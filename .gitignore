@@ -1,0 +1,62 @@
+### OS
+.DS_Store
+Thumbs.db
+
+### Node / JS / TS (frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+### Laravel / PHP
+vendor/
+bootstrap/cache/
+storage/
+storage/*.key
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+public/storage
+public/hot
+public/build/
+public/mix-manifest.json
+Homestead.json
+Homestead.yaml
+/.phpunit.result.cache
+/.php-cs-fixer.cache
+/.php-cs-fixer.cache.*
+/.phpunit.cache/
+/.phpunit.cache/*
+
+### Build / dist
+dist/
+build/
+coverage/
+.nyc_output/
+*.log
+
+### IDE / Editor
+.vscode/
+.idea/
+*.iml
+.history/
+
+### Docker / Compose
+.docker/
+docker-data/
+
+### Cursor / tooling
+.cursor/
+.agent/
+
+### Misc
+.env
+.env.*
+*.local
+*.swp
+*.swo
