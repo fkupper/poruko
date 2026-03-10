@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./api
+    container_name: poruko-api
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/var/www/html
+    networks:
+      - poruko-net
+
+  queue:
+    build:
+      context: ./api
+    container_name: poruko-queue
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
+    depends_on:
+      - api
+      - redis
+    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    volumes:
+      - ./api:/var/www/html
+    networks:
+      - poruko-net
+
+  web:
+    build:
+      context: ./web
+    container_name: poruko-web
+    restart: unless-stopped
+    env_file:
+      - ./web/.env
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+    volumes:
+      - ./web:/usr/share/nginx/html
+    networks:
+      - poruko-net
+
+  db:
+    image: postgres:16
+    container_name: poruko-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: poruko
+      POSTGRES_USER: poruko
+      POSTGRES_PASSWORD: poruko
+    ports:
+      - "5432:5432"
+    volumes:
+      - poruko-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poruko -d poruko"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - poruko-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: poruko-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+    ports:
+      - "6379:6379"
+    volumes:
+      - poruko-redis-data:/data
+    networks:
+      - poruko-net
+
+networks:
+  poruko-net:
+    driver: bridge
+
+volumes:
+  poruko-db-data:
+  poruko-redis-data:

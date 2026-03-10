@@ -13,7 +13,9 @@
 /.zed
 /auth.json
 /node_modules
+/storage/*.key
 /public/build
 /public/hot
 /vendor
 Thumbs.db
+/.scribe

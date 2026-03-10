@@ -53,6 +53,11 @@ docker-data/
 ### Cursor / tooling
 .cursor/
 .agent/
+.ai/
+.claude/
+.codex/
+.gemini/
+.agent/
 
 ### Misc
 .env
@@ -60,3 +65,5 @@ docker-data/
 *.local
 *.swp
 *.swo
+
+
