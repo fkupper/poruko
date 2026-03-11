@@ -1,0 +1,15 @@
+{
+  "name": "poruko-root",
+  "private": true,
+  "scripts": {
+    "up": "just up",
+    "down": "just down",
+    "logs": "just logs",
+    "test": "just test-all",
+    "test:web": "just test-web",
+    "test:api": "just test-api",
+    "artisan": "just artisan",
+    "tinker": "just tinker"
+  }
+}
+
