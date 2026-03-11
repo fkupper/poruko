@@ -21,6 +21,10 @@ vi.mock('../../api/transactions', () => ({
 }));
 
 describe('AddExpenseModal', () => {
+  beforeEach(() => {
+    mutateAsyncMock.mockClear();
+  });
+
   it('submits transaction payload in cents for equal split', async () => {
     render(
       <AddExpenseModal
@@ -74,6 +78,109 @@ describe('AddExpenseModal', () => {
         type: 'manual',
       });
     });
+  });
+
+  it('blocks individual split when a participant amount is missing', async () => {
+    render(
+      <AddExpenseModal
+        accounts={[
+          {
+            id: 10,
+            ledger_id: 3,
+            owner_id: null,
+            type: 'pool',
+            name: 'Pool',
+            code: null,
+            created_at: null,
+            updated_at: null,
+          },
+          {
+            id: 11,
+            ledger_id: 3,
+            owner_id: null,
+            type: 'personal',
+            name: 'Bob',
+            code: null,
+            created_at: null,
+            updated_at: null,
+          },
+        ]}
+        ledgerId={3}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'New expense' }));
+
+    fireEvent.change(screen.getByLabelText('Payer account'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Amount (major currency)'), { target: { value: '12.34' } });
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-03-10' } });
+    fireEvent.change(screen.getByLabelText('Split rule'), { target: { value: 'individual' } });
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+    fireEvent.click(checkboxes[1]);
+
+    const amountInputs = screen.getAllByPlaceholderText('Amount');
+    fireEvent.change(amountInputs[0], { target: { value: '12.34' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Every participant requires an amount for individual split.')).toBeInTheDocument();
+    });
+    expect(mutateAsyncMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks individual split when participant total differs from amount', async () => {
+    render(
+      <AddExpenseModal
+        accounts={[
+          {
+            id: 10,
+            ledger_id: 3,
+            owner_id: null,
+            type: 'pool',
+            name: 'Pool',
+            code: null,
+            created_at: null,
+            updated_at: null,
+          },
+          {
+            id: 11,
+            ledger_id: 3,
+            owner_id: null,
+            type: 'personal',
+            name: 'Bob',
+            code: null,
+            created_at: null,
+            updated_at: null,
+          },
+        ]}
+        ledgerId={3}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'New expense' }));
+
+    fireEvent.change(screen.getByLabelText('Payer account'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Amount (major currency)'), { target: { value: '12.34' } });
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-03-10' } });
+    fireEvent.change(screen.getByLabelText('Split rule'), { target: { value: 'individual' } });
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+    fireEvent.click(checkboxes[1]);
+
+    const amountInputs = screen.getAllByPlaceholderText('Amount');
+    fireEvent.change(amountInputs[0], { target: { value: '6.00' } });
+    fireEvent.change(amountInputs[1], { target: { value: '5.00' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Individual participant amounts must equal the total amount.')).toBeInTheDocument();
+    });
+    expect(mutateAsyncMock).not.toHaveBeenCalled();
   });
 });
 

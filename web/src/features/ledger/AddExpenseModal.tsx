@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutationState } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import {
   type CreateTransactionInput,
@@ -48,7 +48,8 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
     },
   });
 
-  const isIndividual = form.watch('split_rule') === 'individual';
+  const splitRule = useWatch({ control: form.control, name: 'split_rule' });
+  const isIndividual = splitRule === 'individual';
 
   const canSubmit = useMemo(() => {
     return pendingTransactions.length === 0 && !createTransactionMutation.isPending;
@@ -76,17 +77,28 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
         return { account_id: accountId };
       }
 
-      const rawAmount = Number(individualAmounts[accountId] ?? '0');
+      const rawValue = individualAmounts[accountId];
+      const parsed = rawValue === undefined || rawValue.trim() === '' ? Number.NaN : Number(rawValue);
 
       return {
         account_id: accountId,
-        amount: toCents(rawAmount),
+        amount: Number.isFinite(parsed) ? toCents(parsed) : undefined,
       };
     });
 
-    if (isIndividual && participants.some((participant) => participant.amount === undefined || participant.amount < 0)) {
+    if (isIndividual && participants.some((participant) => participant.amount === undefined || participant.amount <= 0)) {
       setParticipantsError('Every participant requires an amount for individual split.');
       return;
+    }
+
+    if (isIndividual) {
+      const totalParticipantAmount = participants.reduce((sum, participant) => sum + (participant.amount ?? 0), 0);
+      const totalAmount = toCents(values.amount_major);
+
+      if (totalParticipantAmount !== totalAmount) {
+        setParticipantsError('Individual participant amounts must equal the total amount.');
+        return;
+      }
     }
 
     await createTransactionMutation.mutateAsync({
