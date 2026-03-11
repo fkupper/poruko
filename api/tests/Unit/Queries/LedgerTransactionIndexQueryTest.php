@@ -63,4 +63,41 @@ class LedgerTransactionIndexQueryTest extends TestCase
         $this->assertCount(1, $result);
         $this->assertSame($expected->id, $result->first()?->id);
     }
+
+    public function test_it_returns_transactions_where_account_is_participant_but_not_payer(): void
+    {
+        $ledger = Ledger::factory()->create();
+        $payerA = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $payerB = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $participantOnly = Account::factory()->create(['ledger_id' => $ledger->id]);
+
+        $expected = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payerA->id,
+            'split_rule' => 'equal',
+            'amount' => 1000,
+            'participants' => [['account_id' => $participantOnly->id, 'amount' => 1000]],
+            'date' => '2026-03-10',
+        ]);
+
+        Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payerB->id,
+            'split_rule' => 'equal',
+            'amount' => 2000,
+            'participants' => [['account_id' => $payerB->id, 'amount' => 2000]],
+            'date' => '2026-03-10',
+        ]);
+
+        $query = app(LedgerTransactionIndexQuery::class);
+
+        $result = $query->execute($ledger, new TransactionIndexFiltersData(
+            fromDate: '2026-03-10',
+            toDate: '2026-03-10',
+            accountId: $participantOnly->id,
+        ));
+
+        $this->assertCount(1, $result);
+        $this->assertSame($expected->id, $result->first()?->id);
+    }
 }

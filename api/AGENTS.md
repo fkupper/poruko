@@ -20,6 +20,12 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/sail (SAIL) - v1
 - phpunit/phpunit (PHPUNIT) - v11
 
+## Project-specific (Poruko)
+
+- **Postgres only**: This project uses PostgreSQL indefinitely. Never add exceptions or branches for other database services (e.g. SQLite, MySQL). Write a single code path for Postgres only.
+- **Run tests in Docker**: Always run API tests from inside Docker, e.g. `just test-api` or `docker compose exec -e APP_ENV=testing api php artisan test`. Do not run `php artisan test` or `./vendor/bin/phpunit` on the host.
+- **DevSeeder**: When new database entities (models, tables, or significant new relationships) are added to the API, update `api/database/seeders/DevSeeder.php` so dev data stays representative and the dev environment remains usable.
+
 ## Conventions
 
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
