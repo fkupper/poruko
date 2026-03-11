@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   api:
     build:
@@ -37,8 +35,7 @@ services:
       - poruko-net
 
   web:
-    build:
-      context: ./web
+    image: nginx:alpine
     container_name: poruko-web
     restart: unless-stopped
     env_file:
