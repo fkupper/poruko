@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\LedgerTransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
-Route::middleware('throttle:10,1')->group(function (): void {
+Route::middleware('throttle:api')->group(function (): void {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
 });

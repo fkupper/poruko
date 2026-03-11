@@ -61,8 +61,6 @@ class LedgerTransactionController extends Controller
 
     public function show(Ledger $ledger, Transaction $transaction): TransactionResource
     {
-        $this->authorize('view', $transaction);
-
         return TransactionResource::make(
             $transaction->load(['payerAccount', 'postings.account']),
         );

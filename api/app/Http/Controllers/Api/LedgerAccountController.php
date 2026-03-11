@@ -34,8 +34,6 @@ class LedgerAccountController extends Controller
 
     public function show(Ledger $ledger, Account $account): AccountResource
     {
-        $this->authorize('view', $account);
-
         return AccountResource::make($account);
     }
 
@@ -48,8 +46,6 @@ class LedgerAccountController extends Controller
 
     public function destroy(Ledger $ledger, Account $account): JsonResponse
     {
-        $this->authorize('delete', $account);
-
         if ($account->postings()->exists()) {
             return response()->json([
                 'message' => 'Account cannot be deleted once postings exist.',

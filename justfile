@@ -35,7 +35,7 @@ web-test:
 
 # Tests
 test-api:
-    docker compose exec api php artisan test
+    docker compose exec -e APP_ENV=testing api php artisan test
 
 test-web:
     just web-test
