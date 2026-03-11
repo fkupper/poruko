@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PostingDirection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ class Posting extends Model
     {
         return [
             'amount' => 'integer',
+            'direction' => PostingDirection::class,
         ];
     }
 

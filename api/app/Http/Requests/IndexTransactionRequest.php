@@ -2,13 +2,17 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Ledger;
 use Illuminate\Foundation\Http\FormRequest;
 
 class IndexTransactionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $ledger = $this->route('ledger');
+
+        return $ledger instanceof Ledger
+            && $this->user()?->can('view', $ledger) === true;
     }
 
     /**

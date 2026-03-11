@@ -2,14 +2,20 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AccountType;
+use App\Models\Account;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $account = $this->route('account');
+
+        return $account instanceof Account
+            && $this->user()?->can('update', $account) === true;
     }
 
     /**
@@ -21,7 +27,7 @@ class UpdateAccountRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'type' => ['sometimes', 'required', 'string', 'in:personal,pool,external'],
+            'type' => ['sometimes', 'required', new Enum(AccountType::class)],
             'owner_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'code' => [
                 'sometimes',

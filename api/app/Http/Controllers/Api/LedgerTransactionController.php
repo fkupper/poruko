@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\IndexTransactionRequest;
 use App\Http\Requests\StoreTransactionRequest;
@@ -9,34 +10,28 @@ use App\Http\Resources\TransactionResource;
 use App\Models\Ledger;
 use App\Models\Transaction;
 use App\Modules\Ledger\Actions\PostManualTransactionAction;
+use App\Modules\Ledger\Data\PostManualTransactionData;
+use App\Modules\Ledger\Data\TransactionIndexFiltersData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
+use App\Modules\Ledger\Queries\LedgerTransactionIndexQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
 class LedgerTransactionController extends Controller
 {
-    public function index(IndexTransactionRequest $request, Ledger $ledger): AnonymousResourceCollection
-    {
-        $this->authorize('view', $ledger);
-
-        $validated = $request->validated();
-
-        $transactions = Transaction::query()
-            ->with(['payerAccount', 'postings'])
-            ->forLedger($ledger->id)
-            ->betweenDates($validated['from_date'] ?? null, $validated['to_date'] ?? null)
-            ->when(
-                isset($validated['account_id']),
-                fn ($query) => $query->where(function ($subQuery) use ($validated) {
-                    $subQuery->where('payer_account_id', $validated['account_id'])
-                        ->orWhereJsonContains('participants', [['account_id' => (int) $validated['account_id']]]);
-                }),
-            )
-            ->latest('date')
-            ->get();
-
-        return TransactionResource::collection($transactions);
+    public function index(
+        IndexTransactionRequest $request,
+        Ledger $ledger,
+        LedgerTransactionIndexQuery $query
+    ): AnonymousResourceCollection {
+        return TransactionResource::collection(
+            $query->execute($ledger, TransactionIndexFiltersData::fromArray([
+                'from_date' => $request->validated('from_date'),
+                'to_date' => $request->validated('to_date'),
+                'account_id' => $request->validated('account_id'),
+            ])),
+        );
     }
 
     public function store(
@@ -44,13 +39,15 @@ class LedgerTransactionController extends Controller
         Ledger $ledger,
         PostManualTransactionAction $action
     ): JsonResponse {
-        $this->authorize('view', $ledger);
-
         try {
-            $transaction = $action->execute([
-                ...$request->validated(),
-                'ledger_id' => $ledger->id,
-            ]);
+            $transaction = $action->execute(
+                PostManualTransactionData::fromArray([
+                    ...$request->validated(),
+                    'ledger_id' => $ledger->id,
+                    'description' => $request->validated('description'),
+                    'type' => TransactionType::Manual->value,
+                ]),
+            );
         } catch (InvalidLedgerPostingException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -64,8 +61,7 @@ class LedgerTransactionController extends Controller
 
     public function show(Ledger $ledger, Transaction $transaction): TransactionResource
     {
-        $this->authorize('view', $ledger);
-        abort_unless($transaction->ledger_id === $ledger->id, Response::HTTP_NOT_FOUND);
+        $this->authorize('view', $transaction);
 
         return TransactionResource::make(
             $transaction->load(['payerAccount', 'postings.account']),

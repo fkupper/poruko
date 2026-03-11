@@ -2,36 +2,27 @@
 
 namespace App\Modules\Ledger\Actions;
 
+use App\Enums\PostingDirection;
+use App\Enums\TransactionSplitRule;
 use App\Models\Account;
 use App\Models\Posting;
 use App\Models\Transaction;
+use App\Modules\Ledger\Data\PostManualTransactionData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
 use Illuminate\Support\Facades\DB;
 
 class PostManualTransactionAction
 {
-    /**
-     * @param array{
-     *   ledger_id:int,
-     *   payer_account_id:int,
-     *   amount:int,
-     *   split_rule:string,
-     *   participants:array<int, array{account_id:int, amount?:int}>,
-     *   description?:string|null,
-     *   date:string,
-     *   type?:string
-     * } $payload
-     */
-    public function execute(array $payload): Transaction
+    public function execute(PostManualTransactionData $payload): Transaction
     {
-        $ledgerId = $payload['ledger_id'];
-        $payerAccountId = $payload['payer_account_id'];
-        $amount = $payload['amount'];
-        $splitRule = $payload['split_rule'];
-        $participants = $payload['participants'];
-        $date = $payload['date'];
-        $description = $payload['description'] ?? null;
-        $type = $payload['type'] ?? 'manual';
+        $ledgerId = $payload->ledgerId;
+        $payerAccountId = $payload->payerAccountId;
+        $amount = $payload->amount;
+        $splitRule = $payload->splitRule;
+        $participants = $payload->participants;
+        $date = $payload->date;
+        $description = $payload->description;
+        $type = $payload->type;
 
         if ($amount <= 0) {
             throw new InvalidLedgerPostingException('Amount must be greater than zero.');
@@ -71,7 +62,7 @@ class PostManualTransactionAction
                     'transaction_id' => $transaction->id,
                     'account_id' => $payerAccountId,
                     'amount' => $amount,
-                    'direction' => 'credit',
+                    'direction' => PostingDirection::Credit->value,
                 ],
             ];
 
@@ -80,17 +71,17 @@ class PostManualTransactionAction
                     'transaction_id' => $transaction->id,
                     'account_id' => (int) $participant['account_id'],
                     'amount' => (int) $participant['amount'],
-                    'direction' => 'debit',
+                    'direction' => PostingDirection::Debit->value,
                 ];
             }
 
             Posting::query()->insert($postings);
 
             $sumDebits = (int) collect($postings)
-                ->where('direction', 'debit')
+                ->where('direction', PostingDirection::Debit->value)
                 ->sum('amount');
             $sumCredits = (int) collect($postings)
-                ->where('direction', 'credit')
+                ->where('direction', PostingDirection::Credit->value)
                 ->sum('amount');
 
             if ($sumDebits !== $sumCredits) {
@@ -128,11 +119,11 @@ class PostManualTransactionAction
             throw new InvalidLedgerPostingException('At least one participant is required.');
         }
 
-        if ($splitRule === 'equal') {
+        if ($splitRule === TransactionSplitRule::Equal->value) {
             return $this->allocateEqualParticipants($amount, $participants);
         }
 
-        if ($splitRule === 'individual') {
+        if ($splitRule === TransactionSplitRule::Individual->value) {
             return $this->allocateIndividualParticipants($amount, $participants);
         }
 

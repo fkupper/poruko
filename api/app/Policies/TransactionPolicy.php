@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Ledger;
 use App\Models\Transaction;
 use App\Models\User;
 
@@ -17,9 +18,9 @@ class TransactionPolicy
         return $transaction->ledger->users()->whereKey($user->id)->exists();
     }
 
-    public function create(User $user): bool
+    public function create(User $user, Ledger $ledger): bool
     {
-        return $user->ledgers()->exists();
+        return $ledger->users()->whereKey($user->id)->exists();
     }
 
     public function update(User $user, Transaction $transaction): bool
