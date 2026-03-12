@@ -60,4 +60,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Account::class, 'owner_id');
     }
+
+    public function financialProfiles(): HasMany
+    {
+        return $this->hasMany(FinancialProfile::class);
+    }
 }

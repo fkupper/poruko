@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FinancialProfileController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\LedgerAccountController;
 use App\Http\Controllers\Api\LedgerTransactionController;
@@ -29,5 +30,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('/transactions', [LedgerTransactionController::class, 'index']);
             Route::post('/transactions', [LedgerTransactionController::class, 'store']);
             Route::get('/transactions/{transaction}', [LedgerTransactionController::class, 'show']);
+
+            Route::get('/users/{user}/financial-profile/active', [FinancialProfileController::class, 'show']);
+            Route::put('/users/{user}/financial-profile/active', [FinancialProfileController::class, 'update']);
         });
 });

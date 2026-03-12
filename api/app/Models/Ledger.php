@@ -47,4 +47,9 @@ class Ledger extends Model
             ->withPivot('role')
             ->withTimestamps();
     }
+
+    public function financialProfiles(): HasMany
+    {
+        return $this->hasMany(FinancialProfile::class);
+    }
 }

@@ -6,6 +6,7 @@ use App\Enums\AccountType;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\FinancialProfile;
 use App\Models\Ledger;
 use App\Models\User;
 use App\Modules\Ledger\Actions\PostManualTransactionAction;
@@ -87,11 +88,70 @@ class DevSeeder extends Seeder
             ],
         );
 
+        $partner = User::query()->updateOrCreate(
+            ['email' => 'partner@example.com'],
+            [
+                'name' => 'Partner User',
+                'password' => 'password',
+            ],
+        );
+
+        if (! $ledger->users()->whereKey($partner->id)->exists()) {
+            $ledger->users()->attach($partner->id, ['role' => 'member']);
+        }
+
+        $partnerWallet = Account::query()->firstOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'code' => 'DEV-PARTNER-WALLET',
+            ],
+            [
+                'owner_id' => $partner->id,
+                'type' => AccountType::Personal,
+                'name' => 'Partner Wallet',
+            ],
+        );
+
+        FinancialProfile::query()->updateOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'user_id' => $user->id,
+                'valid_from' => now()->startOfMonth()->format('Y-m-d'),
+            ],
+            [
+                'valid_to' => null,
+                'incomes' => [
+                    ['description' => 'Salary', 'amount' => 400000],
+                    ['description' => 'Freelance', 'amount' => 50000],
+                ],
+                'deductions' => [
+                    ['description' => 'Health Insurance', 'amount' => 15000],
+                ],
+            ],
+        );
+
+        FinancialProfile::query()->updateOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'user_id' => $partner->id,
+                'valid_from' => now()->startOfMonth()->format('Y-m-d'),
+            ],
+            [
+                'valid_to' => null,
+                'incomes' => [
+                    ['description' => 'Salary', 'amount' => 300000],
+                ],
+                'deductions' => [
+                    ['description' => 'Student Loan', 'amount' => 20000],
+                ],
+            ],
+        );
+
         if ($ledger->transactions()->count() > 0) {
             return;
         }
 
-        $postTransaction = new PostManualTransactionAction();
+        $postTransaction = app(PostManualTransactionAction::class);
 
         $postTransaction->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
@@ -131,6 +191,20 @@ class DevSeeder extends Seeder
             ],
             'description' => 'Groceries',
             'date' => now()->subDay()->format('Y-m-d'),
+            'type' => TransactionType::Manual->value,
+        ]));
+
+        $postTransaction->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $pool->id,
+            'amount' => 120000,
+            'split_rule' => TransactionSplitRule::Proportional->value,
+            'participants' => [
+                ['account_id' => $wallet->id],
+                ['account_id' => $partnerWallet->id],
+            ],
+            'description' => 'Rent (proportional)',
+            'date' => now()->format('Y-m-d'),
             'type' => TransactionType::Manual->value,
         ]));
     }
