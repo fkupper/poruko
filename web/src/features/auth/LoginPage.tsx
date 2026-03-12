@@ -38,35 +38,35 @@ export function LoginPage() {
 
   return (
     <main className="mx-auto grid min-h-[70vh] w-full max-w-md place-items-center px-4 py-8">
-      <section className="w-full rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <section className="panel w-full">
         <h1 className="text-2xl font-semibold">Log in</h1>
-        <p className="mt-1 text-sm text-slate-400">Access your Poruko account.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Access your Poruko account.</p>
 
         <form className="mt-4 grid gap-3" onSubmit={form.handleSubmit(onSubmit)}>
           <input
-            className="rounded border border-slate-700 bg-slate-950 px-3 py-2"
+            className="field-input"
             placeholder="Email"
             type="email"
             {...form.register('email')}
           />
           {form.formState.errors.email && (
-            <p className="text-sm text-red-400">{form.formState.errors.email.message}</p>
+            <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
           )}
 
           <input
-            className="rounded border border-slate-700 bg-slate-950 px-3 py-2"
+            className="field-input"
             placeholder="Password"
             type="password"
             {...form.register('password')}
           />
           {form.formState.errors.password && (
-            <p className="text-sm text-red-400">{form.formState.errors.password.message}</p>
+            <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
           )}
 
-          {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
+          {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
 
           <button
-            className="rounded bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="btn-primary"
             disabled={form.formState.isSubmitting}
             type="submit"
           >
@@ -74,9 +74,9 @@ export function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-slate-400">
+        <p className="mt-4 text-sm text-muted-foreground">
           Need an account?{' '}
-          <Link className="text-indigo-400 hover:text-indigo-300" to="/register">
+          <Link className="text-info hover:opacity-80" to="/register">
             Register
           </Link>
         </p>

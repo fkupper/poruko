@@ -29,8 +29,8 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
-      <header className="border-b border-slate-800 bg-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <Link className="text-lg font-semibold" to="/ledgers/1/accounts">
@@ -38,35 +38,35 @@ function App() {
             </Link>
             {user !== null && (
               <nav className="flex items-center gap-3 text-sm">
-                <Link className="text-slate-300 hover:text-slate-100" to="/ledgers/1/accounts">
+                <Link className="text-muted-foreground hover:text-foreground" to="/ledgers/1/accounts">
                   Accounts
                 </Link>
-                <Link className="text-slate-300 hover:text-slate-100" to="/ledgers/1/my-finances">
+                <Link className="text-muted-foreground hover:text-foreground" to="/ledgers/1/my-finances">
                   My Finances
                 </Link>
               </nav>
             )}
           </div>
           <div className="text-sm">
-            {isPending && <span className="text-slate-300">API: checking...</span>}
-            {isError && <span className="text-red-400">API error: {(error as Error).message}</span>}
-            {data && <span className="text-emerald-400">API: {data.status}</span>}
+            {isPending && <span className="text-muted-foreground">API: checking...</span>}
+            {isError && <span className="text-destructive">API error: {(error as Error).message}</span>}
+            {data && <span className="text-inflow">API: {data.status}</span>}
           </div>
           <div className="text-sm">
             {user === null ? (
               <div className="flex items-center gap-2">
-                <Link className="text-indigo-400 hover:text-indigo-300" to="/login">
+                <Link className="text-info hover:opacity-80" to="/login">
                   Log in
                 </Link>
-                <Link className="text-indigo-400 hover:text-indigo-300" to="/register">
+                <Link className="text-info hover:opacity-80" to="/register">
                   Register
                 </Link>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-slate-300">{user.email}</span>
+                <span className="text-muted-foreground">{user.email}</span>
                 <button
-                  className="rounded border border-slate-700 px-2 py-1 text-slate-200 hover:border-slate-500"
+                  className="rounded-control border border-border px-2 py-1 text-foreground hover:opacity-80"
                   onClick={() => void handleLogout()}
                   type="button"
                 >
@@ -132,7 +132,7 @@ interface RequireAuthProps {
 
 function RequireAuth({ children, user, isBootstrapping }: RequireAuthProps) {
   if (isBootstrapping) {
-    return <p className="mx-auto max-w-5xl px-4 py-8 text-slate-300">Loading account...</p>;
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-muted-foreground">Loading account...</p>;
   }
 
   if (user === null) {
@@ -160,7 +160,7 @@ function LedgerAccountsRoute() {
   const ledgerId = Number(params.ledgerId ?? '0');
 
   if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
-    return <p className="mx-auto max-w-5xl px-4 py-8 text-red-400">Invalid ledger id.</p>;
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid ledger id.</p>;
   }
 
   return <ManageAccountsPage ledgerId={ledgerId} />;
@@ -172,7 +172,7 @@ function LedgerMyFinancesRoute() {
   const ledgerId = Number(params.ledgerId ?? '0');
 
   if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
-    return <p className="mx-auto max-w-5xl px-4 py-8 text-red-400">Invalid ledger id.</p>;
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid ledger id.</p>;
   }
 
   if (user === null) {

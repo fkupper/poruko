@@ -72,28 +72,28 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
 
   return (
     <main className="mx-auto grid max-w-5xl gap-6 px-4 py-8">
-      <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <section className="panel">
         <h1 className="text-2xl font-semibold">My Finances</h1>
-        <p className="mt-1 text-sm text-slate-400">Ledger #{ledgerId}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Ledger #{ledgerId}</p>
 
-        {isPending && <p className="mt-4 text-slate-300">Loading financial profile...</p>}
+        {isPending && <p className="mt-4 text-muted-foreground">Loading financial profile...</p>}
         {isError && !error.message.includes('status 404') && (
-          <p className="mt-4 text-red-400">{(error as Error).message}</p>
+          <p className="mt-4 text-destructive">{(error as Error).message}</p>
         )}
         {isError && error.message.includes('status 404') && (
-          <p className="mt-4 text-slate-400">No financial profile set up yet. Fill out the form below to create one.</p>
+          <p className="mt-4 text-muted-foreground">No financial profile set up yet. Fill out the form below to create one.</p>
         )}
 
         <form className="mt-4 grid gap-6" onSubmit={form.handleSubmit(onSubmit)}>
-          <fieldset className="rounded border border-slate-800 p-3">
-            <legend className="px-1 text-sm font-medium text-slate-300">Incomes</legend>
+          <fieldset className="rounded-card border border-border p-3">
+            <legend className="px-1 text-sm font-medium text-muted-foreground">Incomes</legend>
             <div className="grid gap-3">
               {incomesArray.fields.map((field, index) => (
                 <div className="grid gap-2 sm:grid-cols-[1fr,140px,auto] sm:items-end" key={field.id}>
                   <label className="grid gap-1 text-sm">
                     <span>Description</span>
                     <input
-                      className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+                      className="field-input-compact"
                       type="text"
                       {...form.register(`incomes.${index}.description`)}
                     />
@@ -101,14 +101,14 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
                   <label className="grid gap-1 text-sm">
                     <span>Amount</span>
                     <input
-                      className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+                      className="field-input-compact amount-numeric"
                       step="0.01"
                       type="number"
                       {...form.register(`incomes.${index}.amount_major`, { valueAsNumber: true })}
                     />
                   </label>
                   <button
-                    className="rounded border border-red-800 px-2 py-2 text-sm text-red-400 hover:bg-red-900/30"
+                    className="btn-destructive-outline"
                     disabled={incomesArray.fields.length <= 1}
                     onClick={() => incomesArray.remove(index)}
                     type="button"
@@ -118,7 +118,7 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
                 </div>
               ))}
               <button
-                className="justify-self-start rounded border border-slate-700 px-3 py-1 text-sm text-slate-300 hover:border-slate-500"
+                className="btn-outline justify-self-start"
                 onClick={() => incomesArray.append({ description: '', amount_major: 0 })}
                 type="button"
               >
@@ -126,19 +126,19 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
               </button>
             </div>
             {form.formState.errors.incomes?.message && (
-              <p className="mt-2 text-sm text-red-400">{form.formState.errors.incomes.message}</p>
+              <p className="mt-2 text-sm text-destructive">{form.formState.errors.incomes.message}</p>
             )}
           </fieldset>
 
-          <fieldset className="rounded border border-slate-800 p-3">
-            <legend className="px-1 text-sm font-medium text-slate-300">Deductions</legend>
+          <fieldset className="rounded-card border border-border p-3">
+            <legend className="px-1 text-sm font-medium text-muted-foreground">Deductions</legend>
             <div className="grid gap-3">
               {deductionsArray.fields.map((field, index) => (
                 <div className="grid gap-2 sm:grid-cols-[1fr,140px,auto] sm:items-end" key={field.id}>
                   <label className="grid gap-1 text-sm">
                     <span>Description</span>
                     <input
-                      className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+                      className="field-input-compact"
                       type="text"
                       {...form.register(`deductions.${index}.description`)}
                     />
@@ -146,14 +146,14 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
                   <label className="grid gap-1 text-sm">
                     <span>Amount</span>
                     <input
-                      className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+                      className="field-input-compact amount-numeric"
                       step="0.01"
                       type="number"
                       {...form.register(`deductions.${index}.amount_major`, { valueAsNumber: true })}
                     />
                   </label>
                   <button
-                    className="rounded border border-red-800 px-2 py-2 text-sm text-red-400 hover:bg-red-900/30"
+                    className="btn-destructive-outline"
                     onClick={() => deductionsArray.remove(index)}
                     type="button"
                   >
@@ -162,7 +162,7 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
                 </div>
               ))}
               <button
-                className="justify-self-start rounded border border-slate-700 px-3 py-1 text-sm text-slate-300 hover:border-slate-500"
+                className="btn-outline justify-self-start"
                 onClick={() => deductionsArray.append({ description: '', amount_major: 0 })}
                 type="button"
               >
@@ -172,24 +172,24 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
           </fieldset>
 
           {profile?.computed && (
-            <div className="rounded border border-slate-800 bg-slate-950 p-3">
-              <h3 className="text-sm font-medium text-slate-300">Current Summary</h3>
+            <div className="rounded-card border border-border bg-background p-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Current Summary</h3>
               <dl className="mt-2 grid grid-cols-3 gap-4 text-center text-sm">
                 <div>
-                  <dt className="text-slate-400">Total Income</dt>
-                  <dd className="text-lg font-semibold text-emerald-400">
+                  <dt className="text-muted-foreground">Total Income</dt>
+                  <dd className="amount-numeric text-lg font-semibold text-inflow">
                     {(profile.computed.total_income / 100).toFixed(2)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-slate-400">Total Deductions</dt>
-                  <dd className="text-lg font-semibold text-red-400">
+                  <dt className="text-muted-foreground">Total Deductions</dt>
+                  <dd className="amount-numeric text-lg font-semibold text-destructive">
                     {(profile.computed.total_deductions / 100).toFixed(2)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-slate-400">Shareable Income</dt>
-                  <dd className="text-lg font-semibold text-indigo-400">
+                  <dt className="text-muted-foreground">Shareable Income</dt>
+                  <dd className="amount-numeric text-lg font-semibold text-info">
                     {(profile.computed.shareable_income / 100).toFixed(2)}
                   </dd>
                 </div>
@@ -198,15 +198,15 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
           )}
 
           {updateMutation.isError && (
-            <p className="text-sm text-red-400">{(updateMutation.error as Error).message}</p>
+            <p className="text-sm text-destructive">{(updateMutation.error as Error).message}</p>
           )}
 
           {updateMutation.isSuccess && (
-            <p className="text-sm text-emerald-400">Financial profile saved successfully.</p>
+            <p className="text-sm text-inflow">Financial profile saved successfully.</p>
           )}
 
           <button
-            className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="btn-primary text-sm"
             disabled={updateMutation.isPending}
             type="submit"
           >
