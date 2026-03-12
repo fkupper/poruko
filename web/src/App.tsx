@@ -6,6 +6,7 @@ import { useHealthQuery } from './api/health.ts';
 import { LoginPage } from './features/auth/LoginPage.tsx';
 import { RegisterPage } from './features/auth/RegisterPage.tsx';
 import { ManageAccountsPage } from './features/ledger/ManageAccountsPage.tsx';
+import { MyFinancesPage } from './features/ledger/MyFinancesPage.tsx';
 import { useAuthStore } from './stores/authStore.ts';
 
 function App() {
@@ -31,9 +32,21 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <header className="border-b border-slate-800 bg-slate-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link className="text-lg font-semibold" to="/ledgers/1/accounts">
-            Poruko
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link className="text-lg font-semibold" to="/ledgers/1/accounts">
+              Poruko
+            </Link>
+            {user !== null && (
+              <nav className="flex items-center gap-3 text-sm">
+                <Link className="text-slate-300 hover:text-slate-100" to="/ledgers/1/accounts">
+                  Accounts
+                </Link>
+                <Link className="text-slate-300 hover:text-slate-100" to="/ledgers/1/my-finances">
+                  My Finances
+                </Link>
+              </nav>
+            )}
+          </div>
           <div className="text-sm">
             {isPending && <span className="text-slate-300">API: checking...</span>}
             {isError && <span className="text-red-400">API error: {(error as Error).message}</span>}
@@ -98,6 +111,14 @@ function App() {
           }
           path="/ledgers/:ledgerId/accounts"
         />
+        <Route
+          element={
+            <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+              <LedgerMyFinancesRoute />
+            </RequireAuth>
+          }
+          path="/ledgers/:ledgerId/my-finances"
+        />
       </Routes>
     </div>
   );
@@ -143,6 +164,22 @@ function LedgerAccountsRoute() {
   }
 
   return <ManageAccountsPage ledgerId={ledgerId} />;
+}
+
+function LedgerMyFinancesRoute() {
+  const params = useParams<{ ledgerId: string }>();
+  const user = useAuthStore((state) => state.user);
+  const ledgerId = Number(params.ledgerId ?? '0');
+
+  if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-red-400">Invalid ledger id.</p>;
+  }
+
+  if (user === null) {
+    return <Navigate replace to="/login" />;
+  }
+
+  return <MyFinancesPage ledgerId={ledgerId} userId={user.id} />;
 }
 
 export default App;

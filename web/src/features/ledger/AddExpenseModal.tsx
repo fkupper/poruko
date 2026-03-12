@@ -19,7 +19,7 @@ const formSchema = z.object({
   amount_major: z.number().positive('Amount must be greater than 0'),
   description: z.string().max(255).optional(),
   date: z.string().min(1, 'Date is required'),
-  split_rule: z.enum(['equal', 'individual']),
+  split_rule: z.enum(['equal', 'individual', 'proportional']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -188,6 +188,7 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
             >
               <option value="equal">Equal</option>
               <option value="individual">Individual</option>
+              <option value="proportional">Proportional</option>
             </select>
           </label>
 
