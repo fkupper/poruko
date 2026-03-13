@@ -182,5 +182,61 @@ describe('AddExpenseModal', () => {
     });
     expect(mutateAsyncMock).not.toHaveBeenCalled();
   });
+
+  it('submits transaction payload for proportional split without individual amounts', async () => {
+    render(
+      <AddExpenseModal
+        accounts={[
+          {
+            id: 10,
+            ledger_id: 3,
+            owner_id: 1,
+            type: 'personal',
+            name: 'Alice',
+            code: null,
+            created_at: null,
+            updated_at: null,
+          },
+          {
+            id: 11,
+            ledger_id: 3,
+            owner_id: 2,
+            type: 'personal',
+            name: 'Bob',
+            code: null,
+            created_at: null,
+            updated_at: null,
+          },
+        ]}
+        ledgerId={3}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'New expense' }));
+
+    fireEvent.change(screen.getByLabelText('Payer account'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Amount (major currency)'), { target: { value: '50.00' } });
+    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Groceries' } });
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-03-12' } });
+    fireEvent.change(screen.getByLabelText('Split rule'), { target: { value: 'proportional' } });
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+    fireEvent.click(checkboxes[1]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    await waitFor(() => {
+      expect(mutateAsyncMock).toHaveBeenCalledWith({
+        payer_account_id: 10,
+        amount: 5000,
+        description: 'Groceries',
+        date: '2026-03-12',
+        split_rule: 'proportional',
+        participants: [{ account_id: 10 }, { account_id: 11 }],
+        type: 'manual',
+      });
+    });
+  });
 });
 

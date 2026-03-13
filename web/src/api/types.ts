@@ -1,7 +1,29 @@
-export type SplitRule = 'equal' | 'individual';
+export type SplitRule = 'equal' | 'individual' | 'proportional';
 export type TransactionType = 'manual' | 'recurring' | 'settlement' | 'reversal';
 export type AccountType = 'personal' | 'pool' | 'external';
 export type PostingDirection = 'debit' | 'credit';
+
+export interface FinancialLineItem {
+  description: string;
+  amount: number;
+}
+
+export interface FinancialProfileComputed {
+  total_income: number;
+  total_deductions: number;
+  shareable_income: number;
+}
+
+export interface FinancialProfile {
+  id: number;
+  ledger_id: number;
+  user_id: number;
+  valid_from: string;
+  valid_to: string | null;
+  incomes: FinancialLineItem[];
+  deductions: FinancialLineItem[];
+  computed: FinancialProfileComputed;
+}
 
 export interface ApiResponse<T> {
   data: T;

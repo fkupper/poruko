@@ -19,7 +19,7 @@ const formSchema = z.object({
   amount_major: z.number().positive('Amount must be greater than 0'),
   description: z.string().max(255).optional(),
   date: z.string().min(1, 'Date is required'),
-  split_rule: z.enum(['equal', 'individual']),
+  split_rule: z.enum(['equal', 'individual', 'proportional']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -123,11 +123,11 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
   }
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+    <section className="panel">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Add Expense</h2>
         <button
-          className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+          className="btn-success text-sm"
           onClick={() => setIsOpen((current) => !current)}
           type="button"
         >
@@ -140,7 +140,7 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
           <label className="grid gap-1 text-sm">
             <span>Payer account</span>
             <select
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+              className="field-input-compact"
               {...form.register('payer_account_id', { valueAsNumber: true })}
             >
               <option value="">Select payer</option>
@@ -155,7 +155,7 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
           <label className="grid gap-1 text-sm">
             <span>Amount (major currency)</span>
             <input
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+              className="field-input-compact amount-numeric"
               step="0.01"
               type="number"
               {...form.register('amount_major', { valueAsNumber: true })}
@@ -165,7 +165,7 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
           <label className="grid gap-1 text-sm">
             <span>Description</span>
             <input
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+              className="field-input-compact"
               type="text"
               {...form.register('description')}
             />
@@ -174,7 +174,7 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
           <label className="grid gap-1 text-sm">
             <span>Date</span>
             <input
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+              className="field-input-compact"
               type="date"
               {...form.register('date')}
             />
@@ -183,16 +183,17 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
           <label className="grid gap-1 text-sm">
             <span>Split rule</span>
             <select
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-2"
+              className="field-input-compact"
               {...form.register('split_rule')}
             >
               <option value="equal">Equal</option>
               <option value="individual">Individual</option>
+              <option value="proportional">Proportional</option>
             </select>
           </label>
 
-          <fieldset className="rounded border border-slate-800 p-3">
-            <legend className="px-1 text-sm text-slate-300">Participants</legend>
+          <fieldset className="rounded-card border border-border p-3">
+            <legend className="px-1 text-sm text-muted-foreground">Participants</legend>
             <div className="grid gap-2">
               {accounts.map((account) => {
                 const checked = selectedParticipants.includes(account.id);
@@ -207,10 +208,10 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
                       />
                       <span>{account.name}</span>
                     </label>
-                    <span className="text-xs text-slate-400">Account #{account.id}</span>
+                    <span className="text-xs text-muted-foreground">Account #{account.id}</span>
                     {isIndividual && checked ? (
                       <input
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm"
+                        className="field-input-compact amount-numeric py-1 text-sm"
                         onChange={(event) => {
                           const value = event.target.value;
                           setIndividualAmounts((current) => ({
@@ -233,19 +234,19 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
           </fieldset>
 
           {(participantsError !== null || createTransactionMutation.isError) && (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-destructive">
               {participantsError ?? (createTransactionMutation.error as Error).message}
             </p>
           )}
 
           {Object.keys(form.formState.errors).length > 0 && (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-destructive">
               Please fix the form errors before submitting.
             </p>
           )}
 
           <button
-            className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="btn-primary text-sm"
             disabled={!canSubmit}
             type="submit"
           >

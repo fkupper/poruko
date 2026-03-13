@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App.tsx';
 import { queryClient } from './lib/queryClient.ts';
+import { applyPorukoThemeVariables } from './theme/designSystem.ts';
 
 const Devtools = import.meta.env.DEV
   ? lazy(async () => {
@@ -12,6 +13,8 @@ const Devtools = import.meta.env.DEV
       return { default: mod.ReactQueryDevtools };
     })
   : null;
+
+applyPorukoThemeVariables();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

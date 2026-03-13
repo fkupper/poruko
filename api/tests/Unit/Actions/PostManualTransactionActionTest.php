@@ -4,6 +4,7 @@ namespace Tests\Unit\Actions;
 
 use App\Enums\PostingDirection;
 use App\Models\Account;
+use App\Models\FinancialProfile;
 use App\Models\Ledger;
 use App\Models\User;
 use App\Modules\Ledger\Actions\PostManualTransactionAction;
@@ -239,5 +240,176 @@ class PostManualTransactionActionTest extends TestCase
 
         $this->assertSame(100, (int) $transaction->postings->where('direction', PostingDirection::Credit)->sum('amount'));
         $this->assertSame(100, (int) $transaction->postings->where('direction', PostingDirection::Debit)->sum('amount'));
+    }
+
+    public function test_it_creates_balanced_postings_for_proportional_split(): void
+    {
+        $ledger = Ledger::factory()->create();
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $ledger->users()->attach($userA->id, ['role' => 'admin']);
+        $ledger->users()->attach($userB->id, ['role' => 'member']);
+
+        $payer = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+        $accountA = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+        $accountB = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userB->id]);
+
+        FinancialProfile::factory()->create([
+            'ledger_id' => $ledger->id,
+            'user_id' => $userA->id,
+            'valid_from' => '2026-03-01',
+            'incomes' => [['description' => 'Salary', 'amount' => 300000]],
+            'deductions' => [],
+        ]);
+        FinancialProfile::factory()->create([
+            'ledger_id' => $ledger->id,
+            'user_id' => $userB->id,
+            'valid_from' => '2026-03-01',
+            'incomes' => [['description' => 'Salary', 'amount' => 100000]],
+            'deductions' => [],
+        ]);
+
+        $action = app(PostManualTransactionAction::class);
+
+        $transaction = $action->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payer->id,
+            'amount' => 1000,
+            'description' => 'Rent proportional',
+            'date' => '2026-03-12',
+            'type' => 'manual',
+            'split_rule' => 'proportional',
+            'participants' => [
+                ['account_id' => $accountA->id],
+                ['account_id' => $accountB->id],
+            ],
+        ]));
+
+        $debits = $transaction->postings->where('direction', PostingDirection::Debit);
+        $credits = $transaction->postings->where('direction', PostingDirection::Credit);
+
+        $this->assertSame(1000, (int) $credits->sum('amount'));
+        $this->assertSame(1000, (int) $debits->sum('amount'));
+        $this->assertCount(2, $debits);
+
+        $debitA = $debits->firstWhere('account_id', $accountA->id);
+        $debitB = $debits->firstWhere('account_id', $accountB->id);
+
+        $this->assertSame(750, $debitA->amount);
+        $this->assertSame(250, $debitB->amount);
+    }
+
+    public function test_proportional_split_handles_remainder_cents_deterministically(): void
+    {
+        $ledger = Ledger::factory()->create();
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $userC = User::factory()->create();
+
+        $payer = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+        $accountA = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+        $accountB = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userB->id]);
+        $accountC = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userC->id]);
+
+        FinancialProfile::factory()->create([
+            'ledger_id' => $ledger->id,
+            'user_id' => $userA->id,
+            'valid_from' => '2026-03-01',
+            'incomes' => [['description' => 'Salary', 'amount' => 100000]],
+            'deductions' => [],
+        ]);
+        FinancialProfile::factory()->create([
+            'ledger_id' => $ledger->id,
+            'user_id' => $userB->id,
+            'valid_from' => '2026-03-01',
+            'incomes' => [['description' => 'Salary', 'amount' => 100000]],
+            'deductions' => [],
+        ]);
+        FinancialProfile::factory()->create([
+            'ledger_id' => $ledger->id,
+            'user_id' => $userC->id,
+            'valid_from' => '2026-03-01',
+            'incomes' => [['description' => 'Salary', 'amount' => 100000]],
+            'deductions' => [],
+        ]);
+
+        $action = app(PostManualTransactionAction::class);
+
+        $transaction = $action->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payer->id,
+            'amount' => 100,
+            'description' => 'Test remainder',
+            'date' => '2026-03-12',
+            'type' => 'manual',
+            'split_rule' => 'proportional',
+            'participants' => [
+                ['account_id' => $accountA->id],
+                ['account_id' => $accountB->id],
+                ['account_id' => $accountC->id],
+            ],
+        ]));
+
+        $debits = $transaction->postings->where('direction', PostingDirection::Debit);
+
+        $this->assertSame(100, (int) $debits->sum('amount'));
+        $this->assertSame(
+            [33, 33, 34],
+            $debits->pluck('amount')->sort()->values()->all(),
+        );
+    }
+
+    public function test_proportional_split_fails_when_no_shareable_income(): void
+    {
+        $ledger = Ledger::factory()->create();
+        $userA = User::factory()->create();
+        $payer = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+        $accountA = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+
+        $action = app(PostManualTransactionAction::class);
+
+        $this->expectException(InvalidLedgerPostingException::class);
+        $this->expectExceptionMessage('shareable income');
+
+        $action->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payer->id,
+            'amount' => 1000,
+            'description' => 'No profile',
+            'date' => '2026-03-12',
+            'type' => 'manual',
+            'split_rule' => 'proportional',
+            'participants' => [
+                ['account_id' => $accountA->id],
+            ],
+        ]));
+    }
+
+    public function test_proportional_split_fails_for_unowned_account(): void
+    {
+        $ledger = Ledger::factory()->create();
+        $payer = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $pool = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'owner_id' => null,
+        ]);
+
+        $action = app(PostManualTransactionAction::class);
+
+        $this->expectException(InvalidLedgerPostingException::class);
+        $this->expectExceptionMessage('owner');
+
+        $action->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payer->id,
+            'amount' => 1000,
+            'description' => 'Pool has no owner',
+            'date' => '2026-03-12',
+            'type' => 'manual',
+            'split_rule' => 'proportional',
+            'participants' => [
+                ['account_id' => $pool->id],
+            ],
+        ]));
     }
 }

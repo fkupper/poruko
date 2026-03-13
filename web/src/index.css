@@ -1,6 +1,126 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: var(--ds-color-background, #ffffff);
+  --color-surface: var(--ds-color-surface, #f1f5f9);
+  --color-foreground: var(--ds-color-foreground, #0f172a);
+  --color-muted-foreground: var(--ds-color-muted-foreground, #334155);
+  --color-border: var(--ds-color-border, #cbd5e1);
+  --color-focus-ring: var(--ds-color-focus-ring, #2563eb);
+  --color-inflow: var(--ds-color-inflow, #16a34a);
+  --color-outflow: var(--ds-color-outflow, #ea580c);
+  --color-destructive: var(--ds-color-destructive, #dc2626);
+  --color-info: var(--ds-color-info, #2563eb);
+
+  --radius-control: var(--ds-radius-control, 10px);
+  --radius-card: var(--ds-radius-card, 14px);
+  --radius-dialog: var(--ds-radius-dialog, 20px);
+  --radius-pill: var(--ds-radius-pill, 999px);
+
+  --spacing-xs: var(--ds-space-xs, 4px);
+  --spacing-sm: var(--ds-space-sm, 8px);
+  --spacing-md: var(--ds-space-md, 12px);
+  --spacing-lg: var(--ds-space-lg, 16px);
+  --spacing-xl: var(--ds-space-xl, 24px);
+  --spacing-xxl: var(--ds-space-xxl, 32px);
+
+  --font-sans: var(--ds-font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+}
+
+:root {
+  color-scheme: light;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: var(--color-background, #ffffff);
+  color: var(--color-foreground, #0f172a);
+  font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ds-font-size-body, 16px);
+  line-height: var(--ds-line-height-body, 24px);
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.amount-numeric {
+  font-family: var(--ds-font-numeric, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-card border border-border bg-surface p-4;
+  }
+
+  .field-input {
+    @apply rounded-control border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground;
+  }
+
+  .field-input-compact {
+    @apply rounded-control border border-border bg-background px-2 py-2 text-foreground placeholder:text-muted-foreground;
+  }
+
+  .btn-primary {
+    @apply rounded-control bg-info px-3 py-2 font-medium text-white hover:opacity-90 disabled:opacity-50;
+  }
+
+  .btn-success {
+    @apply rounded-control bg-inflow px-3 py-2 font-medium text-white hover:opacity-90 disabled:opacity-50;
+  }
+
+  .btn-outline {
+    @apply rounded-control border border-border px-3 py-1 text-sm text-muted-foreground hover:text-foreground hover:opacity-80;
+  }
+
+  .btn-destructive-outline {
+    @apply rounded-control border border-destructive px-2 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50;
+  }
+
+  .sidebar-shell {
+    @apply fixed left-0 top-0 z-40 h-screen w-64 flex-col border-r border-border bg-surface;
+  }
+
+  .sidebar-brand {
+    @apply flex items-center gap-3 border-b border-border px-4 py-4;
+  }
+
+  .sidebar-brand-logo {
+    @apply flex h-9 w-9 items-center justify-center rounded-control bg-info text-sm font-semibold text-white;
+  }
+
+  .sidebar-ledger-card {
+    @apply border-b border-border p-4;
+  }
+
+  .sidebar-ledger-label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground;
+  }
+
+  .sidebar-ledger-picker {
+    @apply w-full rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground;
+  }
+
+  .sidebar-nav {
+    @apply flex flex-1 flex-col gap-1 p-3;
+  }
+
+  .sidebar-nav-link {
+    @apply rounded-control px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground;
+  }
+
+  .sidebar-nav-link-active {
+    @apply bg-info text-white hover:bg-info hover:text-white;
+  }
+
+  .sidebar-footer {
+    @apply grid gap-2 border-t border-border p-4;
+  }
 }
