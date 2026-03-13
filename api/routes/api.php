@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FinancialProfileController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\LedgerAccountController;
+use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,8 @@ Route::middleware('throttle:api')->group(function (): void {
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    Route::get('/ledgers', [LedgerController::class, 'index']);
 
     Route::prefix('/ledgers/{ledger}')
         ->scopeBindings()

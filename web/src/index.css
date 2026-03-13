@@ -3,14 +3,19 @@
 @theme {
   --color-background: var(--ds-color-background, #ffffff);
   --color-surface: var(--ds-color-surface, #f1f5f9);
+  --color-surfaceStrong: var(--ds-color-surface-strong, #cbd5e1);
   --color-foreground: var(--ds-color-foreground, #0f172a);
   --color-muted-foreground: var(--ds-color-muted-foreground, #334155);
   --color-border: var(--ds-color-border, #cbd5e1);
   --color-focus-ring: var(--ds-color-focus-ring, #2563eb);
   --color-inflow: var(--ds-color-inflow, #16a34a);
+  --color-inflowSubtle: var(--ds-color-inflow-subtle, #dcfce7);
   --color-outflow: var(--ds-color-outflow, #ea580c);
+  --color-outflowSubtle: var(--ds-color-outflow-subtle, #ffedd5);
   --color-destructive: var(--ds-color-destructive, #dc2626);
+  --color-destructiveSubtle: var(--ds-color-destructive-subtle, #fee2e2);
   --color-info: var(--ds-color-info, #2563eb);
+  --color-infoSubtle: var(--ds-color-info-subtle, #dbeafe);
 
   --radius-control: var(--ds-radius-control, 10px);
   --radius-card: var(--ds-radius-card, 14px);
@@ -58,6 +63,10 @@ button:disabled {
 @layer components {
   .panel {
     @apply rounded-card border border-border bg-surface p-4;
+  }
+
+  .panel-dark {
+    @apply rounded-card border border-border bg-foreground p-4 text-background;
   }
 
   .field-input {

@@ -23,6 +23,7 @@ interface LedgerPickerProps {
 }
 
 const NAV_ITEMS = [
+  { label: 'Dashboard', to: (ledgerId: number) => `/ledgers/${ledgerId}/dashboard` },
   { label: 'Accounts', to: (ledgerId: number) => `/ledgers/${ledgerId}/accounts` },
   { label: 'My Finances', to: (ledgerId: number) => `/ledgers/${ledgerId}/my-finances` },
 ] as const;

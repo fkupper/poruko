@@ -3,10 +3,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { AuthUser } from './api/auth.ts';
 import { useHealthQuery } from './api/health.ts';
+import { useLedgersQuery } from './api/ledgers.ts';
 import { LoginPage } from './features/auth/LoginPage.tsx';
 import { RegisterPage } from './features/auth/RegisterPage.tsx';
 import { LedgerSidebar, MobileLedgerBar, type LedgerOption } from './features/layout/LedgerSidebar.tsx';
 import { ManageAccountsPage } from './features/ledger/ManageAccountsPage.tsx';
+import { LedgerDashboardPage } from './features/ledger/LedgerDashboardPage.tsx';
 import { MyFinancesPage } from './features/ledger/MyFinancesPage.tsx';
 import { useAppStore } from './stores/appStore.ts';
 import { useAuthStore } from './stores/authStore.ts';
@@ -24,6 +26,8 @@ function App() {
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const { data: ledgers } = useLedgersQuery(user !== null);
+
   const activeLedgerId = useMemo(() => {
     const match = location.pathname.match(/^\/ledgers\/(\d+)/);
     if (match === null) {
@@ -39,20 +43,38 @@ function App() {
   }, [location.pathname]);
 
   const ledgerOptions = useMemo<LedgerOption[]>(() => {
-    const uniqueLedgerIds = [activeLedgerId, ...recentLedgerIds].filter(
-      (ledgerId, index, ids): ledgerId is number =>
-        ledgerId !== null &&
-        Number.isInteger(ledgerId) &&
-        ledgerId > 0 &&
-        ids.indexOf(ledgerId) === index,
-    );
+    if (ledgers === undefined || ledgers.length === 0) {
+      return [];
+    }
 
-    return uniqueLedgerIds.map((ledgerId) => ({
-      id: ledgerId,
-      name: `Space #${ledgerId}`,
-      membersLabel: 'Shared space',
-    }));
-  }, [activeLedgerId, recentLedgerIds]);
+    const byId = new Map(ledgers.map((ledger) => [ledger.id, ledger]));
+
+    const orderedIds = [
+      ...(activeLedgerId !== null ? [activeLedgerId] : []),
+      ...recentLedgerIds,
+      ...ledgers.map((ledger) => ledger.id),
+    ].filter((ledgerId, index, ids): ledgerId is number => {
+      return byId.has(ledgerId) && ids.indexOf(ledgerId) === index;
+    });
+
+    return orderedIds.flatMap((ledgerId) => {
+      const ledger = byId.get(ledgerId);
+      if (ledger === undefined) {
+        return [];
+      }
+
+      const membersCount = ledger.users_count;
+      const membersLabel = membersCount !== undefined ? `${membersCount} members` : 'Shared space';
+
+      return [
+        {
+          id: ledger.id,
+          name: ledger.name,
+          membersLabel,
+        },
+      ];
+    });
+  }, [activeLedgerId, ledgers, recentLedgerIds]);
 
   const apiStatusMessage = useMemo(() => {
     if (isPending) {
@@ -69,7 +91,8 @@ function App() {
 
     return 'API: unknown';
   }, [data, error, isError, isPending]);
-  const defaultLedgerId = activeLedgerId ?? recentLedgerIds[0] ?? 1;
+  const hasLedgers = ledgerOptions.length > 0;
+  const defaultLedgerId = activeLedgerId ?? (hasLedgers ? ledgerOptions[0]?.id : null);
 
   useEffect(() => {
     hydrateToken();
@@ -91,7 +114,7 @@ function App() {
   }
 
   function handleLedgerChange(ledgerId: number): void {
-    navigate(`/ledgers/${ledgerId}/accounts`);
+    navigate(`/ledgers/${ledgerId}/dashboard`);
   }
 
   return (
@@ -117,7 +140,13 @@ function App() {
           <Route
             element={
               <RequireAuth isBootstrapping={isBootstrapping} user={user}>
-                <Navigate replace to={`/ledgers/${defaultLedgerId}/accounts`} />
+                {hasLedgers ? (
+                  <Navigate replace to={`/ledgers/${defaultLedgerId}/dashboard`} />
+                ) : (
+                  <p className="mx-auto max-w-5xl px-4 py-8 text-muted-foreground">
+                    No spaces available yet. Create a ledger in the API or seed data to get started.
+                  </p>
+                )}
               </RequireAuth>
             }
             path="/"
@@ -137,6 +166,14 @@ function App() {
               </RedirectIfAuthenticated>
             }
             path="/register"
+          />
+          <Route
+            element={
+              <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+                <LedgerDashboardRoute />
+              </RequireAuth>
+            }
+            path="/ledgers/:ledgerId/dashboard"
           />
           <Route
             element={
@@ -181,15 +218,34 @@ function RequireAuth({ children, user, isBootstrapping }: RequireAuthProps) {
 interface RedirectIfAuthenticatedProps {
   children: ReactNode;
   user: AuthUser | null;
-  defaultLedgerId: number;
+  defaultLedgerId: number | null;
 }
 
 function RedirectIfAuthenticated({ children, user, defaultLedgerId }: RedirectIfAuthenticatedProps) {
   if (user !== null) {
-    return <Navigate replace to={`/ledgers/${defaultLedgerId}/accounts`} />;
+    if (defaultLedgerId === null) {
+      return (
+        <p className="mx-auto max-w-5xl px-4 py-8 text-muted-foreground">
+          You are signed in but do not have any spaces yet. Create a ledger in the API or ask an admin for an invite.
+        </p>
+      );
+    }
+
+    return <Navigate replace to={`/ledgers/${defaultLedgerId}/dashboard`} />;
   }
 
   return children;
+}
+
+function LedgerDashboardRoute() {
+  const params = useParams<{ ledgerId: string }>();
+  const ledgerId = Number(params.ledgerId ?? '0');
+
+  if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid space id.</p>;
+  }
+
+  return <LedgerDashboardPage ledgerId={ledgerId} />;
 }
 
 function LedgerAccountsRoute() {

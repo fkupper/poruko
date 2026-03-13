@@ -29,6 +29,18 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export type SettlementMode = 'joint_clearinghouse' | 'direct_p2p';
+
+export interface Ledger {
+  id: number;
+  name: string;
+  settlement_mode: SettlementMode;
+  pool_base_budget: number;
+  users_count?: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export interface Account {
   id: number;
   ledger_id: number;
