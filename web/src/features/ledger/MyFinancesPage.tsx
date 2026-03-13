@@ -74,7 +74,7 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
     <main className="mx-auto grid max-w-5xl gap-6 px-4 py-8">
       <section className="panel">
         <h1 className="text-2xl font-semibold">My Finances</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Ledger #{ledgerId}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Space #{ledgerId}</p>
 
         {isPending && <p className="mt-4 text-muted-foreground">Loading financial profile...</p>}
         {isError && !error.message.includes('status 404') && (

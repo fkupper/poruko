@@ -1,12 +1,14 @@
 import './App.css';
-import { useEffect, type ReactNode } from 'react';
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { AuthUser } from './api/auth.ts';
 import { useHealthQuery } from './api/health.ts';
 import { LoginPage } from './features/auth/LoginPage.tsx';
 import { RegisterPage } from './features/auth/RegisterPage.tsx';
+import { LedgerSidebar, MobileLedgerBar, type LedgerOption } from './features/layout/LedgerSidebar.tsx';
 import { ManageAccountsPage } from './features/ledger/ManageAccountsPage.tsx';
 import { MyFinancesPage } from './features/ledger/MyFinancesPage.tsx';
+import { useAppStore } from './stores/appStore.ts';
 import { useAuthStore } from './stores/authStore.ts';
 
 function App() {
@@ -16,110 +18,144 @@ function App() {
   const hydrateToken = useAuthStore((state) => state.hydrateToken);
   const fetchMe = useAuthStore((state) => state.fetchMe);
   const logout = useAuthStore((state) => state.logout);
+  const recentLedgerIds = useAppStore((state) => state.recentLedgerIds);
+  const setCurrentLedgerId = useAppStore((state) => state.setCurrentLedgerId);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const activeLedgerId = useMemo(() => {
+    const match = location.pathname.match(/^\/ledgers\/(\d+)/);
+    if (match === null) {
+      return null;
+    }
+
+    const ledgerId = Number(match[1]);
+    if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
+      return null;
+    }
+
+    return ledgerId;
+  }, [location.pathname]);
+
+  const ledgerOptions = useMemo<LedgerOption[]>(() => {
+    const uniqueLedgerIds = [activeLedgerId, ...recentLedgerIds].filter(
+      (ledgerId, index, ids): ledgerId is number =>
+        ledgerId !== null &&
+        Number.isInteger(ledgerId) &&
+        ledgerId > 0 &&
+        ids.indexOf(ledgerId) === index,
+    );
+
+    return uniqueLedgerIds.map((ledgerId) => ({
+      id: ledgerId,
+      name: `Space #${ledgerId}`,
+      membersLabel: 'Shared space',
+    }));
+  }, [activeLedgerId, recentLedgerIds]);
+
+  const apiStatusMessage = useMemo(() => {
+    if (isPending) {
+      return 'API: checking...';
+    }
+
+    if (isError) {
+      return `API error: ${(error as Error).message}`;
+    }
+
+    if (data !== undefined) {
+      return `API: ${data.status}`;
+    }
+
+    return 'API: unknown';
+  }, [data, error, isError, isPending]);
+  const defaultLedgerId = activeLedgerId ?? recentLedgerIds[0] ?? 1;
 
   useEffect(() => {
     hydrateToken();
     void fetchMe();
   }, [fetchMe, hydrateToken]);
 
+  useEffect(() => {
+    setCurrentLedgerId(activeLedgerId);
+  }, [activeLedgerId, setCurrentLedgerId]);
+
   async function handleLogout(): Promise<void> {
-    await logout();
-    navigate('/login', { replace: true });
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
+
+  function handleLedgerChange(ledgerId: number): void {
+    navigate(`/ledgers/${ledgerId}/accounts`);
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <Link className="text-lg font-semibold" to="/ledgers/1/accounts">
-              Poruko
-            </Link>
-            {user !== null && (
-              <nav className="flex items-center gap-3 text-sm">
-                <Link className="text-muted-foreground hover:text-foreground" to="/ledgers/1/accounts">
-                  Accounts
-                </Link>
-                <Link className="text-muted-foreground hover:text-foreground" to="/ledgers/1/my-finances">
-                  My Finances
-                </Link>
-              </nav>
-            )}
-          </div>
-          <div className="text-sm">
-            {isPending && <span className="text-muted-foreground">API: checking...</span>}
-            {isError && <span className="text-destructive">API error: {(error as Error).message}</span>}
-            {data && <span className="text-inflow">API: {data.status}</span>}
-          </div>
-          <div className="text-sm">
-            {user === null ? (
-              <div className="flex items-center gap-2">
-                <Link className="text-info hover:opacity-80" to="/login">
-                  Log in
-                </Link>
-                <Link className="text-info hover:opacity-80" to="/register">
-                  Register
-                </Link>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">{user.email}</span>
-                <button
-                  className="rounded-control border border-border px-2 py-1 text-foreground hover:opacity-80"
-                  onClick={() => void handleLogout()}
-                  type="button"
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      {user !== null && (
+        <LedgerSidebar
+          activeLedgerId={activeLedgerId}
+          apiStatus={apiStatusMessage}
+          isLoggingOut={isLoggingOut}
+          ledgers={ledgerOptions}
+          onLedgerChange={handleLedgerChange}
+          onLogout={() => void handleLogout()}
+          userEmail={user.email}
+        />
+      )}
 
-      <Routes>
-        <Route
-          element={
-            <RequireAuth isBootstrapping={isBootstrapping} user={user}>
-              <Navigate replace to="/ledgers/1/accounts" />
-            </RequireAuth>
-          }
-          path="/"
-        />
-        <Route
-          element={
-            <RedirectIfAuthenticated user={user}>
-              <LoginPage />
-            </RedirectIfAuthenticated>
-          }
-          path="/login"
-        />
-        <Route
-          element={
-            <RedirectIfAuthenticated user={user}>
-              <RegisterPage />
-            </RedirectIfAuthenticated>
-          }
-          path="/register"
-        />
-        <Route
-          element={
-            <RequireAuth isBootstrapping={isBootstrapping} user={user}>
-              <LedgerAccountsRoute />
-            </RequireAuth>
-          }
-          path="/ledgers/:ledgerId/accounts"
-        />
-        <Route
-          element={
-            <RequireAuth isBootstrapping={isBootstrapping} user={user}>
-              <LedgerMyFinancesRoute />
-            </RequireAuth>
-          }
-          path="/ledgers/:ledgerId/my-finances"
-        />
-      </Routes>
+      <div className={user !== null ? 'min-h-screen md:pl-64' : 'min-h-screen'}>
+        {user !== null && (
+          <MobileLedgerBar activeLedgerId={activeLedgerId} ledgers={ledgerOptions} onLedgerChange={handleLedgerChange} />
+        )}
+
+        <Routes>
+          <Route
+            element={
+              <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+                <Navigate replace to={`/ledgers/${defaultLedgerId}/accounts`} />
+              </RequireAuth>
+            }
+            path="/"
+          />
+          <Route
+            element={
+              <RedirectIfAuthenticated defaultLedgerId={defaultLedgerId} user={user}>
+                <LoginPage />
+              </RedirectIfAuthenticated>
+            }
+            path="/login"
+          />
+          <Route
+            element={
+              <RedirectIfAuthenticated defaultLedgerId={defaultLedgerId} user={user}>
+                <RegisterPage />
+              </RedirectIfAuthenticated>
+            }
+            path="/register"
+          />
+          <Route
+            element={
+              <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+                <LedgerAccountsRoute />
+              </RequireAuth>
+            }
+            path="/ledgers/:ledgerId/accounts"
+          />
+          <Route
+            element={
+              <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+                <LedgerMyFinancesRoute />
+              </RequireAuth>
+            }
+            path="/ledgers/:ledgerId/my-finances"
+          />
+        </Routes>
+      </div>
     </div>
   );
 }
@@ -145,11 +181,12 @@ function RequireAuth({ children, user, isBootstrapping }: RequireAuthProps) {
 interface RedirectIfAuthenticatedProps {
   children: ReactNode;
   user: AuthUser | null;
+  defaultLedgerId: number;
 }
 
-function RedirectIfAuthenticated({ children, user }: RedirectIfAuthenticatedProps) {
+function RedirectIfAuthenticated({ children, user, defaultLedgerId }: RedirectIfAuthenticatedProps) {
   if (user !== null) {
-    return <Navigate replace to="/ledgers/1/accounts" />;
+    return <Navigate replace to={`/ledgers/${defaultLedgerId}/accounts`} />;
   }
 
   return children;
@@ -160,7 +197,7 @@ function LedgerAccountsRoute() {
   const ledgerId = Number(params.ledgerId ?? '0');
 
   if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
-    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid ledger id.</p>;
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid space id.</p>;
   }
 
   return <ManageAccountsPage ledgerId={ledgerId} />;
@@ -172,7 +209,7 @@ function LedgerMyFinancesRoute() {
   const ledgerId = Number(params.ledgerId ?? '0');
 
   if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
-    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid ledger id.</p>;
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid space id.</p>;
   }
 
   if (user === null) {

@@ -83,4 +83,44 @@ button:disabled {
   .btn-destructive-outline {
     @apply rounded-control border border-destructive px-2 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50;
   }
+
+  .sidebar-shell {
+    @apply fixed left-0 top-0 z-40 h-screen w-64 flex-col border-r border-border bg-surface;
+  }
+
+  .sidebar-brand {
+    @apply flex items-center gap-3 border-b border-border px-4 py-4;
+  }
+
+  .sidebar-brand-logo {
+    @apply flex h-9 w-9 items-center justify-center rounded-control bg-info text-sm font-semibold text-white;
+  }
+
+  .sidebar-ledger-card {
+    @apply border-b border-border p-4;
+  }
+
+  .sidebar-ledger-label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground;
+  }
+
+  .sidebar-ledger-picker {
+    @apply w-full rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground;
+  }
+
+  .sidebar-nav {
+    @apply flex flex-1 flex-col gap-1 p-3;
+  }
+
+  .sidebar-nav-link {
+    @apply rounded-control px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground;
+  }
+
+  .sidebar-nav-link-active {
+    @apply bg-info text-white hover:bg-info hover:text-white;
+  }
+
+  .sidebar-footer {
+    @apply grid gap-2 border-t border-border p-4;
+  }
 }

@@ -1,12 +1,25 @@
 import { create } from 'zustand';
 
 interface AppState {
-  currentLedgerId: string | null;
-  setCurrentLedgerId: (id: string | null) => void;
+  currentLedgerId: number | null;
+  recentLedgerIds: number[];
+  setCurrentLedgerId: (id: number | null) => void;
 }
 
 export const useAppStore = create<AppState>()((set) => ({
   currentLedgerId: null,
-  setCurrentLedgerId: (id) => set({ currentLedgerId: id }),
+  recentLedgerIds: [],
+  setCurrentLedgerId: (id) =>
+    set((state) => {
+      if (id === null) {
+        return { currentLedgerId: null };
+      }
+
+      const withoutDuplicate = state.recentLedgerIds.filter((ledgerId) => ledgerId !== id);
+      return {
+        currentLedgerId: id,
+        recentLedgerIds: [id, ...withoutDuplicate].slice(0, 6),
+      };
+    }),
 }));
 

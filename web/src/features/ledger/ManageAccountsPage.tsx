@@ -40,7 +40,7 @@ export function ManageAccountsPage({ ledgerId }: ManageAccountsPageProps) {
     <main className="mx-auto grid max-w-5xl gap-6 px-4 py-8">
       <section className="panel">
         <h1 className="text-2xl font-semibold">Manage Accounts</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Ledger #{ledgerId}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Space #{ledgerId}</p>
 
         <form className="mt-4 grid gap-3 sm:grid-cols-[1fr,180px,auto]" onSubmit={form.handleSubmit(onSubmit)}>
           <input
