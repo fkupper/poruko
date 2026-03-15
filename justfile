@@ -30,7 +30,7 @@ seed-dev reset="":
     if [ -n "{{reset}}" ]; then
       docker compose {{compose}} exec api php artisan migrate:fresh
     fi
-    docker compose {{compose}} exec api php artisan db:seed --class=DevSeeder
+    docker compose {{compose}} exec api php artisan db:seed:dev
 
 seed-dev-pending reset="":
     #!/usr/bin/env bash
@@ -38,7 +38,7 @@ seed-dev-pending reset="":
     if [ -n "{{reset}}" ]; then
       docker compose {{compose}} exec api php artisan migrate:fresh
     fi
-    docker compose {{compose}} exec -e DEV_SEED_SETTLEMENT_PENDING=1 api php artisan db:seed --class=DevSeeder
+    docker compose {{compose}} exec api php artisan db:seed:dev --pending
 
 artisan *args:
     docker compose {{compose}} exec api php artisan {{args}}

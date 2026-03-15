@@ -62,6 +62,10 @@ return [
         'update_date_on_publish' => true,
     ],
 
+    'seeders' => [
+        'dev_leave_settlement_pending' => false,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Redis Databases

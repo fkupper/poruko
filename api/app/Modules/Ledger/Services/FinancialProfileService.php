@@ -33,7 +33,7 @@ class FinancialProfileService
      */
     public function upsertActive(Ledger $ledger, User $user, array $incomes, array $deductions): FinancialProfile
     {
-        $now = now();
+        $now = CarbonImmutable::now();
         $today = $now->format('Y-m-d');
 
         $existing = $this->activeProfile($ledger, $user, $today);

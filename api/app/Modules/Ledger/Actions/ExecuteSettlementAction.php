@@ -86,7 +86,7 @@ readonly class ExecuteSettlementAction
             }
 
             $settlement->update([
-                'executed_at' => now(),
+                'executed_at' => CarbonImmutable::now(),
             ]);
 
             return $settlement->refresh();

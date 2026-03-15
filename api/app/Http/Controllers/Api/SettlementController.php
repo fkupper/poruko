@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ConfirmSettlementCycleRequest;
 use App\Http\Requests\PreviewSettlementRequest;
 use App\Http\Requests\UpdateLedgerCycleConfigRequest;
+use App\Http\Resources\LedgerResource;
 use App\Http\Resources\SettlementResource;
 use App\Models\Ledger;
 use App\Modules\Ledger\Actions\ConfirmSettlementAction;
@@ -43,19 +44,11 @@ class SettlementController extends Controller
         return SettlementResource::collection($query->execute($ledger));
     }
 
-    public function updateCycleConfig(UpdateLedgerCycleConfigRequest $request, Ledger $ledger): Response
+    public function updateCycleConfig(UpdateLedgerCycleConfigRequest $request, Ledger $ledger): LedgerResource
     {
         $ledger->update($request->validated());
 
-        return response([
-            'data' => [
-                'id' => $ledger->id,
-                'settlement_timezone' => $ledger->settlement_timezone,
-                'settlement_cutoff_day' => $ledger->settlement_cutoff_day,
-                'settlement_cutoff_time' => $ledger->settlement_cutoff_time,
-                'settlement_auto_execute_enabled' => $ledger->settlement_auto_execute_enabled,
-            ],
-        ]);
+        return new LedgerResource($ledger->fresh());
     }
 
     public function confirm(

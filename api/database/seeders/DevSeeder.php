@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Modules\Ledger\Actions\ExecuteSettlementAction;
 use App\Modules\Ledger\Actions\PostManualTransactionAction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 /**
@@ -129,7 +130,7 @@ class DevSeeder extends Seeder
             ],
         );
 
-        $profileStart = now()->subMonthsNoOverflow(3)->startOfMonth()->format('Y-m-d');
+        $profileStart = Carbon::now()->subMonthsNoOverflow(3)->startOfMonth()->format('Y-m-d');
 
         FinancialProfile::query()->updateOrCreate(
             [
@@ -157,7 +158,7 @@ class DevSeeder extends Seeder
             ],
         );
 
-        $lastMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+        $lastMonthEnd = Carbon::now()->subMonthNoOverflow()->endOfMonth();
         $lastMonthStart = $lastMonthEnd->copy()->startOfMonth();
         $postAction = app(PostManualTransactionAction::class);
         $participants = [['user_id' => $bob->id], ['user_id' => $clara->id]];
@@ -220,7 +221,7 @@ class DevSeeder extends Seeder
         $periodEnd = $lastMonthEnd->format('Y-m-d');
         $periodStart = $lastMonthStart->format('Y-m-d');
         $leaveSettlementPending = filter_var(
-            config('dev.seed_settlement_pending', false),
+            config('database.seeders.dev_leave_settlement_pending', false),
             FILTER_VALIDATE_BOOLEAN,
         );
 

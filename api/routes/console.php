@@ -6,11 +6,12 @@ use App\Models\Settlement;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
 use App\Modules\Ledger\Services\SettlementCycleService;
 use App\Modules\Ledger\Services\SettlementSafetyGateService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('settlements:run-due', function (): void {
-    $now = now();
+    $now = Carbon::now();
     $cycleService = app(SettlementCycleService::class);
     $previewAction = app(PreviewSettlementAction::class);
     $safetyGate = app(SettlementSafetyGateService::class);

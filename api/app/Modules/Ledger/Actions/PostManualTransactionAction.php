@@ -9,6 +9,7 @@ use App\Models\Posting;
 use App\Models\Transaction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final readonly class PostManualTransactionAction
@@ -40,7 +41,7 @@ final readonly class PostManualTransactionAction
                 'date' => $payload->date,
             ]);
 
-            $now = now()->toDateTimeString();
+            $now = Carbon::now()->toDateTimeString();
             Posting::query()->insert([
                 [
                     'transaction_id' => $transaction->id,
