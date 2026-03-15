@@ -12,6 +12,7 @@ interface AuthState {
   login: (payload: LoginInput) => Promise<void>;
   fetchMe: () => Promise<void>;
   logout: () => Promise<void>;
+  setUnauthenticated: () => void;
 }
 
 function persistToken(token: string | null): void {
@@ -89,6 +90,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
     }
 
+    persistToken(null);
+    set({
+      user: null,
+      token: null,
+      isBootstrapping: false,
+    });
+  },
+  setUnauthenticated: () => {
     persistToken(null);
     set({
       user: null,

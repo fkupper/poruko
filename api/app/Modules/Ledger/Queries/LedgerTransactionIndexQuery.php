@@ -5,31 +5,31 @@ namespace App\Modules\Ledger\Queries;
 use App\Models\Ledger;
 use App\Models\Transaction;
 use App\Modules\Ledger\Data\TransactionIndexFiltersData;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class LedgerTransactionIndexQuery
 {
     public function __construct(
-        private readonly Transaction $transactions,
+        private readonly Transaction $transaction,
     ) {}
 
     /**
-     * @return Collection<int, Transaction>
+     * @return LengthAwarePaginator<int, Transaction>
      */
-    public function execute(Ledger $ledger, TransactionIndexFiltersData $filters): Collection
+    public function execute(Ledger $ledger, TransactionIndexFiltersData $filters): LengthAwarePaginator
     {
-        return $this->transactions->newQuery()
-            ->with(['payerAccount', 'postings'])
+        return $this->transaction->newQuery()
+            ->with(['creditAccount', 'debitAccount', 'postings'])
             ->forLedger($ledger->id)
             ->betweenDates($filters->fromDate, $filters->toDate)
             ->when(
                 $filters->accountId !== null,
                 fn ($query) => $query->where(function ($subQuery) use ($filters) {
-                    $subQuery->where('payer_account_id', $filters->accountId)
-                        ->orWhereJsonContains('participants', [['account_id' => $filters->accountId]]);
+                    $subQuery->where('credit_account_id', $filters->accountId)
+                        ->orWhere('debit_account_id', $filters->accountId);
                 }),
             )
             ->latest('date')
-            ->get();
+            ->paginate($filters->perPage, ['*'], 'page', $filters->page);
     }
 }

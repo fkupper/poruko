@@ -8,18 +8,21 @@ import {
   useCreateTransactionMutation,
 } from '../../api/transactions';
 import type { Account } from '../../api/types';
+import { AsyncSaveButton } from '../../components/AsyncSaveButton';
 
 interface AddExpenseModalProps {
   ledgerId: number;
   accounts: Account[];
+  users: Array<{ id: number; name: string }>;
 }
 
 const formSchema = z.object({
-  payer_account_id: z.number().int().min(1, 'Payer account is required'),
+  credit_account_id: z.number().int().min(1, 'Source account is required'),
+  debit_account_id: z.number().int().min(1, 'Destination account is required'),
   amount_major: z.number().positive('Amount must be greater than 0'),
   description: z.string().max(255).optional(),
   date: z.string().min(1, 'Date is required'),
-  split_rule: z.enum(['equal', 'individual', 'proportional']),
+  split_rule: z.enum(['equal', 'individual', 'proportional', 'manual']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -28,10 +31,10 @@ function toCents(value: number): number {
   return Math.round(value * 100);
 }
 
-export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
+export function AddExpenseModal({ ledgerId, accounts, users }: AddExpenseModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedParticipants, setSelectedParticipants] = useState<number[]>([]);
-  const [individualAmounts, setIndividualAmounts] = useState<Record<number, string>>({});
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [manualShares, setManualShares] = useState<Record<number, string>>({});
   const [participantsError, setParticipantsError] = useState<string | null>(null);
 
   const createTransactionMutation = useCreateTransactionMutation(ledgerId);
@@ -50,59 +53,60 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
 
   const splitRule = useWatch({ control: form.control, name: 'split_rule' });
   const isIndividual = splitRule === 'individual';
+  const isManual = splitRule === 'manual';
 
   const canSubmit = useMemo(() => {
     return pendingTransactions.length === 0 && !createTransactionMutation.isPending;
   }, [pendingTransactions.length, createTransactionMutation.isPending]);
 
-  function toggleParticipant(accountId: number): void {
+  function toggleUser(userId: number): void {
     setParticipantsError(null);
-    setSelectedParticipants((current) => {
-      if (current.includes(accountId)) {
-        return current.filter((id) => id !== accountId);
+    setSelectedUsers((current) => {
+      if (current.includes(userId)) {
+        return current.filter((id) => id !== userId);
       }
 
-      return [...current, accountId];
+      if (isIndividual) {
+        return [userId];
+      }
+
+      return [...current, userId];
     });
   }
 
   async function onSubmit(values: FormValues): Promise<void> {
-    if (selectedParticipants.length === 0) {
-      setParticipantsError('Select at least one participant account.');
-      return;
-    }
+    let participants: CreateTransactionInput['participants'] = null;
 
-    const participants: CreateTransactionInput['participants'] = selectedParticipants.map((accountId) => {
-      if (!isIndividual) {
-        return { account_id: accountId };
+    if (selectedUsers.length > 0) {
+      if (isIndividual && selectedUsers.length !== 1) {
+        setParticipantsError('Individual split requires exactly 1 participant.');
+        return;
       }
 
-      const rawValue = individualAmounts[accountId];
-      const parsed = rawValue === undefined || rawValue.trim() === '' ? Number.NaN : Number(rawValue);
+      if (isManual) {
+        const hasInvalidShares = selectedUsers.some((userId) => {
+          const raw = manualShares[userId];
+          const parsed = raw === undefined || raw.trim() === '' ? Number.NaN : Number(raw);
+          return !Number.isFinite(parsed) || parsed <= 0;
+        });
 
-      return {
-        account_id: accountId,
-        amount: Number.isFinite(parsed) ? toCents(parsed) : undefined,
-      };
-    });
+        if (hasInvalidShares) {
+          setParticipantsError('Every participant requires a share weight greater than 0 for manual split.');
+          return;
+        }
 
-    if (isIndividual && participants.some((participant) => participant.amount === undefined || participant.amount <= 0)) {
-      setParticipantsError('Every participant requires an amount for individual split.');
-      return;
-    }
-
-    if (isIndividual) {
-      const totalParticipantAmount = participants.reduce((sum, participant) => sum + (participant.amount ?? 0), 0);
-      const totalAmount = toCents(values.amount_major);
-
-      if (totalParticipantAmount !== totalAmount) {
-        setParticipantsError('Individual participant amounts must equal the total amount.');
-        return;
+        participants = selectedUsers.map((userId) => ({
+          user_id: userId,
+          share: Number(manualShares[userId]),
+        }));
+      } else {
+        participants = selectedUsers.map((userId) => ({ user_id: userId }));
       }
     }
 
     await createTransactionMutation.mutateAsync({
-      payer_account_id: values.payer_account_id,
+      credit_account_id: values.credit_account_id,
+      debit_account_id: values.debit_account_id,
       amount: toCents(values.amount_major),
       description: values.description,
       date: values.date,
@@ -116,8 +120,8 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
       split_rule: 'equal',
       date: new Date().toISOString().slice(0, 10),
     });
-    setSelectedParticipants([]);
-    setIndividualAmounts({});
+    setSelectedUsers([]);
+    setManualShares({});
     setParticipantsError(null);
     setIsOpen(false);
   }
@@ -125,7 +129,7 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
   return (
     <section className="panel">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Add Expense</h2>
+        <h2 className="section-title">Add Expense</h2>
         <button
           className="btn-success text-sm"
           onClick={() => setIsOpen((current) => !current)}
@@ -138,12 +142,27 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
       {isOpen && (
         <form className="mt-4 grid gap-3" onSubmit={form.handleSubmit(onSubmit)}>
           <label className="grid gap-1 text-sm">
-            <span>Payer account</span>
+            <span>Source account</span>
             <select
               className="field-input-compact"
-              {...form.register('payer_account_id', { valueAsNumber: true })}
+              {...form.register('credit_account_id', { valueAsNumber: true })}
             >
-              <option value="">Select payer</option>
+              <option value="">Select source</option>
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1 text-sm">
+            <span>Destination account</span>
+            <select
+              className="field-input-compact"
+              {...form.register('debit_account_id', { valueAsNumber: true })}
+            >
+              <option value="">Select destination</option>
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.name}
@@ -189,40 +208,41 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
               <option value="equal">Equal</option>
               <option value="individual">Individual</option>
               <option value="proportional">Proportional</option>
+              <option value="manual">Manual</option>
             </select>
           </label>
 
           <fieldset className="rounded-card border border-border p-3">
-            <legend className="px-1 text-sm text-muted-foreground">Participants</legend>
+            <legend className="px-1 text-sm text-muted-foreground">Participants (optional)</legend>
             <div className="grid gap-2">
-              {accounts.map((account) => {
-                const checked = selectedParticipants.includes(account.id);
+              {users.map((user) => {
+                const checked = selectedUsers.includes(user.id);
 
                 return (
-                  <div className="grid gap-2 sm:grid-cols-[auto,1fr,140px] sm:items-center" key={account.id}>
+                  <div className="grid gap-2 sm:grid-cols-[auto,1fr,140px] sm:items-center" key={user.id}>
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         checked={checked}
-                        onChange={() => toggleParticipant(account.id)}
+                        onChange={() => toggleUser(user.id)}
                         type="checkbox"
                       />
-                      <span>{account.name}</span>
+                      <span>{user.name}</span>
                     </label>
-                    <span className="text-xs text-muted-foreground">Account #{account.id}</span>
-                    {isIndividual && checked ? (
+                    <span className="text-xs text-muted-foreground">User #{user.id}</span>
+                    {isManual && checked ? (
                       <input
                         className="field-input-compact amount-numeric py-1 text-sm"
                         onChange={(event) => {
                           const value = event.target.value;
-                          setIndividualAmounts((current) => ({
+                          setManualShares((current) => ({
                             ...current,
-                            [account.id]: value,
+                            [user.id]: value,
                           }));
                         }}
-                        placeholder="Amount"
-                        step="0.01"
+                        placeholder="Share weight"
+                        step="1"
                         type="number"
-                        value={individualAmounts[account.id] ?? ''}
+                        value={manualShares[user.id] ?? ''}
                       />
                     ) : (
                       <span />
@@ -245,16 +265,17 @@ export function AddExpenseModal({ ledgerId, accounts }: AddExpenseModalProps) {
             </p>
           )}
 
-          <button
-            className="btn-primary text-sm"
+          <AsyncSaveButton
+            className="text-sm"
             disabled={!canSubmit}
+            isError={createTransactionMutation.isError}
+            isSubmitting={createTransactionMutation.isPending}
+            isSuccess={createTransactionMutation.isSuccess}
+            label="Save expense"
             type="submit"
-          >
-            {createTransactionMutation.isPending ? 'Saving...' : 'Save expense'}
-          </button>
+          />
         </form>
       )}
     </section>
   );
 }
-

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountType;
 use App\Models\Ledger;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,12 +19,21 @@ class AccountFactory extends Factory
      */
     public function definition(): array
     {
+        $type = fake()->randomElement([
+            AccountType::Personal->value,
+            AccountType::Pool->value,
+            AccountType::External->value,
+        ]);
+
         return [
             'ledger_id' => Ledger::factory(),
-            'owner_id' => User::factory(),
-            'type' => fake()->randomElement(['personal', 'pool', 'external']),
+            'owner_id' => in_array($type, [AccountType::Pool->value, AccountType::External->value], true)
+                ? null
+                : User::factory(),
+            'type' => $type,
             'name' => fake()->words(2, true),
-            'code' => strtoupper(fake()->bothify('ACC-#####')),
+            'code' => mb_strtoupper(fake()->unique()->bothify('ACC-#####')),
+            'base_budget' => 0,
         ];
     }
 }

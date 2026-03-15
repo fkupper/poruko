@@ -10,6 +10,8 @@ import { LedgerSidebar, MobileLedgerBar, type LedgerOption } from './features/la
 import { ManageAccountsPage } from './features/ledger/ManageAccountsPage.tsx';
 import { LedgerDashboardPage } from './features/ledger/LedgerDashboardPage.tsx';
 import { MyFinancesPage } from './features/ledger/MyFinancesPage.tsx';
+import { SettlementsPage } from './features/ledger/SettlementsPage.tsx';
+import { SpaceSettingsPage } from './features/ledger/SpaceSettingsPage.tsx';
 import { useAppStore } from './stores/appStore.ts';
 import { useAuthStore } from './stores/authStore.ts';
 
@@ -191,6 +193,22 @@ function App() {
             }
             path="/ledgers/:ledgerId/my-finances"
           />
+          <Route
+            element={
+              <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+                <LedgerSettlementsRoute />
+              </RequireAuth>
+            }
+            path="/ledgers/:ledgerId/settlements"
+          />
+          <Route
+            element={
+              <RequireAuth isBootstrapping={isBootstrapping} user={user}>
+                <LedgerSettingsRoute />
+              </RequireAuth>
+            }
+            path="/ledgers/:ledgerId/settings"
+          />
         </Routes>
       </div>
     </div>
@@ -273,6 +291,28 @@ function LedgerMyFinancesRoute() {
   }
 
   return <MyFinancesPage ledgerId={ledgerId} userId={user.id} />;
+}
+
+function LedgerSettlementsRoute() {
+  const params = useParams<{ ledgerId: string }>();
+  const ledgerId = Number(params.ledgerId ?? '0');
+
+  if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid space id.</p>;
+  }
+
+  return <SettlementsPage ledgerId={ledgerId} />;
+}
+
+function LedgerSettingsRoute() {
+  const params = useParams<{ ledgerId: string }>();
+  const ledgerId = Number(params.ledgerId ?? '0');
+
+  if (!Number.isInteger(ledgerId) || ledgerId <= 0) {
+    return <p className="mx-auto max-w-5xl px-4 py-8 text-destructive">Invalid space id.</p>;
+  }
+
+  return <SpaceSettingsPage ledgerId={ledgerId} />;
 }
 
 export default App;

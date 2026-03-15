@@ -5,11 +5,12 @@ namespace App\Modules\Ledger\Data;
 final readonly class PostManualTransactionData
 {
     /**
-     * @param  array<int, array{account_id:int, amount?:int}>  $participants
+     * @param list<array{user_id:int, share?:int}> $participants
      */
     public function __construct(
         public int $ledgerId,
-        public int $payerAccountId,
+        public int $creditAccountId,
+        public int $debitAccountId,
         public int $amount,
         public string $splitRule,
         public array $participants,
@@ -21,10 +22,11 @@ final readonly class PostManualTransactionData
     /**
      * @param  array{
      *   ledger_id:int,
-     *   payer_account_id:int,
+     *   credit_account_id:int,
+     *   debit_account_id:int,
      *   amount:int,
      *   split_rule:string,
-     *   participants:array<int, array{account_id:int, amount?:int}>,
+     *   participants:list<array{user_id:int, share?:int}>,
      *   description:string|null,
      *   date:string,
      *   type:string
@@ -34,13 +36,14 @@ final readonly class PostManualTransactionData
     {
         return new self(
             ledgerId: (int) $payload['ledger_id'],
-            payerAccountId: (int) $payload['payer_account_id'],
+            creditAccountId: (int) $payload['credit_account_id'],
+            debitAccountId: (int) $payload['debit_account_id'],
             amount: (int) $payload['amount'],
             splitRule: (string) $payload['split_rule'],
             participants: $payload['participants'],
             date: (string) $payload['date'],
             description: $payload['description'] !== null ? (string) $payload['description'] : null,
-            type: (string) $payload['type'],
+            type: (string) ($payload['type'] ?? 'manual'),
         );
     }
 }

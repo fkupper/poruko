@@ -19,4 +19,3 @@ class HealthController
         return response()->json(['status' => 'ok']);
     }
 }
-

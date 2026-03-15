@@ -2,23 +2,28 @@
 
 namespace App\Models;
 
+use App\Enums\SettlementMode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property SettlementMode $settlement_mode
+ */
 class Ledger extends Model
 {
     /** @use HasFactory<\Database\Factories\LedgerFactory> */
     use HasFactory;
 
-    /**
-     * @var list<string>
-     */
+    /** @var list<string> */
     protected $fillable = [
         'name',
         'settlement_mode',
-        'pool_base_budget',
+        'settlement_timezone',
+        'settlement_cutoff_day',
+        'settlement_cutoff_time',
+        'settlement_auto_execute_enabled',
     ];
 
     /**
@@ -27,20 +32,24 @@ class Ledger extends Model
     protected function casts(): array
     {
         return [
-            'pool_base_budget' => 'integer',
+            'settlement_auto_execute_enabled' => 'boolean',
+            'settlement_mode' => SettlementMode::class,
         ];
     }
 
+    /** @return HasMany<Account, $this> */
     public function accounts(): HasMany
     {
         return $this->hasMany(Account::class);
     }
 
+    /** @return HasMany<Transaction, $this> */
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
     }
 
+    /** @return BelongsToMany<User, $this> */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
@@ -48,8 +57,15 @@ class Ledger extends Model
             ->withTimestamps();
     }
 
+    /** @return HasMany<FinancialProfile, $this> */
     public function financialProfiles(): HasMany
     {
         return $this->hasMany(FinancialProfile::class);
+    }
+
+    /** @return HasMany<Settlement, $this> */
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(Settlement::class);
     }
 }

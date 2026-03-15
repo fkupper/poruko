@@ -1,15 +1,9 @@
 import { useMemo } from 'react';
+import { formatEuroFromCents } from '../../lib/currency';
 import { useTransactionsQuery } from '../../api/transactions';
 
 interface TransactionHistoryTableProps {
   ledgerId: number;
-}
-
-function formatCurrencyFromCents(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(cents / 100);
 }
 
 export function TransactionHistoryTable({ ledgerId }: TransactionHistoryTableProps) {
@@ -47,7 +41,7 @@ export function TransactionHistoryTable({ ledgerId }: TransactionHistoryTablePro
               <td className="px-3 py-2 text-foreground">{transaction.description ?? '-'}</td>
               <td className="px-3 py-2 text-muted-foreground">{transaction.split_rule}</td>
               <td className="amount-numeric px-3 py-2 text-foreground">
-                {formatCurrencyFromCents(transaction.amount)}
+                {formatEuroFromCents(transaction.amount)}
               </td>
             </tr>
           ))}

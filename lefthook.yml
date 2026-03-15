@@ -2,3 +2,5 @@ pre-commit:
   commands:
     web-checks:
       run: ./scripts/pre-commit-web-checks.sh
+    api-checks:
+      run: ./scripts/pre-commit-api-checks.sh

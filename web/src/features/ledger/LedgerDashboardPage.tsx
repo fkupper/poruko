@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatEuroFromCents } from '../../lib/currency';
+import { PageScaffold } from '../../components/PageScaffold';
+import { useSettlementPreviewQuery } from '../../api/settlements';
 import { useTransactionsQuery } from '../../api/transactions';
+import { SettleUpWidget } from './SettleUpWidget';
 
 interface LedgerDashboardPageProps {
   ledgerId: number;
@@ -9,8 +13,8 @@ interface LedgerDashboardPageProps {
 interface DashboardUserBalance {
   name: string;
   ratio: number;
-  net: number;
-  netType: 'owes' | 'owed';
+  net: number; // cents
+  netType: 'owes' | 'owed' | 'settled';
 }
 
 interface DashboardPool {
@@ -21,7 +25,7 @@ interface DashboardPool {
 }
 
 interface DashboardSplitDistribution {
-  label: 'Proportional' | 'Equal' | 'Individual';
+  label: 'Proportional' | 'Equal' | 'Individual' | 'Manual';
   value: number;
 }
 
@@ -32,7 +36,6 @@ interface DashboardFundingSource {
 
 interface DashboardMock {
   hasPool: boolean;
-  balances: DashboardUserBalance[];
   pool?: DashboardPool;
   splitDistribution: DashboardSplitDistribution[];
   fundingSources: DashboardFundingSource[];
@@ -42,10 +45,6 @@ const DASHBOARD_MOCKS: Record<number | 'default', DashboardMock> = {
   // Simple default mock; can be expanded per-ledger later.
   default: {
     hasPool: true,
-    balances: [
-      { name: 'Member A', ratio: 60, net: 670, netType: 'owes' },
-      { name: 'Member B', ratio: 40, net: 280, netType: 'owes' },
-    ],
     pool: { balance: 240000, spent: 60000, total: 300000, daysLeft: 12 },
     splitDistribution: [
       { label: 'Proportional', value: 75 },
@@ -60,13 +59,11 @@ const DASHBOARD_MOCKS: Record<number | 'default', DashboardMock> = {
   },
 };
 
-function centsToMajor(amount: number): string {
-  return (amount / 100).toFixed(2);
-}
-
 export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
   const navigate = useNavigate();
   const { data: transactions, isPending, isError, error } = useTransactionsQuery(ledgerId);
+  const today = new Date().toISOString().slice(0, 10);
+  const previewQuery = useSettlementPreviewQuery(ledgerId, today);
 
   const mock = useMemo<DashboardMock>(() => {
     return DASHBOARD_MOCKS[ledgerId] ?? DASHBOARD_MOCKS.default;
@@ -83,26 +80,41 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
   }, [transactions]);
 
   const hasRecentTransactions = recentTransactions.length > 0;
+  const memberBalances = useMemo<DashboardUserBalance[]>(() => {
+    if (previewQuery.data === undefined) {
+      return [];
+    }
+
+    return previewQuery.data.user_breakdowns.map((member) => {
+      const ratio = Math.round(member.active_ratio * 1000) / 10;
+      const netCents = Math.abs(member.net_balance);
+      const netType: DashboardUserBalance['netType'] =
+        member.net_balance < 0 ? 'owes' : member.net_balance > 0 ? 'owed' : 'settled';
+
+      return {
+        name: member.name,
+        ratio,
+        net: netCents,
+        netType,
+      };
+    });
+  }, [previewQuery.data]);
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
-      <header className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold">Overview</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Space #{ledgerId}</p>
-        </div>
-      </header>
-
+    <PageScaffold
+      title="Overview"
+      subtitle={`Space #${ledgerId}`}
+    >
       <section className="panel">
         <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ledger balance</h2>
 
         {mock.hasPool && mock.pool && (
-          <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,2fr),minmax(0,1fr)] sm:items-center">
-            <div>
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
               <div className="flex items-end justify-between">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Joint pool health</p>
                 <p className="text-xs font-semibold text-foreground">
-                  €{centsToMajor(mock.pool.balance)} remaining
+                  {formatEuroFromCents(mock.pool.balance)} remaining
                 </p>
               </div>
               <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-surfaceStrong">
@@ -112,53 +124,75 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                <span>Total spent: €{centsToMajor(mock.pool.spent)}</span>
-                <span>{mock.pool.daysLeft} days until next cycle</span>
+                <span>Total spent: {formatEuroFromCents(mock.pool.spent)}</span>
+                <span>{mock.pool.daysLeft} days until next settlement cutoff</span>
               </div>
             </div>
 
-            <div className="rounded-card border border-inflowSubtle bg-inflowSubtle px-4 py-3 text-center">
+            <div className="rounded-card border border-inflowSubtle bg-inflowSubtle px-4 py-3 text-center sm:w-64">
               <p className="text-xs font-medium uppercase tracking-wide text-inflow">Status</p>
               <p className="mt-1 text-xl font-semibold text-foreground">Healthy</p>
             </div>
           </div>
         )}
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {mock.balances.map((balance) => (
-            <div key={balance.name} className="rounded-card border border-border bg-background p-4">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-foreground">{balance.name}</p>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Share: {balance.ratio}%
-                </p>
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Net settlement{' '}
-                  <span className="sr-only">
-                    {balance.netType === 'owes' ? 'user owes this amount' : 'user is owed this amount'}
-                  </span>
-                </span>
-                <span
-                  className={
-                    balance.netType === 'owes'
-                      ? 'amount-numeric text-sm font-semibold text-destructive'
-                      : 'amount-numeric text-sm font-semibold text-inflow'
-                  }
-                >
-                  {balance.netType === 'owes' ? 'Owes ' : 'Owed '}
-                  €{centsToMajor(balance.net * 100)}
-                </span>
-              </div>
+        <div className="mt-6">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Previous calendar month</p>
+
+          {previewQuery.isPending && (
+            <p className="mt-3 text-sm text-muted-foreground">Loading member expense shares...</p>
+          )}
+
+          {previewQuery.isError && (
+            <p className="mt-3 text-sm text-destructive">
+              Failed to load member balances: {previewQuery.error instanceof Error ? previewQuery.error.message : String(previewQuery.error)}
+            </p>
+          )}
+
+          {!previewQuery.isPending && !previewQuery.isError && memberBalances.length === 0 && (
+            <p className="mt-3 text-sm text-muted-foreground">No member balance data for the previous calendar month yet.</p>
+          )}
+
+          {memberBalances.length > 0 && (
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              {memberBalances.map((balance) => (
+                <div key={balance.name} className="rounded-card border border-border bg-background p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{balance.name}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Current share: {balance.ratio}%
+                    </p>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Current owed/owed money</span>
+                    <span
+                      className={
+                        balance.netType === 'owes'
+                          ? 'amount-numeric text-sm font-semibold text-destructive'
+                          : balance.netType === 'owed'
+                            ? 'amount-numeric text-sm font-semibold text-inflow'
+                            : 'amount-numeric text-sm font-semibold text-muted-foreground'
+                      }
+                    >
+                      {balance.netType === 'owes'
+                        ? `Owes ${formatEuroFromCents(balance.net)}`
+                        : balance.netType === 'owed'
+                          ? `Owed ${formatEuroFromCents(balance.net)}`
+                          : 'Settled'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </section>
 
+      <SettleUpWidget ledgerId={ledgerId} today={today} />
+
       <section className="panel">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Recent activity</h2>
+          <h2 className="section-title">Recent activity</h2>
           <button
             type="button"
             onClick={() => navigate(`/ledgers/${ledgerId}/accounts`)}
@@ -192,7 +226,7 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
                 </div>
                 <div className="text-right">
                   <p className="amount-numeric text-sm font-semibold text-foreground">
-                    €{centsToMajor(transaction.amount)}
+                    {formatEuroFromCents(transaction.amount)}
                   </p>
                 </div>
               </li>
@@ -203,10 +237,10 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
 
       <section className="grid gap-6 md:grid-cols-[minmax(0,2fr),minmax(0,1.5fr)]">
         <div className="panel">
-          <h2 className="text-sm font-semibold text-foreground">Math breakdown</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Analysis of how expenses are split this period.
-          </p>
+          <div className="section-header">
+            <h2 className="section-title">Math breakdown</h2>
+            <p className="section-subtitle">Analysis of how expenses are split this period.</p>
+          </div>
           <div className="mt-4 flex h-3 w-full overflow-hidden rounded-[var(--radius-pill)] bg-infoSubtle">
             {mock.splitDistribution.map((item) => (
               <div
@@ -216,7 +250,9 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
                     ? 'bg-info'
                     : item.label === 'Equal'
                       ? 'bg-inflow'
-                      : 'bg-destructive'
+                      : item.label === 'Manual'
+                        ? 'bg-warning'
+                        : 'bg-destructive'
                 }
                 style={{ width: `${item.value}%` }}
               />
@@ -232,7 +268,9 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
                         ? 'h-2 w-2 rounded-full bg-info'
                         : item.label === 'Equal'
                           ? 'h-2 w-2 rounded-full bg-inflow'
-                          : 'h-2 w-2 rounded-full bg-destructive'
+                          : item.label === 'Manual'
+                            ? 'h-2 w-2 rounded-full bg-warning'
+                            : 'h-2 w-2 rounded-full bg-destructive'
                     }
                   />
                   <span className="font-medium">{item.label}</span>
@@ -264,7 +302,7 @@ export function LedgerDashboardPage({ ledgerId }: LedgerDashboardPageProps) {
           </ul>
         </div>
       </section>
-    </main>
+    </PageScaffold>
   );
 }
 

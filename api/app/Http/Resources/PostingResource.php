@@ -2,9 +2,13 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Posting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Posting
+ */
 class PostingResource extends JsonResource
 {
     /**

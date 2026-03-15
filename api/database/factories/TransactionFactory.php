@@ -22,19 +22,21 @@ class TransactionFactory extends Factory
     {
         return [
             'ledger_id' => Ledger::factory(),
-            'payer_account_id' => Account::factory(),
+            'credit_account_id' => fn (array $attributes) => Account::factory()->create([
+                'ledger_id' => $attributes['ledger_id'],
+            ])->id,
+            'debit_account_id' => fn (array $attributes) => Account::factory()->create([
+                'ledger_id' => $attributes['ledger_id'],
+            ])->id,
             'amount' => fake()->numberBetween(100, 100_000),
             'type' => TransactionType::Manual->value,
             'split_rule' => fake()->randomElement([
                 TransactionSplitRule::Equal->value,
                 TransactionSplitRule::Individual->value,
+                TransactionSplitRule::Proportional->value,
+                TransactionSplitRule::Manual->value,
             ]),
-            'participants' => [
-                [
-                    'account_id' => fake()->numberBetween(1, 1000),
-                    'amount' => fake()->numberBetween(100, 10_000),
-                ],
-            ],
+            'participants' => [],
             'description' => fake()->sentence(),
             'date' => fake()->date(),
         ];

@@ -15,7 +15,7 @@ class AccountPolicy
 
     public function view(User $user, Account $account): bool
     {
-        return $account->ledger->users()->whereKey($user->id)->exists();
+        return $user->ledgers()->whereKey($account->ledger_id)->exists();
     }
 
     public function create(User $user, Ledger $ledger): bool

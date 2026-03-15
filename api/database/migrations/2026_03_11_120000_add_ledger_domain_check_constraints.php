@@ -6,14 +6,12 @@ use App\Enums\TransactionType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class() extends Migration {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        if (DB::getDriverName() !== 'pgsql') {
-            return;
-        }
-
         $transactionTypes = implode(', ', array_map(
             static fn (TransactionType $type): string => "'{$type->value}'",
             TransactionType::cases(),
@@ -34,12 +32,11 @@ return new class extends Migration
         DB::statement('ALTER TABLE postings ADD CONSTRAINT postings_amount_positive_check CHECK (amount > 0)');
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        if (DB::getDriverName() !== 'pgsql') {
-            return;
-        }
-
         DB::statement('ALTER TABLE postings DROP CONSTRAINT IF EXISTS postings_amount_positive_check');
         DB::statement('ALTER TABLE postings DROP CONSTRAINT IF EXISTS postings_direction_check');
         DB::statement('ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_amount_positive_check');

@@ -5,15 +5,25 @@ namespace Tests\Feature\Api;
 use App\Http\Controllers\Api\AuthController;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
+#[Group('auth')]
 #[CoversClass(AuthController::class)]
 class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_register_and_receive_token(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
+
+    public function testUserCanRegisterAndReceiveToken(): void
     {
         $response = $this->postJson('/api/auth/register', [
             'name' => 'Test User',
@@ -33,7 +43,7 @@ class AuthApiTest extends TestCase
         ]);
     }
 
-    public function test_user_can_login_and_receive_token(): void
+    public function testUserCanLoginAndReceiveToken(): void
     {
         $user = User::factory()->create([
             'password' => 'password123',
@@ -50,7 +60,7 @@ class AuthApiTest extends TestCase
             ->assertJsonStructure(['token']);
     }
 
-    public function test_login_fails_with_invalid_credentials(): void
+    public function testLoginFailsWithInvalidCredentials(): void
     {
         $user = User::factory()->create([
             'password' => 'password123',
@@ -64,7 +74,17 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('message', 'Invalid credentials.');
     }
 
-    public function test_register_fails_with_duplicate_email(): void
+    public function testLoginFailsWithNonExistentEmail(): void
+    {
+        $this->postJson('/api/auth/login', [
+            'email' => 'nonexistent@example.com',
+            'password' => 'password123',
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Invalid credentials.');
+    }
+
+    public function testRegisterFailsWithDuplicateEmail(): void
     {
         User::factory()->create(['email' => 'test@example.com']);
 
@@ -76,24 +96,95 @@ class AuthApiTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function test_register_fails_with_invalid_email_and_short_password(): void
+    /**
+     * @param array<string, mixed> $payload
+     * @param array<int, string> $expectedErrors
+     */
+    #[DataProvider('registerValidationDataProvider')]
+    public function testRegisterFailsValidation(array $payload, array $expectedErrors): void
     {
-        $this->postJson('/api/auth/register', [
-            'name' => 'Test User',
-            'email' => 'invalid-email',
-            'password' => 'short',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['email', 'password']);
-    }
-
-    public function test_login_fails_validation_when_credentials_are_missing(): void
-    {
-        $this->postJson('/api/auth/login', [])
+        $this->postJson('/api/auth/register', $payload)
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['email', 'password']);
+            ->assertJsonValidationErrors($expectedErrors);
     }
 
-    public function test_authenticated_user_can_fetch_me(): void
+    public static function registerValidationDataProvider(): array
+    {
+        return [
+            'invalid email and short password' => [
+                'payload' => [
+                    'name' => 'Test User',
+                    'email' => 'invalid-email',
+                    'password' => 'short',
+                ],
+                'expectedErrors' => ['email', 'password'],
+            ],
+            'missing name' => [
+                'payload' => [
+                    'email' => 'test@example.com',
+                    'password' => 'password123',
+                ],
+                'expectedErrors' => ['name'],
+            ],
+            'missing email' => [
+                'payload' => [
+                    'name' => 'Test User',
+                    'password' => 'password123',
+                ],
+                'expectedErrors' => ['email'],
+            ],
+            'missing password' => [
+                'payload' => [
+                    'name' => 'Test User',
+                    'email' => 'test@example.com',
+                ],
+                'expectedErrors' => ['password'],
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param array<int, string> $expectedErrors
+     */
+    #[DataProvider('loginValidationDataProvider')]
+    public function testLoginFailsValidation(array $payload, array $expectedErrors): void
+    {
+        $this->postJson('/api/auth/login', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors($expectedErrors);
+    }
+
+    public static function loginValidationDataProvider(): array
+    {
+        return [
+            'missing email and password' => [
+                'payload' => [],
+                'expectedErrors' => ['email', 'password'],
+            ],
+            'invalid email format' => [
+                'payload' => [
+                    'email' => 'not-an-email',
+                    'password' => 'password123',
+                ],
+                'expectedErrors' => ['email'],
+            ],
+            'missing email' => [
+                'payload' => [
+                    'password' => 'password123',
+                ],
+                'expectedErrors' => ['email'],
+            ],
+            'missing password' => [
+                'payload' => [
+                    'email' => 'test@example.com',
+                ],
+                'expectedErrors' => ['password'],
+            ],
+        ];
+    }
+
+    public function testAuthenticatedUserCanFetchMe(): void
     {
         $user = User::factory()->create();
         $token = $user->createToken('api-token')->plainTextToken;
@@ -105,13 +196,13 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('user.id', $user->id);
     }
 
-    public function test_unauthenticated_user_cannot_fetch_me(): void
+    public function testUnauthenticatedUserCannotFetchMe(): void
     {
         $this->getJson('/api/auth/me')
             ->assertUnauthorized();
     }
 
-    public function test_authenticated_user_can_logout_and_revoke_current_token(): void
+    public function testAuthenticatedUserCanLogoutAndRevokeCurrentToken(): void
     {
         $user = User::factory()->create();
         $token = $user->createToken('api-token')->plainTextToken;
@@ -135,13 +226,13 @@ class AuthApiTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_unauthenticated_user_cannot_logout(): void
+    public function testUnauthenticatedUserCannotLogout(): void
     {
         $this->postJson('/api/auth/logout')
             ->assertUnauthorized();
     }
 
-    public function test_logout_revokes_only_current_token(): void
+    public function testLogoutRevokesOnlyCurrentToken(): void
     {
         $user = User::factory()->create();
         $tokenA = $user->createToken('token-a')->plainTextToken;

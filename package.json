@@ -9,7 +9,8 @@
     "test:web": "just test-web",
     "test:api": "just test-api",
     "artisan": "just artisan",
-    "tinker": "just tinker"
+    "tinker": "just tinker",
+    "design:check": "npm --prefix web run design:check"
   }
 }
 

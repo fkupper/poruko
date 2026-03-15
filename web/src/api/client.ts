@@ -9,6 +9,12 @@ interface RequestOptions {
   token?: string | null;
 }
 
+let onUnauthorized: (() => void) | null = null;
+
+export function registerOnUnauthorized(cb: () => void): void {
+  onUnauthorized = cb;
+}
+
 function resolveToken(explicitToken?: string | null): string | null {
   if (explicitToken !== undefined) {
     return explicitToken;
@@ -34,6 +40,9 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      onUnauthorized?.();
+    }
     const message = await response.text();
     throw new Error(message || `API request failed with status ${response.status}`);
   }

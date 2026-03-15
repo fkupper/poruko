@@ -1,10 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { DollarSign, TrendingUp, XCircle } from 'lucide-react';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
+import { formatEuroFromCents } from '../../lib/currency';
 import {
   useFinancialProfileQuery,
   useUpdateFinancialProfileMutation,
 } from '../../api/financialProfiles';
+import { EditableLineItem } from '../../components/EditableLineItem';
+import { AsyncSaveButton } from '../../components/AsyncSaveButton';
+import { PageScaffold } from '../../components/PageScaffold';
+import { SectionBlock } from '../../components/SectionBlock';
+import { SummaryCard } from '../../components/SummaryCard';
 
 interface MyFinancesPageProps {
   ledgerId: number;
@@ -29,6 +36,17 @@ function toCents(value: number): number {
 
 function toMajor(cents: number): number {
   return cents / 100;
+}
+
+function formatEuroFromMajor(value: number): string {
+  return formatEuroFromCents(toCents(value));
+}
+
+function safeMajorAmount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, value);
 }
 
 export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
@@ -56,6 +74,17 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
 
   const incomesArray = useFieldArray({ control: form.control, name: 'incomes' });
   const deductionsArray = useFieldArray({ control: form.control, name: 'deductions' });
+  const watchedIncomes = useWatch({ control: form.control, name: 'incomes' }) ?? [];
+  const watchedDeductions = useWatch({ control: form.control, name: 'deductions' }) ?? [];
+  const totalIncomeMajor = watchedIncomes.reduce((total, item) => {
+    return total + safeMajorAmount(item.amount_major);
+  }, 0);
+  const totalDeductionsMajor = watchedDeductions.reduce((total, item) => {
+    return total + safeMajorAmount(item.amount_major);
+  }, 0);
+  const shareableIncomeMajor = totalIncomeMajor - totalDeductionsMajor;
+
+  const isNotFoundError = isError && (error as Error).message.includes('status 404');
 
   async function onSubmit(values: FinancialProfileFormValues): Promise<void> {
     await updateMutation.mutateAsync({
@@ -71,149 +100,181 @@ export function MyFinancesPage({ ledgerId, userId }: MyFinancesPageProps) {
   }
 
   return (
-    <main className="mx-auto grid max-w-5xl gap-6 px-4 py-8">
-      <section className="panel">
-        <h1 className="text-2xl font-semibold">My Finances</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Space #{ledgerId}</p>
+    <PageScaffold
+      title="My Finances"
+      subtitle="Set your income and deductions to calculate your shareable income for proportional splits."
+    >
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <SummaryCard
+          amount={formatEuroFromMajor(totalIncomeMajor)}
+          descriptor={`${watchedIncomes.length} income ${watchedIncomes.length === 1 ? 'source' : 'sources'}`}
+          icon={<TrendingUp size={14} />}
+          label="Total Monthly Income"
+          tone="inflow"
+        />
+        <SummaryCard
+          amount={formatEuroFromMajor(totalDeductionsMajor)}
+          descriptor={`${watchedDeductions.length} deduction${watchedDeductions.length === 1 ? '' : 's'}`}
+          icon={<XCircle size={14} />}
+          label="Total Deductions"
+          tone="destructive"
+        />
+        <SummaryCard
+          amount={formatEuroFromMajor(shareableIncomeMajor)}
+          descriptor="Used for proportional splits"
+          icon={<DollarSign size={14} />}
+          label="Shareable Income"
+          tone="info"
+        />
+      </section>
 
-        {isPending && <p className="mt-4 text-muted-foreground">Loading financial profile...</p>}
-        {isError && !error.message.includes('status 404') && (
-          <p className="mt-4 text-destructive">{(error as Error).message}</p>
-        )}
-        {isError && error.message.includes('status 404') && (
-          <p className="mt-4 text-muted-foreground">No financial profile set up yet. Fill out the form below to create one.</p>
-        )}
+      {isPending && <p className="text-sm text-muted-foreground">Loading financial profile...</p>}
+      {isError && !isNotFoundError && (
+        <p className="text-sm text-destructive">{(error as Error).message}</p>
+      )}
+      {isNotFoundError && (
+        <p className="text-sm text-muted-foreground">
+          No financial profile set up yet. Fill out the form below to create one.
+        </p>
+      )}
 
-        <form className="mt-4 grid gap-6" onSubmit={form.handleSubmit(onSubmit)}>
-          <fieldset className="rounded-card border border-border p-3">
-            <legend className="px-1 text-sm font-medium text-muted-foreground">Incomes</legend>
-            <div className="grid gap-3">
-              {incomesArray.fields.map((field, index) => (
-                <div className="grid gap-2 sm:grid-cols-[1fr,140px,auto] sm:items-end" key={field.id}>
-                  <label className="grid gap-1 text-sm">
-                    <span>Description</span>
-                    <input
-                      className="field-input-compact"
-                      type="text"
-                      {...form.register(`incomes.${index}.description`)}
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span>Amount</span>
-                    <input
-                      className="field-input-compact amount-numeric"
-                      step="0.01"
-                      type="number"
-                      {...form.register(`incomes.${index}.amount_major`, { valueAsNumber: true })}
-                    />
-                  </label>
-                  <button
-                    className="btn-destructive-outline"
-                    disabled={incomesArray.fields.length <= 1}
-                    onClick={() => incomesArray.remove(index)}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                className="btn-outline justify-self-start"
-                onClick={() => incomesArray.append({ description: '', amount_major: 0 })}
-                type="button"
-              >
-                + Add income
-              </button>
-            </div>
-            {form.formState.errors.incomes?.message && (
-              <p className="mt-2 text-sm text-destructive">{form.formState.errors.incomes.message}</p>
-            )}
-          </fieldset>
-
-          <fieldset className="rounded-card border border-border p-3">
-            <legend className="px-1 text-sm font-medium text-muted-foreground">Deductions</legend>
-            <div className="grid gap-3">
-              {deductionsArray.fields.map((field, index) => (
-                <div className="grid gap-2 sm:grid-cols-[1fr,140px,auto] sm:items-end" key={field.id}>
-                  <label className="grid gap-1 text-sm">
-                    <span>Description</span>
-                    <input
-                      className="field-input-compact"
-                      type="text"
-                      {...form.register(`deductions.${index}.description`)}
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span>Amount</span>
-                    <input
-                      className="field-input-compact amount-numeric"
-                      step="0.01"
-                      type="number"
-                      {...form.register(`deductions.${index}.amount_major`, { valueAsNumber: true })}
-                    />
-                  </label>
-                  <button
-                    className="btn-destructive-outline"
-                    onClick={() => deductionsArray.remove(index)}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                className="btn-outline justify-self-start"
-                onClick={() => deductionsArray.append({ description: '', amount_major: 0 })}
-                type="button"
-              >
-                + Add deduction
-              </button>
-            </div>
-          </fieldset>
-
-          {profile?.computed && (
-            <div className="rounded-card border border-border bg-background p-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Current Summary</h3>
-              <dl className="mt-2 grid grid-cols-3 gap-4 text-center text-sm">
-                <div>
-                  <dt className="text-muted-foreground">Total Income</dt>
-                  <dd className="amount-numeric text-lg font-semibold text-inflow">
-                    {(profile.computed.total_income / 100).toFixed(2)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Total Deductions</dt>
-                  <dd className="amount-numeric text-lg font-semibold text-destructive">
-                    {(profile.computed.total_deductions / 100).toFixed(2)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Shareable Income</dt>
-                  <dd className="amount-numeric text-lg font-semibold text-info">
-                    {(profile.computed.shareable_income / 100).toFixed(2)}
-                  </dd>
-                </div>
-              </dl>
-            </div>
+      <form className="grid gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+        <SectionBlock
+          actions={(
+            <button
+              className="btn-primary text-sm"
+              onClick={() => incomesArray.append({ description: '', amount_major: 0 })}
+              type="button"
+            >
+              + Add Income
+            </button>
           )}
+          subtitle="Add all your regular monthly income sources"
+          title="Income Sources"
+        >
+          <div className="grid gap-3">
+            {incomesArray.fields.map((field, index) => {
+              const fieldError =
+                form.formState.errors.incomes?.[index]?.description?.message ??
+                form.formState.errors.incomes?.[index]?.amount_major?.message;
+
+              return (
+                <EditableLineItem
+                  amountInputProps={{
+                    ...form.register(`incomes.${index}.amount_major`, { valueAsNumber: true }),
+                    'aria-label': `Income amount ${index + 1}`,
+                    min: 0,
+                    placeholder: '0.00',
+                  }}
+                  deleteDisabled={incomesArray.fields.length <= 1}
+                  deleteLabel={`Delete income line ${index + 1}`}
+                  descriptionInputProps={{
+                    ...form.register(`incomes.${index}.description`),
+                    'aria-label': `Income description ${index + 1}`,
+                    placeholder: 'Description',
+                  }}
+                  errorMessage={fieldError}
+                  key={field.id}
+                  onDelete={() => incomesArray.remove(index)}
+                />
+              );
+            })}
+          </div>
+          {form.formState.errors.incomes?.message && (
+            <p className="mt-2 text-sm text-destructive">{form.formState.errors.incomes.message}</p>
+          )}
+        </SectionBlock>
+
+        <SectionBlock
+          actions={(
+            <button
+              className="btn-primary text-sm"
+              onClick={() => deductionsArray.append({ description: '', amount_major: 0 })}
+              type="button"
+            >
+              + Add Deduction
+            </button>
+          )}
+          subtitle="Add fixed monthly expenses not shared with the group"
+          title="Deductions"
+        >
+          <div className="grid gap-3">
+            {deductionsArray.fields.map((field, index) => {
+              const fieldError =
+                form.formState.errors.deductions?.[index]?.description?.message ??
+                form.formState.errors.deductions?.[index]?.amount_major?.message;
+
+              return (
+                <EditableLineItem
+                  amountInputProps={{
+                    ...form.register(`deductions.${index}.amount_major`, { valueAsNumber: true }),
+                    'aria-label': `Deduction amount ${index + 1}`,
+                    min: 0,
+                    placeholder: '0.00',
+                  }}
+                  deleteLabel={`Delete deduction line ${index + 1}`}
+                  descriptionInputProps={{
+                    ...form.register(`deductions.${index}.description`),
+                    'aria-label': `Deduction description ${index + 1}`,
+                    placeholder: 'Description',
+                  }}
+                  errorMessage={fieldError}
+                  key={field.id}
+                  onDelete={() => deductionsArray.remove(index)}
+                />
+              );
+            })}
+          </div>
+        </SectionBlock>
+
+        <SectionBlock
+          actions={(
+            <AsyncSaveButton
+              className="text-sm"
+              isError={updateMutation.isError}
+              isSubmitting={updateMutation.isPending}
+              isSuccess={updateMutation.isSuccess}
+              label="Save Changes"
+              type="submit"
+            />
+          )}
+          title="Shareable Income Calculation"
+        >
+          <p className="amount-numeric text-xl font-semibold">
+            <span className="text-inflow">{formatEuroFromMajor(totalIncomeMajor)}</span>
+            <span className="mx-2 text-muted-foreground">-</span>
+            <span className="text-destructive">{formatEuroFromMajor(totalDeductionsMajor)}</span>
+            <span className="mx-2 text-muted-foreground">=</span>
+            <span className="text-info">{formatEuroFromMajor(shareableIncomeMajor)}</span>
+          </p>
 
           {updateMutation.isError && (
-            <p className="text-sm text-destructive">{(updateMutation.error as Error).message}</p>
+            <p className="mt-3 text-sm text-destructive">{(updateMutation.error as Error).message}</p>
           )}
 
           {updateMutation.isSuccess && (
-            <p className="text-sm text-inflow">Financial profile saved successfully.</p>
+            <p className="mt-3 text-sm text-inflow">Financial profile saved successfully.</p>
           )}
+        </SectionBlock>
+      </form>
 
-          <button
-            className="btn-primary text-sm"
-            disabled={updateMutation.isPending}
-            type="submit"
-          >
-            {updateMutation.isPending ? 'Saving...' : 'Save profile'}
-          </button>
-        </form>
-      </section>
-    </main>
+      <SectionBlock title="How proportional splits work">
+        <div className="grid gap-4 text-sm text-muted-foreground">
+          <p>
+            When you choose proportional split for an expense, each person pays based on their
+            shareable income relative to the group total. This ensures fair contribution when
+            incomes differ significantly between members.
+          </p>
+          <div className="border-t border-border pt-4">
+            <h3 className="text-base font-semibold text-foreground">What counts as a deduction?</h3>
+            <p className="mt-2">
+              Deductions are fixed personal expenses that reduce your available income for shared
+              costs. Common examples include personal loans, child support, individual insurance
+              premiums, or other non-negotiable monthly obligations.
+            </p>
+          </div>
+        </div>
+      </SectionBlock>
+    </PageScaffold>
   );
 }

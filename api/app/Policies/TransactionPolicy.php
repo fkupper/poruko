@@ -15,7 +15,7 @@ class TransactionPolicy
 
     public function view(User $user, Transaction $transaction): bool
     {
-        return $transaction->ledger->users()->whereKey($user->id)->exists();
+        return $user->ledgers()->whereKey($transaction->ledger_id)->exists();
     }
 
     public function create(User $user, Ledger $ledger): bool

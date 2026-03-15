@@ -3,16 +3,29 @@
 namespace Database\Seeders;
 
 use App\Enums\AccountType;
+use App\Enums\SettlementMode;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\FinancialProfile;
 use App\Models\Ledger;
+use App\Models\Settlement;
 use App\Models\User;
+use App\Modules\Ledger\Actions\ExecuteSettlementAction;
 use App\Modules\Ledger\Actions\PostManualTransactionAction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
 use Illuminate\Database\Seeder;
 
+/**
+ * Joint Clearinghouse scenario: Bob and Clara share expenses. The settlement
+ * engine calculates liabilities by split rule (proportional 60/40, equal 50/50),
+ * subtracts out-of-pocket payments, and issues transfers to refill the House
+ * Joint Account.
+ *
+ * Scenario: Rent $1000 + Holiday $100 + Groceries $200 (all proportional);
+ * Restaurant $100 (equal). Bob paid Groceries and Restaurant ($300). Result:
+ * Bob owes $530, Clara owes $570. Settlement transfers refill the pool.
+ */
 class DevSeeder extends Seeder
 {
     public function run(): void
@@ -21,191 +34,213 @@ class DevSeeder extends Seeder
             return;
         }
 
-        $user = User::query()->updateOrCreate(
-            ['email' => 'dev@example.com'],
+        $bob = User::query()->updateOrCreate(
+            ['email' => 'bob@example.com'],
             [
-                'name' => 'Dev User',
+                'name' => 'Bob',
                 'password' => 'password',
             ],
         );
 
-        $ledger = $user->ledgers()->first();
+        $clara = User::query()->updateOrCreate(
+            ['email' => 'clara@example.com'],
+            [
+                'name' => 'Clara',
+                'password' => 'password',
+            ],
+        );
 
-        if (! $ledger) {
+        $ledger = $bob->ledgers()->first();
+
+        if (!$ledger) {
             $ledger = Ledger::query()->create([
                 'name' => 'Dev Ledger',
-                'settlement_mode' => 'joint_clearinghouse',
-                'pool_base_budget' => 0,
+                'settlement_mode' => SettlementMode::JointClearinghouse->value,
+                'settlement_timezone' => 'UTC',
+                'settlement_cutoff_day' => 1,
+                'settlement_cutoff_time' => '00:00:00',
+                'settlement_auto_execute_enabled' => false,
             ]);
-            $ledger->users()->attach($user->id, ['role' => 'admin']);
+            $ledger->users()->attach($bob->id, ['role' => 'admin']);
         }
 
-        $wallet = Account::query()->firstOrCreate(
-            [
-                'ledger_id' => $ledger->id,
-                'code' => 'DEV-WALLET',
-            ],
-            [
-                'owner_id' => $user->id,
-                'type' => AccountType::Personal,
-                'name' => 'My Wallet',
-            ],
-        );
+        if (!$ledger->users()->whereKey($clara->id)->exists()) {
+            $ledger->users()->attach($clara->id, ['role' => 'member']);
+        }
 
-        $savings = Account::query()->firstOrCreate(
+        $housePool = Account::query()->firstOrCreate(
             [
                 'ledger_id' => $ledger->id,
-                'code' => 'DEV-SAVINGS',
-            ],
-            [
-                'owner_id' => $user->id,
-                'type' => AccountType::Personal,
-                'name' => 'Savings',
-            ],
-        );
-
-        $pool = Account::query()->firstOrCreate(
-            [
-                'ledger_id' => $ledger->id,
-                'code' => 'DEV-POOL',
+                'code' => 'DEV-HOUSE-POOL',
             ],
             [
                 'owner_id' => null,
                 'type' => AccountType::Pool,
-                'name' => 'House',
+                'name' => 'House Joint Account',
+                'base_budget' => 200000,
             ],
         );
 
-        $external = Account::query()->firstOrCreate(
+        $bobWallet = Account::query()->firstOrCreate(
             [
                 'ledger_id' => $ledger->id,
-                'code' => 'DEV-EXT',
+                'code' => 'DEV-BOB-WALLET',
+            ],
+            [
+                'owner_id' => $bob->id,
+                'type' => AccountType::Personal,
+                'name' => "Bob's Personal Account",
+            ],
+        );
+
+        $claraWallet = Account::query()->firstOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'code' => 'DEV-CLARA-WALLET',
+            ],
+            [
+                'owner_id' => $clara->id,
+                'type' => AccountType::Personal,
+                'name' => "Clara's Personal Account",
+            ],
+        );
+
+        $generalExpenses = Account::query()->firstOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'code' => 'DEV-GENERAL-EXP',
             ],
             [
                 'owner_id' => null,
                 'type' => AccountType::External,
-                'name' => 'Landlord',
+                'name' => 'General Expenses Account',
             ],
         );
 
-        $partner = User::query()->updateOrCreate(
-            ['email' => 'partner@example.com'],
-            [
-                'name' => 'Partner User',
-                'password' => 'password',
-            ],
-        );
-
-        if (! $ledger->users()->whereKey($partner->id)->exists()) {
-            $ledger->users()->attach($partner->id, ['role' => 'member']);
-        }
-
-        $partnerWallet = Account::query()->firstOrCreate(
+        $holidayExpenses = Account::query()->firstOrCreate(
             [
                 'ledger_id' => $ledger->id,
-                'code' => 'DEV-PARTNER-WALLET',
+                'code' => 'DEV-HOLIDAY-EXP',
             ],
             [
-                'owner_id' => $partner->id,
-                'type' => AccountType::Personal,
-                'name' => 'Partner Wallet',
+                'owner_id' => null,
+                'type' => AccountType::External,
+                'name' => 'Holiday Expenses Account',
+            ],
+        );
+
+        $profileStart = now()->subMonthsNoOverflow(3)->startOfMonth()->format('Y-m-d');
+
+        FinancialProfile::query()->updateOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'user_id' => $bob->id,
+                'valid_from' => $profileStart,
+            ],
+            [
+                'valid_to' => null,
+                'incomes' => [['description' => 'Salary', 'amount' => 600000]],
+                'deductions' => [],
             ],
         );
 
         FinancialProfile::query()->updateOrCreate(
             [
                 'ledger_id' => $ledger->id,
-                'user_id' => $user->id,
-                'valid_from' => now()->startOfMonth()->format('Y-m-d'),
+                'user_id' => $clara->id,
+                'valid_from' => $profileStart,
             ],
             [
                 'valid_to' => null,
-                'incomes' => [
-                    ['description' => 'Salary', 'amount' => 400000],
-                    ['description' => 'Freelance', 'amount' => 50000],
-                ],
-                'deductions' => [
-                    ['description' => 'Health Insurance', 'amount' => 15000],
-                ],
+                'incomes' => [['description' => 'Salary', 'amount' => 400000]],
+                'deductions' => [],
             ],
         );
 
-        FinancialProfile::query()->updateOrCreate(
-            [
+        $lastMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+        $lastMonthStart = $lastMonthEnd->copy()->startOfMonth();
+        $postAction = app(PostManualTransactionAction::class);
+        $participants = [['user_id' => $bob->id], ['user_id' => $clara->id]];
+
+        if ($ledger->transactions()->where('type', '!=', 'settlement')->count() === 0) {
+            $day5 = $lastMonthStart->copy()->addDays(5)->format('Y-m-d');
+            $day10 = $lastMonthStart->copy()->addDays(10)->format('Y-m-d');
+            $day15 = $lastMonthStart->copy()->addDays(15)->format('Y-m-d');
+            $day20 = $lastMonthStart->copy()->addDays(20)->format('Y-m-d');
+
+            $postAction->execute(PostManualTransactionData::fromArray([
                 'ledger_id' => $ledger->id,
-                'user_id' => $partner->id,
-                'valid_from' => now()->startOfMonth()->format('Y-m-d'),
-            ],
-            [
-                'valid_to' => null,
-                'incomes' => [
-                    ['description' => 'Salary', 'amount' => 300000],
-                ],
-                'deductions' => [
-                    ['description' => 'Student Loan', 'amount' => 20000],
-                ],
-            ],
-        );
+                'credit_account_id' => $housePool->id,
+                'debit_account_id' => $generalExpenses->id,
+                'amount' => 100000,
+                'split_rule' => TransactionSplitRule::Proportional->value,
+                'participants' => $participants,
+                'description' => 'Rent',
+                'date' => $day5,
+                'type' => TransactionType::Manual->value,
+            ]));
 
-        if ($ledger->transactions()->count() > 0) {
-            return;
+            $postAction->execute(PostManualTransactionData::fromArray([
+                'ledger_id' => $ledger->id,
+                'credit_account_id' => $housePool->id,
+                'debit_account_id' => $holidayExpenses->id,
+                'amount' => 10000,
+                'split_rule' => TransactionSplitRule::Proportional->value,
+                'participants' => $participants,
+                'description' => 'Holiday Expense',
+                'date' => $day10,
+                'type' => TransactionType::Manual->value,
+            ]));
+
+            $postAction->execute(PostManualTransactionData::fromArray([
+                'ledger_id' => $ledger->id,
+                'credit_account_id' => $bobWallet->id,
+                'debit_account_id' => $generalExpenses->id,
+                'amount' => 20000,
+                'split_rule' => TransactionSplitRule::Proportional->value,
+                'participants' => $participants,
+                'description' => 'Groceries',
+                'date' => $day15,
+                'type' => TransactionType::Manual->value,
+            ]));
+
+            $postAction->execute(PostManualTransactionData::fromArray([
+                'ledger_id' => $ledger->id,
+                'credit_account_id' => $bobWallet->id,
+                'debit_account_id' => $generalExpenses->id,
+                'amount' => 10000,
+                'split_rule' => TransactionSplitRule::Equal->value,
+                'participants' => $participants,
+                'description' => 'Restaurant',
+                'date' => $day20,
+                'type' => TransactionType::Manual->value,
+            ]));
         }
 
-        $postTransaction = app(PostManualTransactionAction::class);
+        $periodEnd = $lastMonthEnd->format('Y-m-d');
+        $periodStart = $lastMonthStart->format('Y-m-d');
+        $leaveSettlementPending = filter_var(
+            config('dev.seed_settlement_pending', false),
+            FILTER_VALIDATE_BOOLEAN,
+        );
 
-        $postTransaction->execute(PostManualTransactionData::fromArray([
-            'ledger_id' => $ledger->id,
-            'payer_account_id' => $wallet->id,
-            'amount' => 5000,
-            'split_rule' => TransactionSplitRule::Equal->value,
-            'participants' => [
-                ['account_id' => $pool->id],
-                ['account_id' => $savings->id],
-            ],
-            'description' => 'Rent split',
-            'date' => now()->subDays(5)->format('Y-m-d'),
-            'type' => TransactionType::Manual->value,
-        ]));
+        if ($leaveSettlementPending) {
+            Settlement::query()->firstOrCreate(
+                [
+                    'ledger_id' => $ledger->id,
+                    'period_start' => $periodStart,
+                    'period_end' => $periodEnd,
+                ],
+                ['executed_at' => null],
+            );
+        } else {
+            $settlement = app(ExecuteSettlementAction::class)->execute($ledger, $periodEnd);
 
-        $postTransaction->execute(PostManualTransactionData::fromArray([
-            'ledger_id' => $ledger->id,
-            'payer_account_id' => $wallet->id,
-            'amount' => 1200,
-            'split_rule' => TransactionSplitRule::Individual->value,
-            'participants' => [
-                ['account_id' => $external->id, 'amount' => 1200],
-            ],
-            'description' => 'Rent payment',
-            'date' => now()->subDays(3)->format('Y-m-d'),
-            'type' => TransactionType::Manual->value,
-        ]));
-
-        $postTransaction->execute(PostManualTransactionData::fromArray([
-            'ledger_id' => $ledger->id,
-            'payer_account_id' => $pool->id,
-            'amount' => 3400,
-            'split_rule' => TransactionSplitRule::Equal->value,
-            'participants' => [
-                ['account_id' => $wallet->id],
-                ['account_id' => $savings->id],
-            ],
-            'description' => 'Groceries',
-            'date' => now()->subDay()->format('Y-m-d'),
-            'type' => TransactionType::Manual->value,
-        ]));
-
-        $postTransaction->execute(PostManualTransactionData::fromArray([
-            'ledger_id' => $ledger->id,
-            'payer_account_id' => $pool->id,
-            'amount' => 120000,
-            'split_rule' => TransactionSplitRule::Proportional->value,
-            'participants' => [
-                ['account_id' => $wallet->id],
-                ['account_id' => $partnerWallet->id],
-            ],
-            'description' => 'Rent (proportional)',
-            'date' => now()->format('Y-m-d'),
-            'type' => TransactionType::Manual->value,
-        ]));
+            if ($settlement->executed_at === null) {
+                $settlement->update([
+                    'executed_at' => $lastMonthEnd->copy()->setTime(12, 0)->toDateTimeString(),
+                ]);
+            }
+        }
     }
 }
