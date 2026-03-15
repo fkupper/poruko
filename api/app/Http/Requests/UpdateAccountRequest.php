@@ -25,17 +25,38 @@ class UpdateAccountRequest extends FormRequest
      */
     public function rules(): array
     {
+        $account = $this->route('account');
+        $codeRules = ['sometimes', 'nullable', 'string', 'max:255'];
+        $ledgerId = $account instanceof Account ? $account->ledger_id : 0;
+
+        if ($account instanceof Account) {
+            $codeRules[] = Rule::unique('accounts', 'code')->ignore($account->id);
+        }
+
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['sometimes', 'required', new Enum(AccountType::class)],
-            'owner_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
-            'code' => [
+            'owner_id' => [
                 'sometimes',
                 'nullable',
-                'string',
-                'max:255',
-                Rule::unique('accounts', 'code')->ignore($this->route('account')?->id),
+                'integer',
+                'exists:users,id',
+                Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId),
             ],
+            'code' => $codeRules,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'The account name is required.',
+            'type.required' => 'The account type is required.',
+            'owner_id.exists' => 'The selected owner does not exist or is not a member of this ledger.',
+            'code.unique' => 'This account code is already in use.',
         ];
     }
 }

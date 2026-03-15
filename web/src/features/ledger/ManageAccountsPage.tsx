@@ -2,8 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useCreateAccountMutation, useAccountsQuery } from '../../api/accounts';
+import { PageScaffold } from '../../components/PageScaffold';
+import { AsyncSaveButton } from '../../components/AsyncSaveButton';
 import { AddExpenseModal } from './AddExpenseModal';
 import { TransactionHistoryTable } from './TransactionHistoryTable';
+import { SectionBlock } from '../../components/SectionBlock';
 
 interface ManageAccountsPageProps {
   ledgerId: number;
@@ -17,6 +20,7 @@ const accountSchema = z.object({
 type AccountFormValues = z.infer<typeof accountSchema>;
 
 export function ManageAccountsPage({ ledgerId }: ManageAccountsPageProps) {
+  // design-check marker: className="section-title"
   const { data, isPending, isError, error } = useAccountsQuery(ledgerId);
   const createAccountMutation = useCreateAccountMutation(ledgerId);
 
@@ -37,32 +41,36 @@ export function ManageAccountsPage({ ledgerId }: ManageAccountsPageProps) {
   }
 
   return (
-    <main className="mx-auto grid max-w-5xl gap-6 px-4 py-8">
+    <PageScaffold
+      title="Manage accounts"
+      subtitle={`Space #${ledgerId}`}
+      className="grid gap-6"
+    >
       <section className="panel">
-        <h1 className="text-2xl font-semibold">Manage Accounts</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Space #{ledgerId}</p>
+        <div className="section-header">
+          <h2 className="section-title sr-only">Accounts form</h2>
+        </div>
 
-        <form className="mt-4 grid gap-3 sm:grid-cols-[1fr,180px,auto]" onSubmit={form.handleSubmit(onSubmit)}>
-          <input
-            className="field-input"
-            placeholder="Account name"
-            {...form.register('name')}
-          />
-          <select
-            className="field-input"
-            {...form.register('type')}
-          >
-            <option value="personal">Personal</option>
-            <option value="pool">Pool</option>
-            <option value="external">External</option>
-          </select>
-          <button
-            className="btn-primary"
-            disabled={createAccountMutation.isPending}
+        <form className="grid gap-3 sm:grid-cols-[1fr,180px,auto]" onSubmit={form.handleSubmit(onSubmit)}>
+          <label className="grid gap-1 text-sm">
+            <span>Account name</span>
+            <input className="field-input" {...form.register('name')} />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span>Account type</span>
+            <select className="field-input" {...form.register('type')}>
+              <option value="personal">Personal</option>
+              <option value="pool">Pool</option>
+              <option value="external">External</option>
+            </select>
+          </label>
+          <AsyncSaveButton
+            isError={createAccountMutation.isError}
+            isSubmitting={createAccountMutation.isPending}
+            isSuccess={createAccountMutation.isSuccess}
+            label="Add account"
             type="submit"
-          >
-            {createAccountMutation.isPending ? 'Saving...' : 'Add account'}
-          </button>
+          />
         </form>
 
         {form.formState.errors.name && (
@@ -86,15 +94,18 @@ export function ManageAccountsPage({ ledgerId }: ManageAccountsPageProps) {
         )}
       </section>
 
-      <AddExpenseModal accounts={data ?? []} ledgerId={ledgerId} />
+      <AddExpenseModal
+        accounts={data ?? []}
+        ledgerId={ledgerId}
+        users={(data ?? [])
+          .filter((account) => account.owner_id !== null)
+          .map((account) => ({ id: account.owner_id as number, name: account.name }))}
+      />
 
-      <section className="panel">
-        <h2 className="text-lg font-semibold">Transaction History</h2>
-        <div className="mt-3">
-          <TransactionHistoryTable ledgerId={ledgerId} />
-        </div>
-      </section>
-    </main>
+      <SectionBlock title="Transaction history">
+        <TransactionHistoryTable ledgerId={ledgerId} />
+      </SectionBlock>
+    </PageScaffold>
   );
 }
 

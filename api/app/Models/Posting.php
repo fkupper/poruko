@@ -12,9 +12,7 @@ class Posting extends Model
     /** @use HasFactory<\Database\Factories\PostingFactory> */
     use HasFactory;
 
-    /**
-     * @var list<string>
-     */
+    /** @var list<string> */
     protected $fillable = [
         'transaction_id',
         'account_id',
@@ -33,11 +31,13 @@ class Posting extends Model
         ];
     }
 
+    /** @return BelongsTo<Transaction, $this> */
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
     }
 
+    /** @return BelongsTo<Account, $this> */
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);

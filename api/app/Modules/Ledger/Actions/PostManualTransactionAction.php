@@ -5,104 +5,69 @@ namespace App\Modules\Ledger\Actions;
 use App\Enums\PostingDirection;
 use App\Enums\TransactionSplitRule;
 use App\Models\Account;
-use App\Models\Ledger;
 use App\Models\Posting;
 use App\Models\Transaction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
-use App\Modules\Ledger\Services\FinancialProfileService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class PostManualTransactionAction
+final readonly class PostManualTransactionAction
 {
-    public function __construct(
-        private readonly FinancialProfileService $financialProfileService,
-    ) {}
     public function execute(PostManualTransactionData $payload): Transaction
     {
-        $ledgerId = $payload->ledgerId;
-        $payerAccountId = $payload->payerAccountId;
-        $amount = $payload->amount;
-        $splitRule = $payload->splitRule;
-        $participants = $payload->participants;
-        $date = $payload->date;
-        $description = $payload->description;
-        $type = $payload->type;
-
-        if ($amount <= 0) {
+        if ($payload->amount <= 0) {
             throw new InvalidLedgerPostingException('Amount must be greater than zero.');
         }
 
         $this->assertAccountsBelongToLedger(
-            $ledgerId,
-            $payerAccountId,
-            array_map(static fn (array $participant): int => (int) $participant['account_id'], $participants),
+            $payload->ledgerId,
+            $payload->creditAccountId,
+            $payload->debitAccountId,
         );
 
-        $allocatedParticipants = $this->allocateParticipants($amount, $splitRule, $participants, $ledgerId, $date);
+        $this->validateParticipants($payload->splitRule, $payload->participants);
 
-        return DB::transaction(function () use (
-            $ledgerId,
-            $payerAccountId,
-            $amount,
-            $splitRule,
-            $allocatedParticipants,
-            $description,
-            $date,
-            $type
-        ): Transaction {
+        return DB::transaction(function () use ($payload): Transaction {
             $transaction = Transaction::query()->create([
-                'ledger_id' => $ledgerId,
-                'payer_account_id' => $payerAccountId,
-                'amount' => $amount,
-                'type' => $type,
-                'split_rule' => $splitRule,
-                'participants' => $allocatedParticipants,
-                'description' => $description,
-                'date' => $date,
+                'ledger_id' => $payload->ledgerId,
+                'credit_account_id' => $payload->creditAccountId,
+                'debit_account_id' => $payload->debitAccountId,
+                'amount' => $payload->amount,
+                'type' => $payload->type,
+                'split_rule' => $payload->splitRule,
+                'participants' => $payload->participants,
+                'description' => $payload->description,
+                'date' => $payload->date,
             ]);
 
-            $postings = [
+            $now = Carbon::now()->toDateTimeString();
+            Posting::query()->insert([
                 [
                     'transaction_id' => $transaction->id,
-                    'account_id' => $payerAccountId,
-                    'amount' => $amount,
+                    'account_id' => $payload->creditAccountId,
+                    'amount' => $payload->amount,
                     'direction' => PostingDirection::Credit->value,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ],
-            ];
-
-            foreach ($allocatedParticipants as $participant) {
-                $postings[] = [
+                [
                     'transaction_id' => $transaction->id,
-                    'account_id' => (int) $participant['account_id'],
-                    'amount' => (int) $participant['amount'],
+                    'account_id' => $payload->debitAccountId,
+                    'amount' => $payload->amount,
                     'direction' => PostingDirection::Debit->value,
-                ];
-            }
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
 
-            Posting::query()->insert($postings);
-
-            $sumDebits = (int) collect($postings)
-                ->where('direction', PostingDirection::Debit->value)
-                ->sum('amount');
-            $sumCredits = (int) collect($postings)
-                ->where('direction', PostingDirection::Credit->value)
-                ->sum('amount');
-
-            if ($sumDebits !== $sumCredits) {
-                throw new InvalidLedgerPostingException('Debits and credits are unbalanced.');
-            }
-
-            return $transaction->load(['payerAccount', 'postings.account']);
+            return $transaction->load(['creditAccount', 'debitAccount', 'postings']);
         });
     }
 
-    /**
-     * @param  array<int, int>  $participantAccountIds
-     */
-    private function assertAccountsBelongToLedger(int $ledgerId, int $payerAccountId, array $participantAccountIds): void
+    private function assertAccountsBelongToLedger(int $ledgerId, int $creditAccountId, int $debitAccountId): void
     {
-        $accountIds = collect([$payerAccountId, ...$participantAccountIds])->unique()->values();
+        $accountIds = collect([$creditAccountId, $debitAccountId])->unique()->values();
 
         $existingCount = Account::query()
             ->where('ledger_id', $ledgerId)
@@ -115,146 +80,22 @@ class PostManualTransactionAction
     }
 
     /**
-     * @param  array<int, array{account_id:int, amount?:int}>  $participants
-     * @return array<int, array{account_id:int, amount:int}>
+     * @param list<array{user_id:int, share?:int}> $participants
      */
-    private function allocateParticipants(int $amount, string $splitRule, array $participants, int $ledgerId, string $date): array
+    private function validateParticipants(string $splitRule, array $participants): void
     {
-        if (count($participants) === 0) {
-            throw new InvalidLedgerPostingException('At least one participant is required.');
-        }
-
         $rule = TransactionSplitRule::tryFrom($splitRule);
 
-        return match ($rule) {
-            TransactionSplitRule::Equal => $this->allocateEqualParticipants($amount, $participants),
-            TransactionSplitRule::Individual => $this->allocateIndividualParticipants($amount, $participants),
-            TransactionSplitRule::Proportional => $this->allocateProportionalParticipants($amount, $participants, $ledgerId, $date),
-            default => throw new InvalidLedgerPostingException('Unsupported split rule for manual transaction.'),
-        };
-    }
+        if ($rule === TransactionSplitRule::Individual && count($participants) !== 1) {
+            throw new InvalidLedgerPostingException('Individual split requires exactly one participant.');
+        }
 
-    /**
-     * @param  array<int, array{account_id:int, amount?:int}>  $participants
-     * @return array<int, array{account_id:int, amount:int}>
-     */
-    private function allocateEqualParticipants(int $amount, array $participants): array
-    {
-        $participantCount = count($participants);
-        $baseAmount = intdiv($amount, $participantCount);
-        $remainder = $amount % $participantCount;
-
-        $allocated = [];
-
-        foreach ($participants as $index => $participant) {
-            $participantAmount = $baseAmount;
-
-            if ($index < $remainder) {
-                $participantAmount++;
+        if ($rule === TransactionSplitRule::Manual) {
+            foreach ($participants as $participant) {
+                if (!isset($participant['share']) || (int) $participant['share'] <= 0) {
+                    throw new InvalidLedgerPostingException('Manual split requires share > 0 on all participants.');
+                }
             }
-
-            $allocated[] = [
-                'account_id' => (int) $participant['account_id'],
-                'amount' => $participantAmount,
-            ];
         }
-
-        return $allocated;
-    }
-
-    /**
-     * @param  array<int, array{account_id:int, amount?:int}>  $participants
-     * @return array<int, array{account_id:int, amount:int}>
-     */
-    private function allocateIndividualParticipants(int $amount, array $participants): array
-    {
-        $allocated = [];
-        $sum = 0;
-
-        foreach ($participants as $participant) {
-            $participantAmount = (int) ($participant['amount'] ?? -1);
-
-            if ($participantAmount < 0) {
-                throw new InvalidLedgerPostingException('Individual split requires a non-negative amount per participant.');
-            }
-
-            $sum += $participantAmount;
-            $allocated[] = [
-                'account_id' => (int) $participant['account_id'],
-                'amount' => $participantAmount,
-            ];
-        }
-
-        if ($sum !== $amount) {
-            throw new InvalidLedgerPostingException('Individual split participant amounts must equal transaction amount.');
-        }
-
-        return $allocated;
-    }
-
-    /**
-     * Allocate proportionally based on each participant's shareable income.
-     *
-     * @param  array<int, array{account_id:int, amount?:int}>  $participants
-     * @return array<int, array{account_id:int, amount:int}>
-     */
-    private function allocateProportionalParticipants(int $amount, array $participants, int $ledgerId, string $date): array
-    {
-        $accountIds = array_map(
-            static fn (array $participant): int => (int) $participant['account_id'],
-            $participants,
-        );
-
-        $accounts = Account::query()
-            ->with('owner')
-            ->whereIn('id', $accountIds)
-            ->get()
-            ->keyBy('id');
-
-        $ledger = Ledger::query()->findOrFail($ledgerId);
-
-        $incomes = [];
-        foreach ($participants as $participant) {
-            $accountId = (int) $participant['account_id'];
-            $account = $accounts->get($accountId);
-
-            if ($account === null || $account->owner_id === null) {
-                throw new InvalidLedgerPostingException('Proportional split requires participant accounts with an owner.');
-            }
-
-            $incomes[$accountId] = $this->financialProfileService->shareableIncomeOn(
-                $ledger,
-                $account->owner,
-                $date,
-            );
-        }
-
-        $totalIncome = array_sum($incomes);
-
-        if ($totalIncome <= 0) {
-            throw new InvalidLedgerPostingException('Proportional split requires at least one participant with shareable income.');
-        }
-
-        $allocated = [];
-        $runningTotal = 0;
-        $lastIndex = count($participants) - 1;
-
-        foreach ($participants as $index => $participant) {
-            $accountId = (int) $participant['account_id'];
-
-            if ($index === $lastIndex) {
-                $participantAmount = $amount - $runningTotal;
-            } else {
-                $participantAmount = (int) floor(($incomes[$accountId] / $totalIncome) * $amount);
-                $runningTotal += $participantAmount;
-            }
-
-            $allocated[] = [
-                'account_id' => $accountId,
-                'amount' => $participantAmount,
-            ];
-        }
-
-        return $allocated;
     }
 }

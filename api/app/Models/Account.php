@@ -13,15 +13,14 @@ class Account extends Model
     /** @use HasFactory<\Database\Factories\AccountFactory> */
     use HasFactory;
 
-    /**
-     * @var list<string>
-     */
+    /** @var list<string> */
     protected $fillable = [
         'ledger_id',
         'owner_id',
         'type',
         'name',
         'code',
+        'base_budget',
     ];
 
     /**
@@ -31,26 +30,37 @@ class Account extends Model
     {
         return [
             'type' => AccountType::class,
+            'base_budget' => 'integer',
         ];
     }
 
+    /** @return BelongsTo<Ledger, $this> */
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    /** @return HasMany<Posting, $this> */
     public function postings(): HasMany
     {
         return $this->hasMany(Posting::class);
     }
 
-    public function payerTransactions(): HasMany
+    /** @return HasMany<Transaction, $this> */
+    public function creditTransactions(): HasMany
     {
-        return $this->hasMany(Transaction::class, 'payer_account_id');
+        return $this->hasMany(Transaction::class, 'credit_account_id');
+    }
+
+    /** @return HasMany<Transaction, $this> */
+    public function debitTransactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'debit_account_id');
     }
 }

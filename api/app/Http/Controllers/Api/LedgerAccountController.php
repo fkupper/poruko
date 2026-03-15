@@ -8,6 +8,9 @@ use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Resources\AccountResource;
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Modules\Ledger\Actions\CreateAccountAction;
+use App\Modules\Ledger\Actions\DeleteAccountAction;
+use App\Modules\Ledger\Actions\UpdateAccountAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,9 +26,9 @@ class LedgerAccountController extends Controller
         return AccountResource::collection($accounts);
     }
 
-    public function store(StoreAccountRequest $request, Ledger $ledger): JsonResponse
+    public function store(StoreAccountRequest $request, Ledger $ledger, CreateAccountAction $action): JsonResponse
     {
-        $account = $ledger->accounts()->create($request->validated());
+        $account = $action->execute($ledger, $request->validated());
 
         return AccountResource::make($account)
             ->response()
@@ -34,25 +37,27 @@ class LedgerAccountController extends Controller
 
     public function show(Ledger $ledger, Account $account): AccountResource
     {
+        $this->authorize('view', $account);
+
         return AccountResource::make($account);
     }
 
-    public function update(UpdateAccountRequest $request, Ledger $ledger, Account $account): AccountResource
+    public function update(UpdateAccountRequest $request, Ledger $ledger, Account $account, UpdateAccountAction $action): AccountResource
     {
-        $account->update($request->validated());
-
-        return AccountResource::make($account->refresh());
+        return AccountResource::make($action->execute($account, $request->validated()));
     }
 
-    public function destroy(Ledger $ledger, Account $account): JsonResponse
+    public function destroy(Ledger $ledger, Account $account, DeleteAccountAction $action): JsonResponse
     {
-        if ($account->postings()->exists()) {
+        $this->authorize('delete', $account);
+
+        $result = $action->execute($account);
+
+        if (!$result['deleted']) {
             return response()->json([
-                'message' => 'Account cannot be deleted once postings exist.',
+                'message' => $result['message'] ?? 'Account cannot be deleted.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        $account->delete();
 
         return response()->json([], Response::HTTP_NO_CONTENT);
     }

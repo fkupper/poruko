@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\SettlementMode;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,8 +19,11 @@ class LedgerFactory extends Factory
     {
         return [
             'name' => fake()->words(2, true),
-            'settlement_mode' => fake()->randomElement(['joint_clearinghouse', 'direct_p2p']),
-            'pool_base_budget' => fake()->numberBetween(0, 1_000_000),
+            'settlement_mode' => fake()->randomElement(SettlementMode::cases())->value,
+            'settlement_timezone' => fake()->timezone(),
+            'settlement_cutoff_day' => fake()->numberBetween(1, 28),
+            'settlement_cutoff_time' => fake()->time('H:i:s'),
+            'settlement_auto_execute_enabled' => fake()->boolean(),
         ];
     }
 }

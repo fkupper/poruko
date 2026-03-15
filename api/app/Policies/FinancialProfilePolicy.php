@@ -12,8 +12,9 @@ class FinancialProfilePolicy
      */
     public function view(User $authUser, Ledger $ledger, User $targetUser): bool
     {
-        return $ledger->users()->whereKey($authUser->id)->exists()
-            && $ledger->users()->whereKey($targetUser->id)->exists();
+        $ids = array_unique([$authUser->id, $targetUser->id]);
+
+        return $ledger->users()->whereIn('users.id', $ids)->count() === count($ids);
     }
 
     /**

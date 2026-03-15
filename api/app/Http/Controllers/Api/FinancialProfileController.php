@@ -9,6 +9,7 @@ use App\Models\FinancialProfile;
 use App\Models\Ledger;
 use App\Models\User;
 use App\Modules\Ledger\Services\FinancialProfileService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
 class FinancialProfileController extends Controller
@@ -38,7 +39,7 @@ class FinancialProfileController extends Controller
     ): FinancialProfileResource {
         $this->authorize('view', [FinancialProfile::class, $ledger, $user]);
 
-        $profile = $service->activeProfile($ledger, $user, now()->format('Y-m-d'));
+        $profile = $service->activeProfile($ledger, $user, Carbon::now()->format('Y-m-d'));
 
         abort_if($profile === null, 404, 'No active financial profile found.');
 

@@ -15,12 +15,12 @@ class Transaction extends Model
     /** @use HasFactory<\Database\Factories\TransactionFactory> */
     use HasFactory;
 
-    /**
-     * @var list<string>
-     */
+    /** @var list<string> */
     protected $fillable = [
         'ledger_id',
-        'payer_account_id',
+        'settlement_id',
+        'credit_account_id',
+        'debit_account_id',
         'amount',
         'type',
         'split_rule',
@@ -43,26 +43,49 @@ class Transaction extends Model
         ];
     }
 
+    /** @return BelongsTo<Ledger, $this> */
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
     }
 
-    public function payerAccount(): BelongsTo
+    /** @return BelongsTo<Settlement, $this> */
+    public function settlement(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'payer_account_id');
+        return $this->belongsTo(Settlement::class);
     }
 
+    /** @return BelongsTo<Account, $this> */
+    public function creditAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'credit_account_id');
+    }
+
+    /** @return BelongsTo<Account, $this> */
+    public function debitAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'debit_account_id');
+    }
+
+    /** @return HasMany<Posting, $this> */
     public function postings(): HasMany
     {
         return $this->hasMany(Posting::class);
     }
 
+    /**
+     * @param Builder<Transaction> $query
+     * @return Builder<Transaction>
+     */
     public function scopeForLedger(Builder $query, int $ledgerId): Builder
     {
         return $query->where('ledger_id', $ledgerId);
     }
 
+    /**
+     * @param Builder<Transaction> $query
+     * @return Builder<Transaction>
+     */
     public function scopeBetweenDates(Builder $query, ?string $fromDate, ?string $toDate): Builder
     {
         if ($fromDate !== null) {

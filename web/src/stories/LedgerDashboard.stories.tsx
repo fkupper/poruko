@@ -1,18 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ComponentType } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { LedgerDashboardPage } from '../features/ledger/LedgerDashboardPage.tsx';
+import { LedgerDashboardPage } from '../features/ledger/LedgerDashboardPage';
 
 const queryClient = new QueryClient();
 
 const meta = {
-  title: 'Poruko/Ledger Dashboard',
+  title: 'Poruko/Pages/Ledger Dashboard',
   component: LedgerDashboardPage,
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component: 'Dashboard member balances summarize the previous calendar month settlement window.',
+      },
+    },
   },
   decorators: [
-    (Story) => (
+    (Story: ComponentType) => (
       <MemoryRouter initialEntries={['/ledgers/1/dashboard']}>
         <QueryClientProvider client={queryClient}>
           <div className="min-h-screen bg-background">
@@ -22,12 +27,11 @@ const meta = {
       </MemoryRouter>
     ),
   ],
-} satisfies Meta<typeof LedgerDashboardPage>;
+};
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-export const DefaultDashboard: Story = {
+export const DefaultDashboard = {
   args: {
     ledgerId: 1,
   },

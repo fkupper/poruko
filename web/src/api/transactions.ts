@@ -15,17 +15,18 @@ export interface TransactionFilters {
 }
 
 export interface CreateTransactionParticipant {
-  account_id: number;
-  amount?: number;
+  user_id: number;
+  share?: number;
 }
 
 export interface CreateTransactionInput {
-  payer_account_id: number;
+  credit_account_id: number;
+  debit_account_id: number;
   amount: number;
   description?: string;
   date: string;
   split_rule: SplitRule;
-  participants: CreateTransactionParticipant[];
+  participants?: CreateTransactionParticipant[] | null;
   type?: 'manual';
 }
 

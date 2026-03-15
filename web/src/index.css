@@ -1,5 +1,44 @@
 @import "tailwindcss";
 
+@keyframes async-save-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes async-save-success-pop {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes async-save-error-shake {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(-1px) scale(1.05);
+  }
+  60% {
+    transform: translateX(1px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @theme {
   --color-background: var(--ds-color-background, #ffffff);
   --color-surface: var(--ds-color-surface, #f1f5f9);
@@ -36,6 +75,10 @@
   color-scheme: light;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -69,12 +112,36 @@ button:disabled {
     @apply rounded-card border border-border bg-foreground p-4 text-background;
   }
 
+  .section-header {
+    @apply flex flex-col;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .section-subtitle {
+    @apply mt-1 text-sm text-muted-foreground;
+  }
+
+  .page-header {
+    @apply flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold text-foreground;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm text-muted-foreground;
+  }
+
   .field-input {
-    @apply rounded-control border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground;
+    @apply rounded-control border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
   }
 
   .field-input-compact {
-    @apply rounded-control border border-border bg-background px-2 py-2 text-foreground placeholder:text-muted-foreground;
+    @apply rounded-control border border-border bg-background px-2 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
   }
 
   .btn-primary {
@@ -86,11 +153,38 @@ button:disabled {
   }
 
   .btn-outline {
-    @apply rounded-control border border-border px-3 py-1 text-sm text-muted-foreground hover:text-foreground hover:opacity-80;
+    @apply inline-flex min-h-12 items-center rounded-control border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:opacity-80;
   }
 
   .btn-destructive-outline {
-    @apply rounded-control border border-destructive px-2 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50;
+    @apply inline-flex min-h-12 items-center rounded-control border border-destructive px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50;
+  }
+
+  .btn-primary-async {
+    @apply inline-flex items-center justify-center gap-2;
+  }
+
+  .btn-primary-async-icon {
+    @apply inline-flex h-4 w-4 items-center justify-center;
+  }
+
+  .btn-primary-async--submitting:disabled {
+    @apply opacity-100;
+    transform: translateY(1px);
+  }
+
+  .btn-primary-async-spinner {
+    animation: async-save-spin 0.9s linear infinite;
+  }
+
+  .btn-primary-async-success {
+    @apply text-inflowSubtle;
+    animation: async-save-success-pop 180ms ease-out;
+  }
+
+  .btn-primary-async-error {
+    @apply text-destructiveSubtle;
+    animation: async-save-error-shake 220ms ease-out;
   }
 
   .sidebar-shell {
@@ -98,7 +192,7 @@ button:disabled {
   }
 
   .sidebar-brand {
-    @apply flex items-center gap-3 border-b border-border px-4 py-4;
+    @apply flex items-center gap-3 px-4 py-4;
   }
 
   .sidebar-brand-logo {
@@ -106,7 +200,7 @@ button:disabled {
   }
 
   .sidebar-ledger-card {
-    @apply border-b border-border p-4;
+    @apply p-4;
   }
 
   .sidebar-ledger-label {
@@ -115,6 +209,22 @@ button:disabled {
 
   .sidebar-ledger-picker {
     @apply w-full rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground;
+  }
+
+  .sidebar-ledger-trigger {
+    @apply flex w-full items-center justify-between gap-3 rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground shadow-sm hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed;
+  }
+
+  .sidebar-ledger-menu {
+    @apply mt-2 overflow-hidden rounded-card border border-border bg-background shadow-md;
+  }
+
+  .sidebar-ledger-option {
+    @apply flex w-full flex-col items-start px-3 py-2 text-left text-sm text-muted-foreground hover:bg-surface hover:text-foreground;
+  }
+
+  .sidebar-ledger-option-active {
+    @apply bg-infoSubtle text-info;
   }
 
   .sidebar-nav {
@@ -127,6 +237,22 @@ button:disabled {
 
   .sidebar-nav-link-active {
     @apply bg-info text-white hover:bg-info hover:text-white;
+  }
+
+  .sidebar-nav-content {
+    @apply flex items-center gap-2;
+  }
+
+  .sidebar-nav-icon {
+    @apply inline-flex h-4 w-4 shrink-0 items-center justify-center text-muted-foreground;
+  }
+
+  .sidebar-nav-link-active .sidebar-nav-icon {
+    @apply text-white;
+  }
+
+  .sidebar-nav-icon svg {
+    @apply h-4 w-4;
   }
 
   .sidebar-footer {

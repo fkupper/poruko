@@ -6,8 +6,8 @@ const mutateAsyncMock = vi.fn();
 vi.mock('../../api/accounts', () => ({
   useAccountsQuery: () => ({
     data: [
-      { id: 1, name: 'Pool', type: 'pool' },
-      { id: 2, name: 'Alice', type: 'personal' },
+      { id: 1, name: 'Pool', type: 'pool', owner_id: null, base_budget: 0 },
+      { id: 2, name: 'Alice', type: 'personal', owner_id: 1, base_budget: 0 },
     ],
     isPending: false,
     isError: false,
@@ -36,7 +36,7 @@ describe('ManageAccountsPage', () => {
     expect(screen.getByTestId('add-expense-modal')).toBeInTheDocument();
     expect(screen.getByTestId('transaction-history')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Account name'), {
+    fireEvent.change(screen.getByLabelText('Account name'), {
       target: { value: 'New Shared' },
     });
     fireEvent.change(screen.getByRole('combobox'), {

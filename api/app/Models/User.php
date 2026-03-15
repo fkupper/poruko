@@ -12,8 +12,10 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+    use HasApiTokens;
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -49,6 +51,7 @@ class User extends Authenticatable
         ];
     }
 
+    /** @return BelongsToMany<Ledger, $this> */
     public function ledgers(): BelongsToMany
     {
         return $this->belongsToMany(Ledger::class)
@@ -56,11 +59,13 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    /** @return HasMany<Account, $this> */
     public function ownedAccounts(): HasMany
     {
         return $this->hasMany(Account::class, 'owner_id');
     }
 
+    /** @return HasMany<FinancialProfile, $this> */
     public function financialProfiles(): HasMany
     {
         return $this->hasMany(FinancialProfile::class);

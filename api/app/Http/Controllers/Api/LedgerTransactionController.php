@@ -30,6 +30,8 @@ class LedgerTransactionController extends Controller
                 'from_date' => $request->validated('from_date'),
                 'to_date' => $request->validated('to_date'),
                 'account_id' => $request->validated('account_id'),
+                'per_page' => $request->validated('per_page'),
+                'page' => $request->validated('page'),
             ])),
         );
     }
@@ -40,14 +42,15 @@ class LedgerTransactionController extends Controller
         PostManualTransactionAction $action
     ): JsonResponse {
         try {
-            $transaction = $action->execute(
-                PostManualTransactionData::fromArray([
-                    ...$request->validated(),
-                    'ledger_id' => $ledger->id,
-                    'description' => $request->validated('description'),
-                    'type' => TransactionType::Manual->value,
-                ]),
-            );
+            /** @var array{ledger_id:int, credit_account_id:int, debit_account_id:int, amount:int, split_rule:string, participants:list<array{user_id:int, share?:int}>, description:string|null, date:string, type:string} $payload */
+            $payload = [
+                ...$request->validated(),
+                'ledger_id' => $ledger->id,
+                'description' => $request->validated('description'),
+                'type' => TransactionType::Manual->value,
+                'participants' => $request->validated('participants') ?? [],
+            ];
+            $transaction = $action->execute(PostManualTransactionData::fromArray($payload));
         } catch (InvalidLedgerPostingException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -61,8 +64,10 @@ class LedgerTransactionController extends Controller
 
     public function show(Ledger $ledger, Transaction $transaction): TransactionResource
     {
+        $this->authorize('view', $transaction);
+
         return TransactionResource::make(
-            $transaction->load(['payerAccount', 'postings.account']),
+            $transaction->load(['creditAccount', 'debitAccount', 'postings']),
         );
     }
 }

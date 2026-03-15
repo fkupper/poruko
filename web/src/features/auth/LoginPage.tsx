@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuthStore } from '../../stores/authStore';
+import { SectionBlock } from '../../components/SectionBlock';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -30,7 +31,7 @@ export function LoginPage() {
 
     try {
       await login(values);
-      navigate('/ledgers/1/accounts', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Login failed');
     }
@@ -38,27 +39,24 @@ export function LoginPage() {
 
   return (
     <main className="mx-auto grid min-h-[70vh] w-full max-w-md place-items-center px-4 py-8">
-      <section className="panel w-full">
-        <h1 className="text-2xl font-semibold">Log in</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Access your Poruko account.</p>
-
-        <form className="mt-4 grid gap-3" onSubmit={form.handleSubmit(onSubmit)}>
-          <input
-            className="field-input"
-            placeholder="Email"
-            type="email"
-            {...form.register('email')}
-          />
+      <SectionBlock
+        title="Log in"
+        subtitle="Access your Poruko account."
+        className="w-full"
+      >
+        <form className="grid gap-3" onSubmit={form.handleSubmit(onSubmit)}>
+          <label className="grid gap-1 text-sm">
+            <span>Email</span>
+            <input className="field-input" type="email" {...form.register('email')} />
+          </label>
           {form.formState.errors.email && (
             <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
           )}
 
-          <input
-            className="field-input"
-            placeholder="Password"
-            type="password"
-            {...form.register('password')}
-          />
+          <label className="grid gap-1 text-sm">
+            <span>Password</span>
+            <input className="field-input" type="password" {...form.register('password')} />
+          </label>
           {form.formState.errors.password && (
             <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
           )}
@@ -80,7 +78,7 @@ export function LoginPage() {
             Register
           </Link>
         </p>
-      </section>
+      </SectionBlock>
     </main>
   );
 }

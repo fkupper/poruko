@@ -8,16 +8,20 @@ use App\Models\Ledger;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use InvalidArgumentException;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
+#[Group('ledger-accounts')]
 #[CoversClass(LedgerAccountController::class)]
 class LedgerAccountApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_member_can_list_and_create_accounts_for_ledger(): void
+    public function testMemberCanListAndCreateAccountsForLedger(): void
     {
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
@@ -38,7 +42,7 @@ class LedgerAccountApiTest extends TestCase
             ->assertJsonPath('data.ledger_id', $ledger->id);
     }
 
-    public function test_non_member_cannot_access_ledger_accounts(): void
+    public function testNonMemberCannotAccessLedgerAccounts(): void
     {
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
@@ -49,7 +53,7 @@ class LedgerAccountApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_member_can_show_update_and_delete_account_without_postings(): void
+    public function testMemberCanShowUpdateAndDeleteAccountWithoutPostings(): void
     {
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
@@ -71,23 +75,24 @@ class LedgerAccountApiTest extends TestCase
             ->assertNoContent();
     }
 
-    public function test_account_with_postings_cannot_be_deleted(): void
+    public function testAccountWithPostingsCannotBeDeleted(): void
     {
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
 
-        $payer = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $participant = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
         $transaction = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'payer_account_id' => $payer->id,
+            'credit_account_id' => $credit->id,
+            'debit_account_id' => $debit->id,
             'amount' => 1000,
             'split_rule' => 'equal',
             'type' => 'manual',
-            'participants' => [['account_id' => $participant->id, 'amount' => 1000]],
+            'participants' => [],
         ]);
-        $participant->postings()->create([
+        $debit->postings()->create([
             'transaction_id' => $transaction->id,
             'amount' => 1000,
             'direction' => 'debit',
@@ -95,11 +100,11 @@ class LedgerAccountApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$participant->id}")
+        $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$debit->id}")
             ->assertStatus(422);
     }
 
-    public function test_non_member_cannot_show_update_or_delete_account(): void
+    public function testNonMemberCannotShowUpdateOrDeleteAccount(): void
     {
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
@@ -115,22 +120,86 @@ class LedgerAccountApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_unauthenticated_user_cannot_access_account_endpoints(): void
+    #[DataProvider('unauthenticatedEndpointDataProvider')]
+    public function testUnauthenticatedUserCannotAccessAccountEndpoints(string $method, string $uri, array $payload = []): void
     {
         $ledger = Ledger::factory()->create();
         $account = Account::factory()->create(['ledger_id' => $ledger->id]);
 
-        $this->getJson("/api/ledgers/{$ledger->id}/accounts")->assertUnauthorized();
-        $this->postJson("/api/ledgers/{$ledger->id}/accounts", [
-            'name' => 'Pool',
-            'type' => 'pool',
-        ])->assertUnauthorized();
-        $this->getJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}")->assertUnauthorized();
-        $this->patchJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}", ['name' => 'Pool Updated'])->assertUnauthorized();
-        $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}")->assertUnauthorized();
+        $uri = str_replace(['{ledger}', '{account}'], [(string) $ledger->id, (string) $account->id], $uri);
+
+        $response = match (mb_strtoupper($method)) {
+            'GET' => $this->getJson($uri),
+            'POST' => $this->postJson($uri, $payload),
+            'PATCH' => $this->patchJson($uri, $payload),
+            'DELETE' => $this->deleteJson($uri),
+            default => throw new InvalidArgumentException("Unsupported method: {$method}"),
+        };
+
+        $response->assertUnauthorized();
     }
 
-    public function test_cross_ledger_account_binding_returns_not_found(): void
+    public static function unauthenticatedEndpointDataProvider(): array
+    {
+        return [
+            'index' => ['GET', '/api/ledgers/{ledger}/accounts'],
+            'store' => ['POST', '/api/ledgers/{ledger}/accounts', ['name' => 'Pool', 'type' => 'pool']],
+            'show' => ['GET', '/api/ledgers/{ledger}/accounts/{account}'],
+            'update' => ['PATCH', '/api/ledgers/{ledger}/accounts/{account}', ['name' => 'Pool Updated']],
+            'delete' => ['DELETE', '/api/ledgers/{ledger}/accounts/{account}'],
+        ];
+    }
+
+    #[DataProvider('storeValidationDataProvider')]
+    public function testStoreValidatesRequiredFieldsAndTypes(array $payload, string $expectedErrorKey): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/accounts", $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([$expectedErrorKey]);
+    }
+
+    public static function storeValidationDataProvider(): array
+    {
+        return [
+            'missing name' => [['type' => 'pool'], 'name'],
+            'name empty' => [['name' => '', 'type' => 'pool'], 'name'],
+            'name too long' => [['name' => str_repeat('a', 256), 'type' => 'pool'], 'name'],
+            'invalid type' => [['name' => 'Valid Name', 'type' => 'invalid'], 'type'],
+            'missing type' => [['name' => 'Valid Name'], 'type'],
+        ];
+    }
+
+    #[DataProvider('updateValidationDataProvider')]
+    public function testUpdateValidatesFieldsWhenProvided(array $payload, string $expectedErrorKey): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        $account = Account::factory()->create(['ledger_id' => $ledger->id]);
+
+        Sanctum::actingAs($user);
+
+        $this->patchJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}", $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([$expectedErrorKey]);
+    }
+
+    public static function updateValidationDataProvider(): array
+    {
+        return [
+            'name empty when provided' => [['name' => ''], 'name'],
+            'name too long' => [['name' => str_repeat('a', 256)], 'name'],
+            'invalid type' => [['type' => 'invalid'], 'type'],
+        ];
+    }
+
+    public function testCrossLedgerAccountBindingReturnsNotFound(): void
     {
         $user = User::factory()->create();
         $ledgerA = Ledger::factory()->create();

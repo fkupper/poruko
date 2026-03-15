@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PostingDirection;
 use App\Models\Account;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,7 +23,33 @@ class PostingFactory extends Factory
             'transaction_id' => Transaction::factory(),
             'account_id' => Account::factory(),
             'amount' => fake()->numberBetween(1, 50_000),
-            'direction' => fake()->randomElement(['debit', 'credit']),
+            'direction' => PostingDirection::Credit->value,
         ];
+    }
+
+    /**
+     * Create a credit posting for the transaction's credit account.
+     */
+    public function forCreditAccount(Transaction $transaction): static
+    {
+        return $this->state(fn () => [
+            'transaction_id' => $transaction->id,
+            'account_id' => $transaction->credit_account_id,
+            'amount' => $transaction->amount,
+            'direction' => PostingDirection::Credit->value,
+        ]);
+    }
+
+    /**
+     * Create a debit posting for the transaction's debit account.
+     */
+    public function forDebitAccount(Transaction $transaction): static
+    {
+        return $this->state(fn () => [
+            'transaction_id' => $transaction->id,
+            'account_id' => $transaction->debit_account_id,
+            'amount' => $transaction->amount,
+            'direction' => PostingDirection::Debit->value,
+        ]);
     }
 }

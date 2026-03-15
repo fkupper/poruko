@@ -9,7 +9,7 @@ const sampleSpaces: LedgerOption[] = [
 ];
 
 const meta = {
-  title: 'Poruko/Space Sidebar',
+  title: 'Poruko/Navigation/Space Sidebar',
   component: LedgerSidebar,
   parameters: {
     layout: 'fullscreen',
@@ -41,10 +41,12 @@ export const DesktopDefault: Story = {
       <LedgerSidebar {...args} />
       <main className="p-6">
         <div className="panel">
-          <h2 className="text-lg font-semibold">Page content</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sidebar is fixed to the left, with route-aware navigation and space selection.
-          </p>
+          <div className="section-header">
+            <h2 className="section-title">Page content</h2>
+            <p className="section-subtitle">
+              Sidebar is fixed to the left, with route-aware navigation and space selection.
+            </p>
+          </div>
         </div>
       </main>
     </div>
@@ -86,10 +88,12 @@ export const MobilePicker: Story = {
       <MobileLedgerBar {...args} />
       <main className="p-4">
         <div className="panel">
-          <h2 className="text-base font-semibold">Mobile content area</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The space picker remains available at small breakpoints.
-          </p>
+          <div className="section-header">
+            <h2 className="section-title">Mobile content area</h2>
+            <p className="section-subtitle">
+              The space picker remains available at small breakpoints.
+            </p>
+          </div>
         </div>
       </main>
     </div>

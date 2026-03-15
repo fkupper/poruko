@@ -12,9 +12,7 @@ class FinancialProfile extends Model
     /** @use HasFactory<\Database\Factories\FinancialProfileFactory> */
     use HasFactory;
 
-    /**
-     * @var list<string>
-     */
+    /** @var list<string> */
     protected $fillable = [
         'ledger_id',
         'user_id',
@@ -37,25 +35,35 @@ class FinancialProfile extends Model
         ];
     }
 
+    /** @return BelongsTo<Ledger, $this> */
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @param Builder<FinancialProfile> $query
+     * @return Builder<FinancialProfile>
+     */
     public function scopeActiveOn(Builder $query, string $date): Builder
     {
         return $query->where('valid_from', '<=', $date)
-            ->where(function (Builder $q) use ($date) {
+            ->where(function (Builder $q) use ($date): void {
                 $q->whereNull('valid_to')
                     ->orWhere('valid_to', '>=', $date);
             });
     }
 
+    /**
+     * @param Builder<FinancialProfile> $query
+     * @return Builder<FinancialProfile>
+     */
     public function scopeForLedgerUser(Builder $query, int $ledgerId, int $userId): Builder
     {
         return $query->where('ledger_id', $ledgerId)
@@ -64,16 +72,31 @@ class FinancialProfile extends Model
 
     public function totalIncome(): int
     {
-        return (int) collect($this->incomes)->sum('amount');
+        return (int) collect((array) $this->incomes)->sum('amount');
     }
 
     public function totalDeductions(): int
     {
-        return (int) collect($this->deductions)->sum('amount');
+        return (int) collect((array) $this->deductions)->sum('amount');
     }
 
     public function shareableIncome(): int
     {
         return max($this->totalIncome() - $this->totalDeductions(), 0);
+    }
+
+    public function getTotalIncomeAttribute(): int
+    {
+        return $this->totalIncome();
+    }
+
+    public function getTotalDeductionsAttribute(): int
+    {
+        return $this->totalDeductions();
+    }
+
+    public function getShareableIncomeAttribute(): int
+    {
+        return $this->shareableIncome();
     }
 }

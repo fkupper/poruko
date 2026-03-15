@@ -4,8 +4,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App.tsx';
+import { registerOnUnauthorized } from './api/client.ts';
 import { queryClient } from './lib/queryClient.ts';
+import { useAuthStore } from './stores/authStore.ts';
 import { applyPorukoThemeVariables } from './theme/designSystem.ts';
+
+registerOnUnauthorized(() => useAuthStore.getState().setUnauthenticated?.());
 
 const Devtools = import.meta.env.DEV
   ? lazy(async () => {

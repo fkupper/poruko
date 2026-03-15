@@ -115,6 +115,24 @@
           "lineHeight": "{primitives.lineHeight.32}"
         }
       },
+      "sectionTitle": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{primitives.fontFamily.sans}",
+          "fontWeight": "{primitives.fontWeight.semibold}",
+          "fontSize": "{primitives.fontSize.20}",
+          "lineHeight": "{primitives.lineHeight.28}"
+        }
+      },
+      "sectionSubtitle": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{primitives.fontFamily.sans}",
+          "fontWeight": "{primitives.fontWeight.regular}",
+          "fontSize": "{primitives.fontSize.14}",
+          "lineHeight": "{primitives.lineHeight.20}"
+        }
+      },
       "body": {
         "$type": "typography",
         "$value": {
@@ -208,6 +226,20 @@
         }
       }
     },
+    "sectionBlock": {
+      "shared": {
+        "radius": { "$type": "dimension", "$value": "{semantic.shape.card}" },
+        "padding": { "$type": "dimension", "$value": "{semantic.spacing.lg}" },
+        "bg": { "$type": "color", "$value": "{semantic.color.surface}" },
+        "border": { "$type": "color", "$value": "{semantic.color.border}" }
+      },
+      "variants": {
+        "default": {
+          "titleTypography": { "$type": "typography", "$value": "{semantic.typography.sectionTitle}" },
+          "subtitleTypography": { "$type": "typography", "$value": "{semantic.typography.sectionSubtitle}" }
+        }
+      }
+    },
     "card": {
       "shared": {
         "radius": { "$type": "dimension", "$value": "{semantic.shape.card}" },
@@ -276,6 +308,11 @@
     "minimumContrastRatio": 4.5,
     "colorIsNotSoleIndicator": true,
     "supportsReducedMotion": true,
-    "numericValuesMustBeRightAligned": true
+    "numericValuesMustBeRightAligned": true,
+    "temporaryContrastPolicy": {
+      "enforced": false,
+      "note": "Temporarily allowing lower-contrast visual exploration during initial product build. High-contrast accessible themes must be implemented before project completion.",
+      "trackingCommentTag": "there:fix-hjgh-contrast"
+    }
   }
 }
