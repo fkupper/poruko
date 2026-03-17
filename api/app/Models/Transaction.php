@@ -18,6 +18,7 @@ class Transaction extends Model
     /** @var list<string> */
     protected $fillable = [
         'ledger_id',
+        'source_recurring_transaction_id',
         'settlement_id',
         'credit_account_id',
         'debit_account_id',
@@ -47,6 +48,12 @@ class Transaction extends Model
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
+    }
+
+    /** @return BelongsTo<RecurringTransaction, $this> */
+    public function sourceRecurringTransaction(): BelongsTo
+    {
+        return $this->belongsTo(RecurringTransaction::class, 'source_recurring_transaction_id');
     }
 
     /** @return BelongsTo<Settlement, $this> */

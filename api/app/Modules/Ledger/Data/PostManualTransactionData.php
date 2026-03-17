@@ -20,27 +20,20 @@ final readonly class PostManualTransactionData
     ) {}
 
     /**
-     * @param  array{
-     *   ledger_id:int,
-     *   credit_account_id:int,
-     *   debit_account_id:int,
-     *   amount:int,
-     *   split_rule:string,
-     *   participants:list<array{user_id:int, share?:int}>,
-     *   description:string|null,
-     *   date:string,
-     *   type:string
-     * } $payload
+     * @param  array<string, mixed>  $payload  Must contain ledger_id, credit_account_id, debit_account_id, amount, split_rule, participants, date
      */
     public static function fromArray(array $payload): self
     {
+        /** @var list<array{user_id: int, share?: int}> $participants */
+        $participants = is_array($payload['participants'] ?? null) ? $payload['participants'] : [];
+
         return new self(
             ledgerId: (int) $payload['ledger_id'],
             creditAccountId: (int) $payload['credit_account_id'],
             debitAccountId: (int) $payload['debit_account_id'],
             amount: (int) $payload['amount'],
             splitRule: (string) $payload['split_rule'],
-            participants: $payload['participants'],
+            participants: $participants,
             date: (string) $payload['date'],
             description: $payload['description'] !== null ? (string) $payload['description'] : null,
             type: (string) ($payload['type'] ?? 'manual'),
