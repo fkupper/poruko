@@ -1,8 +1,17 @@
 # Dev override:
 #   - Adds Postgres init script so poruko_test is created for automated tests.
 #   - Replaces the nginx web container with the Vite dev server (hot reload, API proxy).
+#   - api and queue append ./api/.dev.env (merged after ./api/.env from the base compose file).
 # Use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 services:
+  api:
+    env_file:
+      - ./api/.dev.env
+
+  queue:
+    env_file:
+      - ./api/.dev.env
+
   db:
     volumes:
       - poruko-db-data:/var/lib/postgresql/data
