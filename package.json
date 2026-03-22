@@ -2,15 +2,26 @@
   "name": "poruko-root",
   "private": true,
   "scripts": {
-    "up": "just up",
-    "down": "just down",
-    "logs": "just logs",
-    "test": "just test-all",
-    "test:web": "just test-web",
-    "test:api": "just test-api",
-    "artisan": "just artisan",
-    "tinker": "just tinker",
-    "design:check": "npm --prefix web run design:check"
+    "up": "bash scripts/dev.sh up",
+    "down": "bash scripts/dev.sh down",
+    "logs": "bash scripts/dev.sh logs",
+    "restart": "bash scripts/dev.sh restart",
+    "api-sh": "bash scripts/dev.sh api-sh",
+    "artisan": "bash scripts/dev.sh artisan",
+    "tinker": "bash scripts/dev.sh tinker",
+    "seed:dev": "bash scripts/dev.sh seed-dev",
+    "seed:dev:reset": "bash scripts/dev.sh seed-dev reset",
+    "seed:dev:pending": "bash scripts/dev.sh seed-dev-pending",
+    "seed:dev:pending:reset": "bash scripts/dev.sh seed-dev-pending reset",
+    "test-db-setup": "bash scripts/dev.sh test-db-setup",
+    "test": "npm run test:api && npm run test:web",
+    "test:all": "npm run test:api && npm run test:web",
+    "test:web": "npm --prefix web test",
+    "test:api": "bash scripts/dev.sh test-api",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "phpstan": "bash scripts/dev.sh phpstan",
+    "php-cs-fixer:fix": "bash scripts/dev.sh php-cs-fixer-fix",
+    "php-cs-fixer:dry": "bash scripts/dev.sh php-cs-fixer-dry"
   }
 }
-

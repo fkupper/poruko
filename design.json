@@ -84,6 +84,18 @@
       "hover": { "$type": "number", "$value": 0.08 },
       "focus": { "$type": "number", "$value": 0.12 },
       "pressed": { "$type": "number", "$value": 0.14 }
+    },
+    "motion": {
+      "duration": {
+        "fast": { "$type": "duration", "$value": "150ms" },
+        "base": { "$type": "duration", "$value": "300ms" },
+        "slow": { "$type": "duration", "$value": "500ms" }
+      },
+      "easing": {
+        "standard": { "$type": "cubicBezier", "$value": "cubic-bezier(0.4, 0, 0.2, 1)" },
+        "emphasized": { "$type": "cubicBezier", "$value": "cubic-bezier(0.2, 0, 0, 1)" },
+        "decelerate": { "$type": "cubicBezier", "$value": "cubic-bezier(0, 0, 0.2, 1)" }
+      }
     }
   },
   "semantic": {
@@ -201,6 +213,20 @@
       "hover": { "$type": "number", "$value": "{primitives.opacity.hover}" },
       "focus": { "$type": "number", "$value": "{primitives.opacity.focus}" },
       "pressed": { "$type": "number", "$value": "{primitives.opacity.pressed}" }
+    },
+    "transition": {
+      "interactive": {
+        "duration": { "$type": "duration", "$value": "{primitives.motion.duration.fast}" },
+        "easing": { "$type": "cubicBezier", "$value": "{primitives.motion.easing.standard}" }
+      },
+      "hover": {
+        "duration": { "$type": "duration", "$value": "{primitives.motion.duration.fast}" },
+        "easing": { "$type": "cubicBezier", "$value": "{primitives.motion.easing.standard}" }
+      },
+      "focus": {
+        "duration": { "$type": "duration", "$value": "{primitives.motion.duration.fast}" },
+        "easing": { "$type": "cubicBezier", "$value": "{primitives.motion.easing.standard}" }
+      }
     }
   },
   "components": {
@@ -223,8 +249,26 @@
         "ghost": {
           "bg": { "$type": "color", "$value": "{semantic.color.surface}" },
           "text": { "$type": "color", "$value": "{semantic.color.textPrimary}" }
+        },
+        "secondary": {
+          "bg": { "$type": "color", "$value": "{semantic.color.infoSubtle}" },
+          "text": { "$type": "color", "$value": "{semantic.color.info}" }
+        },
+        "outlined": {
+          "border": { "$type": "color", "$value": "{semantic.color.border}" },
+          "text": { "$type": "color", "$value": "{semantic.color.textMuted}" }
+        },
+        "destructiveOutlined": {
+          "border": { "$type": "color", "$value": "{semantic.color.destructive}" },
+          "text": { "$type": "color", "$value": "{semantic.color.destructive}" }
         }
       }
+    },
+    "iconButton": {
+      "minWidth": { "$type": "dimension", "$value": "{layout.touchTargetMin}" },
+      "minHeight": { "$type": "dimension", "$value": "{layout.touchTargetMin}" },
+      "radius": { "$type": "dimension", "$value": "{semantic.shape.control}" },
+      "paddingX": { "$type": "dimension", "$value": "{semantic.spacing.sm}" }
     },
     "sectionBlock": {
       "shared": {

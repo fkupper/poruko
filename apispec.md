@@ -134,9 +134,33 @@ Logs a new expense and triggers the backend to generate immutable double-entry p
 
 ---
 
-### 2. Financial Profiles (Dynamic Income/Deductions)
+### 2. Ledger Members
 
-#### 2A. Update Active Financial Profile
+#### 2A. List Ledger Members
+Returns all users attached to the ledger, each with their `shareable_income` from their active financial profile on the given date. Used by the Add Expense modal for proportional split calculations.
+
+**GET** `/api/ledgers/{ledger_id}/users?date=2026-03-17`
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| date | string (Y-m-d) | No | Date for shareable_income resolution. Defaults to today. |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    { "id": 1, "name": "Alice", "shareable_income": 60000 },
+    { "id": 2, "name": "Bob", "shareable_income": 40000 }
+  ]
+}
+```
+
+---
+
+### 3. Financial Profiles (Dynamic Income/Deductions)
+
+#### 3A. Update Active Financial Profile
 This is an idempotent endpoint to update a user's current financial capacity. The backend handles the bi-temporal logic (branching versus in-place editing) based on settlement locks.
 
 **PUT** `/api/ledgers/{ledger_id}/users/{user_id}/financial-profile/active`
@@ -183,9 +207,9 @@ This is an idempotent endpoint to update a user's current financial capacity. Th
 
 ---
 
-### 3. Recurring Expenses (Blueprints)
+### 4. Recurring Expenses (Blueprints)
 
-#### 3A. Create Recurring Blueprint
+#### 4A. Create Recurring Blueprint
 Creates a rule for the 1st-of-the-month backend cron job to materialize into the ledger.
 
 **POST** `/api/ledgers/{ledger_id}/recurring-transactions`
@@ -223,9 +247,9 @@ Creates a rule for the 1st-of-the-month backend cron job to materialize into the
 
 ---
 
-### 4. End-of-Month Settlements
+### 5. End-of-Month Settlements
 
-#### 4A. Preview Settlement
+#### 5A. Preview Settlement
 Calculates the expected versus actual contributions without locking the database, which is used to populate the "Settle Up" dashboard.
 
 **GET** `/api/ledgers/{ledger_id}/settlements/preview?date=2026-03-31`

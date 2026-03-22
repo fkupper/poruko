@@ -16,16 +16,23 @@ return new class() extends Migration {
                 ->constrained('ledgers')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            $table->foreignId('payer_account_id')
+            $table->foreignId('credit_account_id')
+                ->constrained('accounts')
+                ->cascadeOnUpdate()
+                ->nullOnDelete();
+            $table->foreignId('debit_account_id')
                 ->constrained('accounts')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
             $table->bigInteger('amount');
+            $table->string('description', 255)->nullable();
             $table->string('split_rule', 50);
             $table->jsonb('participants');
+            $table->string('frequency', 20)->default('monthly');
             $table->date('valid_from');
             $table->date('valid_to')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['ledger_id', 'valid_to']);
         });

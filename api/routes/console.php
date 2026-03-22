@@ -62,3 +62,4 @@ Artisan::command('settlements:run-due', function (): void {
 })->purpose('Dispatch settlement jobs for due ledgers');
 
 Schedule::command('settlements:run-due')->everyMinute();
+Schedule::command('ledger:materialize')->hourly();

@@ -68,4 +68,10 @@ class Ledger extends Model
     {
         return $this->hasMany(Settlement::class);
     }
+
+    /** @return HasMany<RecurringTransaction, $this> */
+    public function recurringTransactions(): HasMany
+    {
+        return $this->hasMany(RecurringTransaction::class);
+    }
 }

@@ -1,64 +1,39 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
-export const ACCESS_TOKEN_STORAGE_KEY = 'poruko_access_token';
+import axios from 'axios';
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+import { useAuthStore } from '@/stores/authStore';
 
-interface RequestOptions {
-  method?: HttpMethod;
-  body?: unknown;
-  token?: string | null;
-}
-
-let onUnauthorized: (() => void) | null = null;
-
-export function registerOnUnauthorized(cb: () => void): void {
-  onUnauthorized = cb;
-}
-
-function resolveToken(explicitToken?: string | null): string | null {
-  if (explicitToken !== undefined) {
-    return explicitToken;
-  }
-
-  return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-}
-
-export function buildApiUrl(path: string): string {
-  return `${API_BASE_URL}${path}`;
-}
-
-export async function request<T>(path: string, options?: RequestOptions): Promise<T> {
-  const token = resolveToken(options?.token);
-  const response = await fetch(buildApiUrl(path), {
-    method: options?.method ?? 'GET',
+const client = axios.create({
+    baseURL: '/api',
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(token !== null ? { Authorization: `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
     },
-    ...(options?.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
-  });
+});
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      onUnauthorized?.();
+client.interceptors.request.use((config) => {
+    const token = useAuthStore.getState().token;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
-    const message = await response.text();
-    throw new Error(message || `API request failed with status ${response.status}`);
-  }
+    return config;
+});
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+client.interceptors.response.use(
+    (response) => response,
+    (error: unknown) => {
+        const axiosError = error as { response?: { status?: number }; config?: { url?: string } };
+        const status = axiosError.response?.status;
+        const url = axiosError.config?.url ?? '';
 
-  return (await response.json()) as T;
-}
+        // Only redirect on 401 for authenticated requests, not for login/register attempts.
+        const isAuthEndpoint = url.startsWith('/auth/');
+        if (status === 401 && !isAuthEndpoint) {
+            useAuthStore.getState().logout();
+            window.location.href = '/login';
+        }
 
-export interface HealthResponse {
-  status: 'ok';
-}
+        return Promise.reject(error);
+    },
+);
 
-export function fetchHealth(): Promise<HealthResponse> {
-  return request<HealthResponse>('/api/health');
-}
-
+export default client;

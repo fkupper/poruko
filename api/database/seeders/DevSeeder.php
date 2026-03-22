@@ -3,10 +3,12 @@
 namespace Database\Seeders;
 
 use App\Enums\AccountType;
+use App\Enums\RecurringFrequency;
 use App\Enums\SettlementMode;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\RecurringTransaction;
 use App\Models\FinancialProfile;
 use App\Models\Ledger;
 use App\Models\Settlement;
@@ -129,6 +131,51 @@ class DevSeeder extends Seeder
                 'name' => 'Holiday Expenses Account',
             ],
         );
+
+        $internetProvider = Account::query()->firstOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'code' => 'DEV-INTERNET',
+            ],
+            [
+                'owner_id' => null,
+                'type' => AccountType::External,
+                'name' => 'Internet Provider',
+            ],
+        );
+
+        $recurringStart = Carbon::now()->startOfMonth()->format('Y-m-d');
+        $participantsForRecurring = [['user_id' => $bob->id], ['user_id' => $clara->id]];
+
+        if (!RecurringTransaction::query()->where('ledger_id', $ledger->id)->where('description', 'Monthly Rent')->exists()) {
+            RecurringTransaction::query()->create([
+                'ledger_id' => $ledger->id,
+                'credit_account_id' => $housePool->id,
+                'debit_account_id' => $generalExpenses->id,
+                'amount' => 100000,
+                'description' => 'Monthly Rent',
+                'split_rule' => TransactionSplitRule::Proportional->value,
+                'participants' => $participantsForRecurring,
+                'frequency' => RecurringFrequency::Monthly->value,
+                'valid_from' => $recurringStart,
+                'valid_to' => null,
+            ]);
+        }
+
+        if (!RecurringTransaction::query()->where('ledger_id', $ledger->id)->where('description', 'Internet')->exists()) {
+            RecurringTransaction::query()->create([
+                'ledger_id' => $ledger->id,
+                'credit_account_id' => $bobWallet->id,
+                'debit_account_id' => $internetProvider->id,
+                'amount' => 5000,
+                'description' => 'Internet',
+                'split_rule' => TransactionSplitRule::Equal->value,
+                'participants' => $participantsForRecurring,
+                'frequency' => RecurringFrequency::Monthly->value,
+                'valid_from' => $recurringStart,
+                'valid_to' => null,
+            ]);
+        }
 
         $profileStart = Carbon::now()->subMonthsNoOverflow(3)->startOfMonth()->format('Y-m-d');
 
