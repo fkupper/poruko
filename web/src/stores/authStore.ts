@@ -1,108 +1,29 @@
 import { create } from 'zustand';
-import type { LoginInput, RegisterInput } from '../api/auth';
-import { fetchMe, login, logout, register, type AuthUser } from '../api/auth';
-import { ACCESS_TOKEN_STORAGE_KEY } from '../api/client';
+import { persist } from 'zustand/middleware';
+
+import type { User } from '@/api/types';
 
 interface AuthState {
-  user: AuthUser | null;
-  token: string | null;
-  isBootstrapping: boolean;
-  hydrateToken: () => void;
-  register: (payload: RegisterInput) => Promise<void>;
-  login: (payload: LoginInput) => Promise<void>;
-  fetchMe: () => Promise<void>;
-  logout: () => Promise<void>;
-  setUnauthenticated: () => void;
+    user: User | null;
+    token: string | null;
+    setAuth: (user: User, token: string) => void;
+    setUser: (user: User) => void;
+    logout: () => void;
 }
 
-function persistToken(token: string | null): void {
-  if (token === null) {
-    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-    return;
-  }
-
-  localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
-}
-
-export const useAuthStore = create<AuthState>()((set, get) => ({
-  user: null,
-  token: null,
-  isBootstrapping: true,
-  hydrateToken: () => {
-    set({
-      token: localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY),
-    });
-  },
-  register: async (payload) => {
-    const response = await register(payload);
-    persistToken(response.token);
-
-    set({
-      user: response.user,
-      token: response.token,
-      isBootstrapping: false,
-    });
-  },
-  login: async (payload) => {
-    const response = await login(payload);
-    persistToken(response.token);
-
-    set({
-      user: response.user,
-      token: response.token,
-      isBootstrapping: false,
-    });
-  },
-  fetchMe: async () => {
-    const token = get().token;
-
-    if (token === null) {
-      set({
-        user: null,
-        isBootstrapping: false,
-      });
-      return;
-    }
-
-    try {
-      const response = await fetchMe(token);
-      set({
-        user: response.user,
-        isBootstrapping: false,
-      });
-    } catch {
-      persistToken(null);
-      set({
-        user: null,
-        token: null,
-        isBootstrapping: false,
-      });
-    }
-  },
-  logout: async () => {
-    const token = get().token;
-
-    if (token !== null) {
-      try {
-        await logout(token);
-      } catch (error) {
-        void error;
-      }
-    }
-
-    persistToken(null);
-    set({
-      user: null,
-      token: null,
-      isBootstrapping: false,
-    });
-  },
-  setUnauthenticated: () => {
-    persistToken(null);
-    set({
-      user: null,
-      token: null,
-      isBootstrapping: false,
-    });
-  },
-}));
+export const useAuthStore = create<AuthState>()(
+    persist(
+        (set) => ({
+            user: null,
+            token: null,
+            setAuth: (user, token) => set({ user, token }),
+            setUser: (user) => set({ user }),
+            logout: () => set({ user: null, token: null }),
+        }),
+        {
+            name: 'poruko-auth',
+            // Only persist the token; user is re-fetched on boot via /auth/me
+            partialize: (state) => ({ token: state.token }),
+        },
+    ),
+);

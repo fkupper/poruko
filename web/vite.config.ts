@@ -1,23 +1,28 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import { resolve } from 'node:path';
+import path from "path";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
 
-// https://vite.dev/config/
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
-
-// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    fs: {
-      allow: [resolve(dirname, '..')],
+    plugins: [react(), tailwindcss()],
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './src'),
+        },
     },
-  },
-  test: {
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    globals: true,
-  },
+    server: {
+        host: true, // needed for Docker to expose the port
+        proxy: {
+            '/api': {
+                // In Docker: traffic goes to the `api` service on the internal network.
+                // On host (npm run web:dev): falls back to localhost:8000.
+                target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8000',
+                changeOrigin: true,
+            },
+        },
+    },
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['./src/test/setup.ts'],
+    },
 });

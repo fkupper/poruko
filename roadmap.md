@@ -52,11 +52,11 @@ poruko/
 
 ---
 
-### Phase 5: Automation (The Helpers)
+### Phase 5: Automation (The Helpers) ✅
 **Goal:** Let the system handle rent and fixed bills automatically.
 
-*   **Backend:** Create migrations for `recurring_transactions`. Write an Artisan Console Command (`php artisan ledger:materialize`) that reads active blueprints and passes them to the `LedgerPostingService`. Register this in Laravel's Scheduler to run on the 1st of the month.
-*   **Frontend:** Build a "Recurring Bills" tab with a form to add or edit fixed monthly bills.
+*   **Backend:** `recurring_transactions` table with bi-temporal modeling (`valid_from`/`valid_to`), soft deletes, and `credit_account_id`/`debit_account_id`. Artisan command `ledger:materialize` reads active blueprints and materializes them via `PostRecurringTransactionAction` (reuses `PostManualTransactionAction`). Supports weekly, monthly, and annual frequency. Scheduler runs hourly for correct timezone handling. CRUD API with bi-temporal edits (PATCH closes current row, creates new).
+*   **Frontend:** "Recurring Bills" tab with list, add form, edit form, and delete. CalendarClock icon in nav.
 
 ---
 

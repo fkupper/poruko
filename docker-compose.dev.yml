@@ -1,7 +1,23 @@
-# Dev override: adds Postgres init script so poruko_test is created for automated tests.
+# Dev override:
+#   - Adds Postgres init script so poruko_test is created for automated tests.
+#   - Replaces the nginx web container with the Vite dev server (hot reload, API proxy).
 # Use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 services:
   db:
     volumes:
       - poruko-db-data:/var/lib/postgresql/data
       - ./docker/postgres-init:/docker-entrypoint-initdb.d
+
+  web:
+    image: node:22-alpine
+    container_name: poruko-web-dev
+    working_dir: /app
+    command: sh -c "npm install --legacy-peer-deps && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_PROXY_TARGET=http://api:8000

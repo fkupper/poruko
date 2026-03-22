@@ -21,5 +21,5 @@ if [[ "$has_api_php" != true ]]; then
 fi
 
 echo "pre-commit: staged API PHP files detected, running phpstan and php-cs-fixer..."
-just phpstan
-just php-cs-fixer-dry
+npm run phpstan
+npm run php-cs-fixer:dry
