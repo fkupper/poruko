@@ -672,6 +672,7 @@ function SidebarMenuSubButton({
   )
 }
 
+/* eslint-disable react-refresh/only-export-components -- compound API: useSidebar is exported with sidebar components (shadcn) */
 export {
   Sidebar,
   SidebarContent,

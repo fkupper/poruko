@@ -66,9 +66,10 @@ export default function RegisterPage() {
                     <CardDescription>Join Poruko to manage your shared finances</CardDescription>
                 </CardHeader>
                 <form
-                    onSubmit={handleSubmit(({ passwordConfirmation: _pc, ...values }) =>
-                        mutation.mutate(values),
-                    )}
+                    onSubmit={handleSubmit(({ passwordConfirmation, ...values }) => {
+                        void passwordConfirmation;
+                        mutation.mutate(values);
+                    })}
                 >
                     <CardContent>
                         <FieldGroup>
