@@ -64,6 +64,12 @@ export default function App() {
                     <Route element={<ProtectedRoute />}>
                         <Route element={<DashboardLayout />}>
                             <Route path="/" element={<DashboardPage />} />
+                            <Route path="/transactions" element={<DashboardPage />} />
+                            <Route path="/settlement" element={<DashboardPage />} />
+                            <Route path="/accounts" element={<DashboardPage />} />
+                            <Route path="/recurring" element={<DashboardPage />} />
+                            <Route path="/my-finance" element={<DashboardPage />} />
+                            <Route path="/settings" element={<DashboardPage />} />
                         </Route>
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />

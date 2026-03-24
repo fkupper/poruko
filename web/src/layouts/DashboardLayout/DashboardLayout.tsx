@@ -1,115 +1,39 @@
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react';
+import { Outlet } from 'react-router-dom';
 
-import { logout as logoutApi } from '@/api/auth';
-import { useAuthStore } from '@/stores/authStore';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { AppSidebar } from '@/components/app-sidebar';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarInset,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarProvider,
-    SidebarRail,
-    SidebarSeparator,
-    SidebarTrigger,
-    useSidebar,
-} from '@/components/ui/sidebar';
-import { Spinner } from '@/components/ui/spinner';
-
-function NavUser() {
-    const { user, logout } = useAuthStore();
-    const navigate = useNavigate();
-    const { isMobile } = useSidebar();
-
-    const mutation = useMutation({
-        mutationFn: logoutApi,
-        onSettled: () => {
-            logout();
-            navigate('/login');
-        },
-    });
-
-    return (
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton size="lg">
-                            <Avatar className="size-8 rounded-lg">
-                                <AvatarFallback className="rounded-lg">
-                                    {user?.name?.charAt(0) ?? '?'}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-medium">{user?.name}</span>
-                            </div>
-                            <ChevronsUpDownIcon />
-                        </SidebarMenuButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        side={isMobile ? 'bottom' : 'right'}
-                        align="end"
-                        sideOffset={4}
-                    >
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                onClick={() => mutation.mutate()}
-                                disabled={mutation.isPending}
-                            >
-                                {mutation.isPending ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <LogOutIcon />
-                                )}
-                                {mutation.isPending ? 'Signing out…' : 'Sign out'}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </SidebarMenuItem>
-        </SidebarMenu>
-    );
-}
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function DashboardLayout() {
     return (
         <SidebarProvider>
-            <Sidebar>
-                <SidebarHeader>
-                    <div className="flex items-center gap-2 px-2 py-2">
-                        <span className="text-base font-semibold">Poruko</span>
-                    </div>
-                </SidebarHeader>
-                <SidebarSeparator />
-                <SidebarContent>
-                    <nav className="flex-1 p-2">
-                        {/* Navigation links added here as features are built */}
-                    </nav>
-                </SidebarContent>
-                <SidebarSeparator />
-                <SidebarFooter>
-                    <NavUser />
-                </SidebarFooter>
-                <SidebarRail />
-            </Sidebar>
+            <AppSidebar />
             <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1" />
+                <header className="flex h-16 shrink-0 items-center gap-2">
+                    <div className="flex items-center gap-2 px-4">
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator
+                            orientation="vertical"
+                            className="mr-2 mt-1.5 data-[orientation=vertical]:h-4"
+                        />
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>Overview</BreadcrumbPage>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator className="hidden md:block" />
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
                 </header>
-                <div className="flex-1 overflow-auto">
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                     <Outlet />
                 </div>
             </SidebarInset>
