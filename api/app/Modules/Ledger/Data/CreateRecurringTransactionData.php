@@ -19,7 +19,7 @@ final readonly class CreateRecurringTransactionData
     ) {}
 
     /**
-     * @param  array<string, mixed>  $validated  Validated request (credit_account_id, debit_account_id, amount, start_date, split_rule, etc.)
+     * @param array<string, mixed> $validated Validated request (credit_account_id, debit_account_id, amount, start_date, split_rule, etc.)
      */
     public static function fromArray(array $validated): self
     {

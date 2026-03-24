@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\LedgerUser;
+use App\Observers\LedgerUserObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +16,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-
     }
 
     /**
@@ -22,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        LedgerUser::observe(LedgerUserObserver::class);
+
         RateLimiter::for('api', function (Request $request): Limit {
             return $this->app->environment('testing')
                 ? Limit::none()

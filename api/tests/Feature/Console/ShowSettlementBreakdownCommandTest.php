@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -34,12 +35,9 @@ class ShowSettlementBreakdownCommandTest extends TestCase
         $user = User::factory()->create(['name' => 'Alice']);
         $ledger->users()->attach($user->id, ['role' => 'admin']);
 
-        $personalAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $user->id,
-            'type' => 'personal',
-            'name' => "Alice's Account",
-        ]);
+        $personalAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $user->id)->value('main_personal_account_id'),
+        );
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'type' => 'external',
@@ -85,7 +83,7 @@ class ShowSettlementBreakdownCommandTest extends TestCase
         $this->assertStringContainsString('100.00 €', $output);
         $this->assertStringContainsString('2026-02', $output);
         $this->assertStringContainsString('Groceries', $output);
-        $this->assertStringContainsString("Alice's Account", $output);
+        $this->assertStringContainsString("Alice's Personal Account", $output);
         $this->assertStringContainsString('External', $output);
     }
 }

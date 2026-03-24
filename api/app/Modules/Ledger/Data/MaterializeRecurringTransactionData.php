@@ -11,7 +11,7 @@ final readonly class MaterializeRecurringTransactionData
     ) {}
 
     /**
-     * @param  array{period_start:string, period_end:string}  $period
+     * @param array{period_start:string, period_end:string} $period
      */
     public static function fromBlueprintAndPeriod(int $blueprintId, array $period): self
     {

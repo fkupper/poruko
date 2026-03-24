@@ -13,6 +13,7 @@ use App\Models\Settlement;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
@@ -83,11 +84,9 @@ class SettlementApiTest extends TestCase
             'period_start' => '2026-02-01',
             'period_end' => '2026-02-28',
         ]);
-        $creditAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $user->id,
-            'type' => AccountType::Personal->value,
-        ]);
+        $creditAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $user->id)->value('main_personal_account_id'),
+        );
         $debitAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'type' => AccountType::Pool->value,
@@ -128,16 +127,9 @@ class SettlementApiTest extends TestCase
         $member = User::factory()->create(['name' => 'Member B']);
         $ledger->users()->attach($member->id, ['role' => 'member']);
 
-        $adminAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $admin->id,
-            'type' => AccountType::Personal->value,
-        ]);
-        $memberAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $member->id,
-            'type' => AccountType::Personal->value,
-        ]);
+        $adminAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $admin->id)->value('main_personal_account_id'),
+        );
         Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,

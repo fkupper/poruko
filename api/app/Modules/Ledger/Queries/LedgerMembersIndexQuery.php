@@ -3,6 +3,8 @@
 namespace App\Modules\Ledger\Queries;
 
 use App\Models\Ledger;
+use App\Models\User;
+use App\Modules\Ledger\Data\LedgerMemberListItem;
 use App\Modules\Ledger\Services\FinancialProfileService;
 use Illuminate\Support\Collection;
 
@@ -13,12 +15,14 @@ class LedgerMembersIndexQuery
     ) {}
 
     /**
-     * @return Collection<int, object{id: int, name: string, shareable_income: int}>
+     * @return Collection<int, LedgerMemberListItem>
      */
     public function execute(Ledger $ledger, string $date): Collection
     {
         $users = $ledger->users()->get();
-        $userIds = $users->pluck('id')->all();
+
+        /** @var list<int> $userIds */
+        $userIds = array_values($users->modelKeys());
 
         $shareableByUser = $this->financialProfileService->shareableIncomeForUsers(
             $ledger,
@@ -26,12 +30,12 @@ class LedgerMembersIndexQuery
             $date,
         );
 
-        return $users->map(function ($user) use ($shareableByUser) {
-            return (object) [
-                'id' => $user->id,
-                'name' => $user->name,
-                'shareable_income' => $shareableByUser[$user->id] ?? 0,
-            ];
+        return $users->map(function (User $user) use ($shareableByUser): LedgerMemberListItem {
+            return new LedgerMemberListItem(
+                id: $user->id,
+                name: $user->name,
+                shareable_income: $shareableByUser[$user->id] ?? 0,
+            );
         });
     }
 }

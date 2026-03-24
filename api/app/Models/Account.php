@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property AccountType $type
+ * @property int $base_budget
+ */
 class Account extends Model
 {
     /** @use HasFactory<\Database\Factories\AccountFactory> */

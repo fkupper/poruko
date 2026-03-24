@@ -3,9 +3,14 @@
 namespace Tests\Unit\Jobs;
 
 use App\Jobs\ExecuteSettlementJob;
+use App\Models\Account;
+use App\Models\FinancialProfile;
 use App\Models\Ledger;
+use App\Models\Transaction;
+use App\Models\User;
 use App\Modules\Ledger\Actions\ExecuteSettlementAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
@@ -47,26 +52,27 @@ class ExecuteSettlementJobTest extends TestCase
             'settlement_cutoff_day' => 31,
             'settlement_cutoff_time' => '23:59:00',
         ]);
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
-        $credit = \App\Models\Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $user->id,
-            'type' => 'personal',
-        ]);
-        $debit = \App\Models\Account::factory()->create([
+        $credit = Account::query()->findOrFail(
+            DB::table('ledger_user')
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $user->id)
+                ->value('main_personal_account_id'),
+        );
+        $debit = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'type' => 'external',
             'owner_id' => null,
         ]);
-        \App\Models\FinancialProfile::factory()->create([
+        FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
             'user_id' => $user->id,
             'valid_from' => '2026-01-01',
             'incomes' => [['description' => 'Income', 'amount' => 100000]],
             'deductions' => [],
         ]);
-        \App\Models\Transaction::factory()->create([
+        Transaction::factory()->create([
             'ledger_id' => $ledger->id,
             'credit_account_id' => $credit->id,
             'debit_account_id' => $debit->id,

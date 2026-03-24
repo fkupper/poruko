@@ -173,7 +173,7 @@ Simple readiness endpoint.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: March 17, 2026</li>
+        <li>Last updated: March 24, 2026</li>
     </ul>
 </div>
 
@@ -1027,7 +1027,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"type\": \"personal\",
+    \"type\": \"pool\",
     \"owner_id\": 16,
     \"code\": \"n\"
 }"
@@ -1046,7 +1046,7 @@ const headers = {
 
 let body = {
     "name": "b",
-    "type": "personal",
+    "type": "pool",
     "owner_id": 16,
     "code": "n"
 };
@@ -1165,10 +1165,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="POSTapi-ledgers--ledger_id--accounts"
-               value="personal"
+               value="pool"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>pool</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>pool</code></li> <li><code>external</code></li></ul>
         </div>
@@ -1704,8 +1704,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"from_date\": \"2026-03-17T13:28:24\",
-    \"to_date\": \"2052-04-09\",
+    \"from_date\": \"2026-03-24T10:24:07\",
+    \"to_date\": \"2052-04-16\",
     \"account_id\": 16,
     \"per_page\": 22,
     \"page\": 67
@@ -1724,8 +1724,8 @@ const headers = {
 };
 
 let body = {
-    "from_date": "2026-03-17T13:28:24",
-    "to_date": "2052-04-09",
+    "from_date": "2026-03-24T10:24:07",
+    "to_date": "2052-04-16",
     "account_id": 16,
     "per_page": 22,
     "page": 67
@@ -1849,10 +1849,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="from_date"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="2026-03-17T13:28:24"
+               value="2026-03-24T10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-17T13:28:24</code></p>
+<p>Must be a valid date. Example: <code>2026-03-24T10:24:07</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>to_date</code></b>&nbsp;&nbsp;
@@ -1861,10 +1861,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="to_date"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="2052-04-09"
+               value="2052-04-16"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>from_date</code>. Example: <code>2052-04-09</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>from_date</code>. Example: <code>2052-04-16</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>account_id</code></b>&nbsp;&nbsp;
@@ -1925,9 +1925,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"debit_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"date\": \"2026-03-17T13:28:24\",
+    \"date\": \"2026-03-24T10:24:07\",
     \"type\": \"manual\",
-    \"split_rule\": \"individual\",
+    \"split_rule\": \"manual\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -1953,9 +1953,9 @@ let body = {
     "debit_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "date": "2026-03-17T13:28:24",
+    "date": "2026-03-24T10:24:07",
     "type": "manual",
-    "split_rule": "individual",
+    "split_rule": "manual",
     "participants": [
         {
             "user_id": 16,
@@ -2114,10 +2114,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="2026-03-17T13:28:24"
+               value="2026-03-24T10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-17T13:28:24</code></p>
+<p>Must be a valid date. Example: <code>2026-03-24T10:24:07</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>type</code></b>&nbsp;&nbsp;
@@ -2140,10 +2140,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="individual"
+               value="manual"
                data-component="body">
     <br>
-<p>Example: <code>individual</code></p>
+<p>Example: <code>manual</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
         </div>
@@ -2499,8 +2499,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
     \"split_rule\": \"equal\",
-    \"start_date\": \"2026-03-17T13:28:24\",
-    \"frequency\": \"annually\",
+    \"start_date\": \"2026-03-24T10:24:07\",
+    \"frequency\": \"monthly\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -2527,8 +2527,8 @@ let body = {
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
     "split_rule": "equal",
-    "start_date": "2026-03-17T13:28:24",
-    "frequency": "annually",
+    "start_date": "2026-03-24T10:24:07",
+    "frequency": "monthly",
     "participants": [
         {
             "user_id": 16,
@@ -2737,10 +2737,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="2026-03-17T13:28:24"
+               value="2026-03-24T10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-17T13:28:24</code></p>
+<p>Must be a valid date. Example: <code>2026-03-24T10:24:07</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>frequency</code></b>&nbsp;&nbsp;
@@ -2749,10 +2749,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="frequency"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="annually"
+               value="monthly"
                data-component="body">
     <br>
-<p>Example: <code>annually</code></p>
+<p>Example: <code>monthly</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>weekly</code></li> <li><code>monthly</code></li> <li><code>annually</code></li></ul>
         </div>
@@ -2780,8 +2780,8 @@ Must be one of:
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
     \"split_rule\": \"equal\",
-    \"start_date\": \"2026-03-17T13:28:24\",
-    \"frequency\": \"weekly\",
+    \"start_date\": \"2026-03-24T10:24:07\",
+    \"frequency\": \"monthly\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -2808,8 +2808,8 @@ let body = {
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
     "split_rule": "equal",
-    "start_date": "2026-03-17T13:28:24",
-    "frequency": "weekly",
+    "start_date": "2026-03-24T10:24:07",
+    "frequency": "monthly",
     "participants": [
         {
             "user_id": 16,
@@ -3030,10 +3030,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="2026-03-17T13:28:24"
+               value="2026-03-24T10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-17T13:28:24</code></p>
+<p>Must be a valid date. Example: <code>2026-03-24T10:24:07</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>frequency</code></b>&nbsp;&nbsp;
@@ -3042,10 +3042,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="frequency"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="weekly"
+               value="monthly"
                data-component="body">
     <br>
-<p>Example: <code>weekly</code></p>
+<p>Example: <code>monthly</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>weekly</code></li> <li><code>monthly</code></li> <li><code>annually</code></li></ul>
         </div>
@@ -3595,7 +3595,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"date\": \"2026-03-17T13:28:24\"
+    \"date\": \"2026-03-24T10:24:07\"
 }"
 </code></pre></div>
 
@@ -3611,7 +3611,7 @@ const headers = {
 };
 
 let body = {
-    "date": "2026-03-17T13:28:24"
+    "date": "2026-03-24T10:24:07"
 };
 
 fetch(url, {
@@ -3732,10 +3732,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="GETapi-ledgers--ledger_id--settlements-preview"
-               value="2026-03-17T13:28:24"
+               value="2026-03-24T10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-17T13:28:24</code></p>
+<p>Must be a valid date. Example: <code>2026-03-24T10:24:07</code></p>
         </div>
         </form>
 
@@ -3896,7 +3896,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"period_end\": \"2026-03-17T13:28:24\"
+    \"period_end\": \"2026-03-24T10:24:07\"
 }"
 </code></pre></div>
 
@@ -3912,7 +3912,7 @@ const headers = {
 };
 
 let body = {
-    "period_end": "2026-03-17T13:28:24"
+    "period_end": "2026-03-24T10:24:07"
 };
 
 fetch(url, {
@@ -4029,10 +4029,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="period_end"                data-endpoint="POSTapi-ledgers--ledger_id--settlements--cycle--confirm"
-               value="2026-03-17T13:28:24"
+               value="2026-03-24T10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-17T13:28:24</code></p>
+<p>Must be a valid date. Example: <code>2026-03-24T10:24:07</code></p>
         </div>
         </form>
 
@@ -4055,7 +4055,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"settlement_timezone\": \"Asia\\/Yekaterinburg\",
     \"settlement_cutoff_day\": 2,
-    \"settlement_cutoff_time\": \"13:28:24\",
+    \"settlement_cutoff_time\": \"10:24:07\",
     \"settlement_auto_execute_enabled\": false
 }"
 </code></pre></div>
@@ -4074,7 +4074,7 @@ const headers = {
 let body = {
     "settlement_timezone": "Asia\/Yekaterinburg",
     "settlement_cutoff_day": 2,
-    "settlement_cutoff_time": "13:28:24",
+    "settlement_cutoff_time": "10:24:07",
     "settlement_auto_execute_enabled": false
 };
 
@@ -4204,10 +4204,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="settlement_cutoff_time"                data-endpoint="PATCHapi-ledgers--ledger_id--cycle-config"
-               value="13:28:24"
+               value="10:24:07"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>13:28:24</code></p>
+<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>10:24:07</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>settlement_auto_execute_enabled</code></b>&nbsp;&nbsp;

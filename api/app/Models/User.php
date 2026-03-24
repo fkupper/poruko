@@ -51,11 +51,12 @@ class User extends Authenticatable
         ];
     }
 
-    /** @return BelongsToMany<Ledger, $this> */
+    /** @return BelongsToMany<Ledger, $this, LedgerUser> */
     public function ledgers(): BelongsToMany
     {
         return $this->belongsToMany(Ledger::class)
-            ->withPivot('role')
+            ->using(LedgerUser::class)
+            ->withPivot('role', 'main_personal_account_id')
             ->withTimestamps();
     }
 

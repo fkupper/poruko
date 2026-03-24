@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Modules\Ledger\Data\LedgerMemberListItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,10 +15,13 @@ class LedgerMemberResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /** @var LedgerMemberListItem $member */
+        $member = $this->resource;
+
         return [
-            'id' => $this->resource->id,
-            'name' => $this->resource->name,
-            'shareable_income' => $this->resource->shareable_income,
+            'id' => $member->id,
+            'name' => $member->name,
+            'shareable_income' => $member->shareable_income,
         ];
     }
 }

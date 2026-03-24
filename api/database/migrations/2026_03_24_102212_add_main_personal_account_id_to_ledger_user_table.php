@@ -10,12 +10,11 @@ return new class() extends Migration {
      */
     public function up(): void
     {
-        Schema::table('transactions', function (Blueprint $table): void {
-            $table->foreignId('source_recurring_transaction_id')
+        Schema::table('ledger_user', function (Blueprint $table) {
+            $table->foreignId('main_personal_account_id')
                 ->nullable()
-                ->after('ledger_id')
-                ->constrained('recurring_transactions')
-                ->cascadeOnUpdate()
+                ->after('role')
+                ->constrained('accounts')
                 ->nullOnDelete();
         });
     }
@@ -25,8 +24,8 @@ return new class() extends Migration {
      */
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('source_recurring_transaction_id');
+        Schema::table('ledger_user', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('main_personal_account_id');
         });
     }
 };

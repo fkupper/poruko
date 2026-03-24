@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Console;
 
+use App\Enums\SettlementMode;
 use App\Jobs\ExecuteSettlementJob;
 use App\Models\Account;
 use App\Models\FinancialProfile;
@@ -11,7 +12,8 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -20,13 +22,21 @@ class SettlementSchedulerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
     public function testDispatchesJobsForLedgersWithAutoExecuteEnabled(): void
     {
-        Bus::fake();
+        Queue::fake();
 
         Carbon::setTestNow('2026-03-31 23:59:10');
 
         $enabled = Ledger::factory()->create([
+            'settlement_mode' => SettlementMode::DirectP2p,
             'settlement_auto_execute_enabled' => true,
             'settlement_timezone' => 'UTC',
             'settlement_cutoff_day' => 31,
@@ -35,6 +45,7 @@ class SettlementSchedulerTest extends TestCase
         $this->seedMinimalSettlementContext($enabled);
 
         $disabled = Ledger::factory()->create([
+            'settlement_mode' => SettlementMode::DirectP2p,
             'settlement_auto_execute_enabled' => false,
             'settlement_timezone' => 'UTC',
             'settlement_cutoff_day' => 31,
@@ -45,7 +56,7 @@ class SettlementSchedulerTest extends TestCase
         $this->artisan('settlements:run-due')
             ->assertExitCode(0);
 
-        Bus::assertDispatched(ExecuteSettlementJob::class, function (ExecuteSettlementJob $job) use ($enabled): bool {
+        Queue::assertPushed(ExecuteSettlementJob::class, function (ExecuteSettlementJob $job) use ($enabled): bool {
             return $job->ledgerId === $enabled->id;
         });
 
@@ -58,10 +69,11 @@ class SettlementSchedulerTest extends TestCase
 
     public function testSchedulerSkipsWhenPeriodAlreadyTracked(): void
     {
-        Bus::fake();
+        Queue::fake();
         Carbon::setTestNow('2026-03-31 23:59:10');
 
         $ledger = Ledger::factory()->create([
+            'settlement_mode' => SettlementMode::DirectP2p,
             'settlement_auto_execute_enabled' => true,
             'settlement_timezone' => 'UTC',
             'settlement_cutoff_day' => 31,
@@ -78,15 +90,16 @@ class SettlementSchedulerTest extends TestCase
 
         $this->artisan('settlements:run-due')->assertExitCode(0);
 
-        Bus::assertNotDispatched(ExecuteSettlementJob::class);
+        Queue::assertNotPushed(ExecuteSettlementJob::class);
     }
 
     public function testSchedulerCreatesPreviousMonthPeriodForDayOneCutoff(): void
     {
-        Bus::fake();
+        Queue::fake();
         Carbon::setTestNow('2026-04-01 00:00:01');
 
         $ledger = Ledger::factory()->create([
+            'settlement_mode' => SettlementMode::DirectP2p,
             'settlement_auto_execute_enabled' => false,
             'settlement_timezone' => 'UTC',
             'settlement_cutoff_day' => 1,
@@ -102,7 +115,7 @@ class SettlementSchedulerTest extends TestCase
             'period_end' => '2026-03-31',
             'executed_at' => null,
         ]);
-        Bus::assertNotDispatched(ExecuteSettlementJob::class);
+        Queue::assertNotPushed(ExecuteSettlementJob::class);
     }
 
     /*
@@ -113,11 +126,12 @@ class SettlementSchedulerTest extends TestCase
     {
         $user = User::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
-        $credit = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $user->id,
-            'type' => 'personal',
-        ]);
+        $credit = Account::query()->findOrFail(
+            DB::table('ledger_user')
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $user->id)
+                ->value('main_personal_account_id'),
+        );
         $debit = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'type' => 'external',

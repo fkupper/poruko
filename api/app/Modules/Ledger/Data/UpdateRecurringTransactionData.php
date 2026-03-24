@@ -19,7 +19,7 @@ final readonly class UpdateRecurringTransactionData
     ) {}
 
     /**
-     * @param  array<string, mixed>  $validated  Validated request data (only non-null values are applied)
+     * @param array<string, mixed> $validated Validated request data (only non-null values are applied)
      */
     public static function fromArray(array $validated): self
     {

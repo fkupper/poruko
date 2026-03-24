@@ -29,9 +29,13 @@ class ExecuteSettlementJob implements ShouldBeUnique, ShouldQueue
 
     public function uniqueId(): string
     {
-        return app()->environment('testing')
-            ? "settlement:{$this->ledgerId}:{$this->periodEnd}:" . uniqid('', true)
-            : "settlement:{$this->ledgerId}:{$this->periodEnd}";
+        $base = "settlement:{$this->ledgerId}:{$this->periodEnd}";
+
+        if (!app()->isProduction()) {
+            return $base . ':' . uniqid('', true);
+        }
+
+        return $base;
     }
 
     public function handle(ExecuteSettlementAction $action): void

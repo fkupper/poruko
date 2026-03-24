@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Ledger\Actions\ExecuteSettlementAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
@@ -35,16 +36,12 @@ class ExecuteSettlementActionTest extends TestCase
         $ledger->users()->attach($a->id, ['role' => 'admin']);
         $ledger->users()->attach($b->id, ['role' => 'member']);
 
-        $aAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $a->id,
-            'type' => AccountType::Personal->value,
-        ]);
-        $bAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $b->id,
-            'type' => AccountType::Personal->value,
-        ]);
+        $aAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $a->id)->value('main_personal_account_id'),
+        );
+        $bAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $b->id)->value('main_personal_account_id'),
+        );
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
@@ -111,11 +108,6 @@ class ExecuteSettlementActionTest extends TestCase
         ]);
         $user = User::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
-        Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $user->id,
-            'type' => AccountType::Personal->value,
-        ]);
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
             'user_id' => $user->id,

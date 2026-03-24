@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Ledger\Actions\ConfirmSettlementAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
@@ -87,16 +88,12 @@ class ConfirmSettlementActionTest extends TestCase
         $ledger->users()->attach($admin->id, ['role' => 'admin']);
         $ledger->users()->attach($member->id, ['role' => 'member']);
 
-        $adminAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $admin->id,
-            'type' => AccountType::Personal->value,
-        ]);
-        $memberAccount = Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $member->id,
-            'type' => AccountType::Personal->value,
-        ]);
+        $adminAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $admin->id)->value('main_personal_account_id'),
+        );
+        $memberAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $member->id)->value('main_personal_account_id'),
+        );
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,

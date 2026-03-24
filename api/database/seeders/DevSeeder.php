@@ -8,9 +8,9 @@ use App\Enums\SettlementMode;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
-use App\Models\RecurringTransaction;
 use App\Models\FinancialProfile;
 use App\Models\Ledger;
+use App\Models\RecurringTransaction;
 use App\Models\Settlement;
 use App\Models\User;
 use App\Modules\Ledger\Actions\ExecuteSettlementAction;
@@ -18,6 +18,7 @@ use App\Modules\Ledger\Actions\PostManualTransactionAction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Joint Clearinghouse scenario: Bob and Clara share expenses. The settlement
@@ -84,29 +85,11 @@ class DevSeeder extends Seeder
             ],
         );
 
-        $bobWallet = Account::query()->firstOrCreate(
-            [
-                'ledger_id' => $ledger->id,
-                'code' => 'DEV-BOB-WALLET',
-            ],
-            [
-                'owner_id' => $bob->id,
-                'type' => AccountType::Personal,
-                'name' => "Bob's Personal Account",
-            ],
-        );
-
-        $claraWallet = Account::query()->firstOrCreate(
-            [
-                'ledger_id' => $ledger->id,
-                'code' => 'DEV-CLARA-WALLET',
-            ],
-            [
-                'owner_id' => $clara->id,
-                'type' => AccountType::Personal,
-                'name' => "Clara's Personal Account",
-            ],
-        );
+        $bobMainId = DB::table('ledger_user')
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $bob->id)
+            ->value('main_personal_account_id');
+        $bobWallet = Account::query()->findOrFail($bobMainId);
 
         $generalExpenses = Account::query()->firstOrCreate(
             [

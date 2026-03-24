@@ -16,7 +16,7 @@ final readonly class UpdateRecurringTransactionAction
     public function execute(RecurringTransaction $blueprint, UpdateRecurringTransactionData $data): RecurringTransaction
     {
         if ($blueprint->valid_to !== null) {
-            throw new CannotUpdateClosedRecurringTransactionException;
+            throw new CannotUpdateClosedRecurringTransactionException();
         }
 
         $today = CarbonImmutable::now()->toDateString();

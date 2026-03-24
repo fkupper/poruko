@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
@@ -477,11 +478,12 @@ class PreviewSettlementActionTest extends TestCase
 
     private function seedPersonalAccount(Ledger $ledger, User $user): Account
     {
-        return Account::factory()->create([
-            'ledger_id' => $ledger->id,
-            'owner_id' => $user->id,
-            'type' => AccountType::Personal->value,
-        ]);
+        $mainId = DB::table('ledger_user')
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $user->id)
+            ->value('main_personal_account_id');
+
+        return Account::query()->findOrFail($mainId);
     }
 
     private function seedFinancialProfile(Ledger $ledger, User $user, int $income): FinancialProfile

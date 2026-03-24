@@ -2,9 +2,9 @@
 
 namespace App\Modules\Ledger\Actions;
 
-use App\Modules\Ledger\Data\CreateRecurringTransactionData;
 use App\Models\Ledger;
 use App\Models\RecurringTransaction;
+use App\Modules\Ledger\Data\CreateRecurringTransactionData;
 
 final readonly class CreateRecurringTransactionAction
 {

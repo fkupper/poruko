@@ -15,7 +15,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class LedgerUserController extends Controller
 {
     /**
-     * List ledger members with shareable income
+     * List ledger members with shareable income.
      *
      * Returns all users attached to the ledger, each with their shareable_income
      * from their active financial profile on the given date.

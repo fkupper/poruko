@@ -49,11 +49,12 @@ class Ledger extends Model
         return $this->hasMany(Transaction::class);
     }
 
-    /** @return BelongsToMany<User, $this> */
+    /** @return BelongsToMany<User, $this, LedgerUser> */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
-            ->withPivot('role')
+            ->using(LedgerUser::class)
+            ->withPivot('role', 'main_personal_account_id')
             ->withTimestamps();
     }
 

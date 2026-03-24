@@ -62,7 +62,7 @@ class RecurringTransactionController extends Controller
         $updated = $action->execute($recurringTransaction, $data);
 
         return RecurringTransactionResource::make(
-            $updated->load(['creditAccount', 'debitAccount'])
+            $updated->load(['creditAccount', 'debitAccount']),
         );
     }
 

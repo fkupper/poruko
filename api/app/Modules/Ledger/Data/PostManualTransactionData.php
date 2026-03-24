@@ -20,7 +20,7 @@ final readonly class PostManualTransactionData
     ) {}
 
     /**
-     * @param  array<string, mixed>  $payload  Must contain ledger_id, credit_account_id, debit_account_id, amount, split_rule, participants, date
+     * @param array<string, mixed> $payload Must contain ledger_id, credit_account_id, debit_account_id, amount, split_rule, participants, date
      */
     public static function fromArray(array $payload): self
     {

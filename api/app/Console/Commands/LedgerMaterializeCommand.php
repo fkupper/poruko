@@ -10,6 +10,7 @@ use App\Modules\Ledger\Data\MaterializeRecurringTransactionData;
 use App\Modules\Ledger\Services\RecurringPeriodService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Throwable;
 
 class LedgerMaterializeCommand extends Command
 {
@@ -48,7 +49,7 @@ class LedgerMaterializeCommand extends Command
                     $data = MaterializeRecurringTransactionData::fromBlueprintAndPeriod($blueprint->id, $period);
                     $postRecurringAction->execute($data);
                     $materialized++;
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     $this->error("Failed to materialize blueprint {$blueprint->id}: {$e->getMessage()}");
                 }
             }
@@ -60,7 +61,7 @@ class LedgerMaterializeCommand extends Command
     }
 
     /**
-     * @param  array{period_start:string, period_end:string}  $period
+     * @param array{period_start:string, period_end:string} $period
      */
     private function blueprintAppliesToPeriod(RecurringTransaction $blueprint, array $period): bool
     {
@@ -79,7 +80,7 @@ class LedgerMaterializeCommand extends Command
     }
 
     /**
-     * @param  array{period_start:string, period_end:string}  $period
+     * @param array{period_start:string, period_end:string} $period
      */
     private function alreadyMaterialized(RecurringTransaction $blueprint, array $period): bool
     {

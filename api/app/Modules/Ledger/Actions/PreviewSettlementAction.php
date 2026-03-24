@@ -7,6 +7,7 @@ use App\Enums\SettlementMode;
 use App\Models\Account;
 use App\Models\Ledger;
 use App\Models\Transaction;
+use App\Modules\Ledger\Queries\LedgerMemberMainAccountsQuery;
 use App\Modules\Ledger\Services\FinancialProfileService;
 use App\Modules\Ledger\Services\SettlementCycleService;
 use BackedEnum;
@@ -17,6 +18,7 @@ readonly class PreviewSettlementAction
     public function __construct(
         private readonly FinancialProfileService $financialProfileService,
         private readonly SettlementCycleService $settlementCycleService,
+        private readonly LedgerMemberMainAccountsQuery $ledgerMemberMainAccountsQuery,
     ) {}
 
     /**
@@ -112,18 +114,12 @@ readonly class PreviewSettlementAction
         /** @var list<int> $userIds */
         $userIds = array_values(array_map('intval', $users->pluck('id')->all()));
 
-        $personalAccountsByUser = Account::query()
-            ->where('ledger_id', $ledger->id)
-            ->where('type', AccountType::Personal->value)
-            ->whereNotNull('owner_id')
-            ->orderBy('id')
-            ->get()
-            ->groupBy('owner_id');
-
         $allAccounts = Account::query()
             ->where('ledger_id', $ledger->id)
             ->get()
             ->keyBy('id');
+
+        $mainAccountByUser = $this->ledgerMemberMainAccountsQuery->get($ledger, $allAccounts);
 
         /** @var array<int, int> $shareableByUser */
         $shareableByUser = $this->financialProfileService->shareableIncomeForUsers(
@@ -203,12 +199,10 @@ readonly class PreviewSettlementAction
 
         /** @var Collection<int, array{user_id:int, name:string, net_balance:int}> $userBreakdownsCollection */
         $userBreakdownsCollection = collect($userBreakdowns);
-        /** @var Collection<int, Collection<int, Account>> $personalAccountsByUserCollection */
-        $personalAccountsByUserCollection = $personalAccountsByUser;
         $requiredTransfers = $this->buildTransfers(
             $ledger,
             $userBreakdownsCollection,
-            $personalAccountsByUserCollection,
+            $mainAccountByUser,
             $allAccounts,
         );
 
@@ -346,7 +340,7 @@ readonly class PreviewSettlementAction
      *   name:string,
      *   net_balance:int
      * }>  $userBreakdowns
-     * @param Collection<int, Collection<int, Account>> $personalAccountsByUser
+     * @param array<int, Account> $mainAccountByUser
      * @param Collection<int, Account> $allAccounts
      * @return array<int, array{
      *   from_account_id:int,
@@ -358,7 +352,7 @@ readonly class PreviewSettlementAction
     private function buildTransfers(
         Ledger $ledger,
         Collection $userBreakdowns,
-        Collection $personalAccountsByUser,
+        array $mainAccountByUser,
         Collection $allAccounts,
     ): array {
         $debtors = $userBreakdowns
@@ -394,11 +388,8 @@ readonly class PreviewSettlementAction
             }
 
             $transfers = $debtors
-                ->map(function (array $debtor) use ($personalAccountsByUser, $poolAccount): ?array {
-                    /** @var Account|null $fromAccount */
-                    $fromAccount = $personalAccountsByUser
-                        ->get($debtor['user_id'])
-                        ?->first();
+                ->map(function (array $debtor) use ($mainAccountByUser, $poolAccount): ?array {
+                    $fromAccount = $mainAccountByUser[$debtor['user_id']] ?? null;
 
                     if (!$fromAccount instanceof Account || $debtor['amount'] === 0) {
                         return null;
@@ -416,10 +407,7 @@ readonly class PreviewSettlementAction
                 ->all();
 
             foreach ($creditors as $creditor) {
-                /** @var Account|null $toAccount */
-                $toAccount = $personalAccountsByUser
-                    ->get($creditor['user_id'])
-                    ?->first();
+                $toAccount = $mainAccountByUser[$creditor['user_id']] ?? null;
 
                 if ($toAccount instanceof Account && $creditor['amount'] > 0) {
                     $transfers[] = [
@@ -440,10 +428,7 @@ readonly class PreviewSettlementAction
 
         foreach ($debtors as $debtor) {
             $remainingDebt = (int) $debtor['amount'];
-            /** @var Account|null $fromAccount */
-            $fromAccount = $personalAccountsByUser
-                ->get($debtor['user_id'])
-                ?->first();
+            $fromAccount = $mainAccountByUser[$debtor['user_id']] ?? null;
 
             if (!$fromAccount instanceof Account) {
                 continue;
@@ -467,10 +452,7 @@ readonly class PreviewSettlementAction
                     continue;
                 }
 
-                /** @var Account|null $toAccount */
-                $toAccount = $personalAccountsByUser
-                    ->get($creditorUserId)
-                    ?->first();
+                $toAccount = $mainAccountByUser[$creditorUserId] ?? null;
 
                 if (!$toAccount instanceof Account) {
                     $creditorIndex++;
