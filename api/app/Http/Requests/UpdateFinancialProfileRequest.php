@@ -30,7 +30,7 @@ class UpdateFinancialProfileRequest extends FormRequest
             'incomes' => ['required', 'array', 'min:1'],
             'incomes.*.description' => ['required', 'string', 'max:255'],
             'incomes.*.amount' => ['required', 'integer', 'min:0'],
-            'deductions' => ['required', 'array'],
+            'deductions' => ['present', 'array'],
             'deductions.*.description' => ['required', 'string', 'max:255'],
             'deductions.*.amount' => ['required', 'integer', 'min:0'],
         ];

@@ -16,6 +16,8 @@ import AccountsPage from '@/pages/AccountsPage/AccountsPage';
 import RecurringPage from '@/pages/RecurringPage/RecurringPage';
 import MyFinancePage from '@/pages/MyFinancePage/MyFinancePage';
 import SettingsPage from '@/pages/SettingsPage/SettingsPage';
+import SetupPage from '@/pages/SetupPage/SetupPage';
+import { SpaceGuard } from '@/routes/SpaceGuard';
 
 /**
  * Redirects to /login when the user is not authenticated.
@@ -68,14 +70,17 @@ export default function App() {
                         <Route path="/register" element={<RegisterPage />} />
                     </Route>
                     <Route element={<ProtectedRoute />}>
-                        <Route element={<DashboardLayout />}>
-                            <Route path="/" element={<DashboardPage />} />
-                            <Route path="/transactions" element={<TransactionsPage />} />
-                            <Route path="/settlement" element={<SettlementPage />} />
-                            <Route path="/accounts" element={<AccountsPage />} />
-                            <Route path="/recurring" element={<RecurringPage />} />
-                            <Route path="/my-finance" element={<MyFinancePage />} />
-                            <Route path="/settings" element={<SettingsPage />} />
+                        <Route element={<SpaceGuard />}>
+                            <Route path="/setup" element={<SetupPage />} />
+                            <Route element={<DashboardLayout />}>
+                                <Route path="/" element={<DashboardPage />} />
+                                <Route path="/transactions" element={<TransactionsPage />} />
+                                <Route path="/settlement" element={<SettlementPage />} />
+                                <Route path="/accounts" element={<AccountsPage />} />
+                                <Route path="/recurring" element={<RecurringPage />} />
+                                <Route path="/my-finance" element={<MyFinancePage />} />
+                                <Route path="/settings" element={<SettingsPage />} />
+                            </Route>
                         </Route>
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />

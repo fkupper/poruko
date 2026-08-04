@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\SettlementMode;
 use App\Http\Controllers\Api\LedgerController;
 use App\Models\Ledger;
 use App\Models\User;
@@ -60,5 +61,54 @@ class LedgerApiTest extends TestCase
     {
         $this->getJson('/api/ledgers')
             ->assertUnauthorized();
+    }
+
+    public function testAuthenticatedUserCanCreateLedger(): void
+    {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/ledgers', [
+            'name' => 'New Household',
+            'currency' => 'USD',
+            'settlement_mode' => SettlementMode::JointClearinghouse->value,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'New Household')
+            ->assertJsonPath('data.currency', 'USD')
+            ->assertJsonPath('data.currency_symbol', '$')
+            ->assertJsonPath('data.settlement_mode', SettlementMode::JointClearinghouse->value);
+
+        $this->assertDatabaseHas('ledgers', [
+            'name' => 'New Household',
+            'currency' => 'USD',
+            'settlement_mode' => SettlementMode::JointClearinghouse->value,
+        ]);
+    }
+
+    public function testCreateLedgerValidationFailsWithoutName(): void
+    {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/ledgers', [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    public function testCreateLedgerValidationFailsWithInvalidCurrency(): void
+    {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/ledgers', [
+            'name' => 'Invalid Space',
+            'currency' => 'INVALID_CODE',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['currency']);
     }
 }

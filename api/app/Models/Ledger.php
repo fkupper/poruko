@@ -19,6 +19,7 @@ class Ledger extends Model
     /** @var list<string> */
     protected $fillable = [
         'name',
+        'currency',
         'settlement_mode',
         'settlement_timezone',
         'settlement_cutoff_day',

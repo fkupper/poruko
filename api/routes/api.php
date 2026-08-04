@@ -21,7 +21,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
+    Route::get('/currencies', [\App\Http\Controllers\Api\CurrenciesController::class, 'index'])->name('currencies.index');
+
     Route::get('/ledgers', [LedgerController::class, 'index'])->name('ledgers.index');
+    Route::post('/ledgers', [LedgerController::class, 'store'])->name('ledgers.store');
 
     Route::prefix('/ledgers/{ledger}')
         ->scopeBindings()

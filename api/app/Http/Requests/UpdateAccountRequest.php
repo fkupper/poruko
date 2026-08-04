@@ -35,6 +35,8 @@ class UpdateAccountRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'base_budget' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'balance' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'type' => ['sometimes', 'required', new Enum(AccountType::class)],
             'owner_id' => [
                 'sometimes',

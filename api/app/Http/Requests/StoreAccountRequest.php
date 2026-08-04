@@ -38,6 +38,8 @@ class StoreAccountRequest extends FormRequest
                 'exists:users,id',
                 Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId),
             ],
+            'base_budget' => ['nullable', 'integer', 'min:0'],
+            'balance' => ['nullable', 'integer', 'min:0'],
             'code' => ['nullable', 'string', 'max:255', 'unique:accounts,code'],
         ];
     }

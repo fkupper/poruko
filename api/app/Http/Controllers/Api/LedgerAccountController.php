@@ -12,6 +12,8 @@ use App\Models\Ledger;
 use App\Modules\Ledger\Actions\CreateAccountAction;
 use App\Modules\Ledger\Actions\DeleteAccountAction;
 use App\Modules\Ledger\Actions\UpdateAccountAction;
+use App\Modules\Ledger\Data\CreateAccountData;
+use App\Modules\Ledger\Data\UpdateAccountData;
 use App\Modules\Ledger\Queries\LedgerAccountIndexQuery;
 use App\Modules\Ledger\Queries\PersonalAccountQuery;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +36,8 @@ class LedgerAccountController extends Controller
 
     public function store(StoreAccountRequest $request, Ledger $ledger, CreateAccountAction $action): JsonResponse
     {
-        $account = $action->execute($ledger, $request->validated());
+        $data = CreateAccountData::fromArray($request->validated());
+        $account = $action->execute($ledger, $data);
 
         return AccountResource::make($this->withAccountIsMainMeta($account))
             ->response()
@@ -50,8 +53,10 @@ class LedgerAccountController extends Controller
 
     public function update(UpdateAccountRequest $request, Ledger $ledger, Account $account, UpdateAccountAction $action): AccountResource
     {
+        $data = UpdateAccountData::fromArray($request->validated());
+
         return AccountResource::make(
-            $this->withAccountIsMainMeta($action->execute($account, $request->validated())),
+            $this->withAccountIsMainMeta($action->execute($account, $data)),
         );
     }
 

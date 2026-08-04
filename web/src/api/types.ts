@@ -17,6 +17,8 @@ export interface ApiError {
 export interface Ledger {
     id: number;
     name: string;
+    currency?: string;
+    currency_symbol?: string;
     settlement_mode: 'direct_p2p' | 'joint_clearinghouse';
     settlement_timezone: string;
     settlement_cutoff_day: number;
@@ -163,7 +165,9 @@ export interface ApprovePendingItem {
 export interface Account {
     id: number;
     ledger_id: number;
+    owner_id?: number | null;
     name: string;
-    type: 'joint_pool' | 'personal' | 'cash' | 'credit';
+    type: 'joint_pool' | 'personal' | 'cash' | 'credit' | 'pool';
+    base_budget?: number;
     balance: number;
 }

@@ -3,15 +3,13 @@
 namespace App\Modules\Ledger\Actions;
 
 use App\Models\Account;
+use App\Modules\Ledger\Data\UpdateAccountData;
 
 final readonly class UpdateAccountAction
 {
-    /**
-     * @param array<string, mixed> $data
-     */
-    public function execute(Account $account, array $data): Account
+    public function execute(Account $account, UpdateAccountData $data): Account
     {
-        $account->update($data);
+        $account->update($data->toArray());
 
         return $account->refresh();
     }

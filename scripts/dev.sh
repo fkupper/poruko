@@ -6,8 +6,17 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose)
+else
+  echo "Error: Neither 'docker compose' nor 'docker-compose' was found." >&2
+  exit 1
+fi
+
 compose() {
-  docker compose -f docker-compose.yml -f docker-compose.dev.yml "$@"
+  "${COMPOSE_CMD[@]}" -f docker-compose.yml -f docker-compose.dev.yml "$@"
 }
 
 test_db_setup() {

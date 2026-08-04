@@ -21,6 +21,8 @@ class LedgerResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'currency' => $this->currency ?? config('currencies.default', 'EUR'),
+            'currency_symbol' => config("currencies.available.{$this->currency}.symbol", '€'),
             'settlement_mode' => $this->settlement_mode,
             'settlement_timezone' => $this->settlement_timezone,
             'settlement_cutoff_day' => $this->settlement_cutoff_day,

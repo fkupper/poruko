@@ -13,6 +13,7 @@ import type { Account } from '@/api/types';
 
 const ACCOUNT_TYPE_ICONS: Record<Account['type'], React.ReactNode> = {
     joint_pool: <LandmarkIcon className="size-5 text-emerald-500" />,
+    pool: <LandmarkIcon className="size-5 text-emerald-500" />,
     personal: <WalletIcon className="size-5 text-blue-500" />,
     cash: <BanknoteIcon className="size-5 text-amber-500" />,
     credit: <CreditCardIcon className="size-5 text-purple-500" />,
