@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateFinancialProfile } from '@/api/finances';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchFinancialProfile, updateFinancialProfile } from '@/api/finances';
 import type { IncomeOrDeductionItem } from '@/api/types';
 import { centsToCurrency } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
@@ -15,13 +15,28 @@ export default function MyFinancePage() {
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
     const currentUser = useAuthStore((s) => s.user);
 
-    const [incomes, setIncomes] = React.useState<IncomeOrDeductionItem[]>([
-        { description: 'Base Salary', amount: 400000 },
-    ]);
-    const [deductions, setDeductions] = React.useState<IncomeOrDeductionItem[]>([
-        { description: 'Health Insurance', amount: 15000 },
-    ]);
+    const [incomes, setIncomes] = React.useState<IncomeOrDeductionItem[]>([]);
+    const [deductions, setDeductions] = React.useState<IncomeOrDeductionItem[]>([]);
     const [saveSuccess, setSaveSuccess] = React.useState(false);
+
+    // Fetch user active financial profile dynamically
+    const { data: profile, isPending } = useQuery({
+        queryKey: ['financial-profile', activeLedgerId, currentUser?.id],
+        queryFn: () => fetchFinancialProfile(activeLedgerId!, currentUser!.id),
+        enabled: !!activeLedgerId && !!currentUser?.id,
+        retry: false,
+    });
+
+    // Populate local form state when fetched profile changes
+    React.useEffect(() => {
+        if (profile) {
+            setIncomes(profile.incomes && profile.incomes.length > 0 ? profile.incomes : [{ description: '', amount: 0 }]);
+            setDeductions(profile.deductions && profile.deductions.length > 0 ? profile.deductions : []);
+        } else {
+            setIncomes([{ description: '', amount: 0 }]);
+            setDeductions([]);
+        }
+    }, [profile]);
 
     // Compute totals in real-time
     const totalIncome = React.useMemo(
@@ -48,6 +63,7 @@ export default function MyFinancePage() {
             });
         },
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['financial-profile', activeLedgerId, currentUser?.id] });
             queryClient.invalidateQueries({ queryKey: ['members', activeLedgerId] });
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
@@ -83,13 +99,21 @@ export default function MyFinancePage() {
         mutation.mutate();
     };
 
+    if (isPending) {
+        return (
+            <div className="h-64 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
+                Loading financial profile...
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 max-w-4xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
                         <UserIcon className="size-6 text-primary" />
-                        My Financial Profile
+                        My Financial Profile {currentUser?.name ? `(${currentUser.name})` : ''}
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Manage your income streams and deductions to calculate your dynamic proportional split ratio.
