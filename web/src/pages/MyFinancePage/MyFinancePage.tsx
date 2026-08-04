@@ -1,0 +1,247 @@
+import * as React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { updateFinancialProfile } from '@/api/finances';
+import type { IncomeOrDeductionItem } from '@/api/types';
+import { centsToCurrency } from '@/lib/currency';
+import { useLedgerStore } from '@/stores/ledgerStore';
+import { useAuthStore } from '@/stores/authStore';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlusIcon, Trash2Icon, UserIcon, SaveIcon, Loader2Icon, CheckCircle2Icon } from 'lucide-react';
+
+export default function MyFinancePage() {
+    const queryClient = useQueryClient();
+    const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currentUser = useAuthStore((s) => s.user);
+
+    const [incomes, setIncomes] = React.useState<IncomeOrDeductionItem[]>([
+        { description: 'Base Salary', amount: 400000 },
+    ]);
+    const [deductions, setDeductions] = React.useState<IncomeOrDeductionItem[]>([
+        { description: 'Health Insurance', amount: 15000 },
+    ]);
+    const [saveSuccess, setSaveSuccess] = React.useState(false);
+
+    // Compute totals in real-time
+    const totalIncome = React.useMemo(
+        () => incomes.reduce((sum, item) => sum + (item.amount || 0), 0),
+        [incomes]
+    );
+
+    const totalDeductions = React.useMemo(
+        () => deductions.reduce((sum, item) => sum + (item.amount || 0), 0),
+        [deductions]
+    );
+
+    const shareableIncome = React.useMemo(
+        () => Math.max(0, totalIncome - totalDeductions),
+        [totalIncome, totalDeductions]
+    );
+
+    const mutation = useMutation({
+        mutationFn: async () => {
+            if (!activeLedgerId || !currentUser) throw new Error('Not authenticated or no space selected.');
+            return updateFinancialProfile(activeLedgerId, currentUser.id, {
+                incomes,
+                deductions,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['members', activeLedgerId] });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        },
+    });
+
+    // Handlers for Incomes
+    const addIncome = () => setIncomes((prev) => [...prev, { description: '', amount: 0 }]);
+    const updateIncome = (index: number, field: keyof IncomeOrDeductionItem, value: string | number) => {
+        setIncomes((prev) => {
+            const next = [...prev];
+            next[index] = { ...next[index], [field]: value };
+            return next;
+        });
+    };
+    const removeIncome = (index: number) =>
+        setIncomes((prev) => prev.filter((_, i) => i !== index));
+
+    // Handlers for Deductions
+    const addDeduction = () => setDeductions((prev) => [...prev, { description: '', amount: 0 }]);
+    const updateDeduction = (index: number, field: keyof IncomeOrDeductionItem, value: string | number) => {
+        setDeductions((prev) => {
+            const next = [...prev];
+            next[index] = { ...next[index], [field]: value };
+            return next;
+        });
+    };
+    const removeDeduction = (index: number) =>
+        setDeductions((prev) => prev.filter((_, i) => i !== index));
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        mutation.mutate();
+    };
+
+    return (
+        <div className="space-y-6 max-w-4xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                        <UserIcon className="size-6 text-primary" />
+                        My Financial Profile
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Manage your income streams and deductions to calculate your dynamic proportional split ratio.
+                    </p>
+                </div>
+                <Button onClick={handleSubmit} disabled={mutation.isPending} className="gap-2 shrink-0">
+                    {mutation.isPending ? (
+                        <Loader2Icon className="size-4 animate-spin" />
+                    ) : saveSuccess ? (
+                        <CheckCircle2Icon className="size-4 text-emerald-400" />
+                    ) : (
+                        <SaveIcon className="size-4" />
+                    )}
+                    {saveSuccess ? 'Saved!' : 'Save Profile'}
+                </Button>
+            </div>
+
+            {/* Computed Capacity Card */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-medium text-muted-foreground">
+                            Total Monthly Income
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                            {centsToCurrency(totalIncome)}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-medium text-muted-foreground">
+                            Total Deductions
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold font-mono text-orange-600 dark:text-orange-400">
+                            {centsToCurrency(totalDeductions)}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-2 border-primary/20 bg-primary/5">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-semibold text-primary">
+                            Shareable Income Capacity
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold font-mono text-foreground">
+                            {centsToCurrency(shareableIncome)}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                            Used for proportional expense splits
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Incomes Array */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">
+                            Income Sources
+                        </CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addIncome} className="gap-1 text-xs">
+                            <PlusIcon className="size-3.5" />
+                            Add Income
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {incomes.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Source (e.g. Salary, Freelance)"
+                                    value={item.description}
+                                    onChange={(e) => updateIncome(idx, 'description', e.target.value)}
+                                    className="h-10 flex-1 rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                />
+                                <div className="w-40">
+                                    <CurrencyInput
+                                        value={item.amount}
+                                        onCentsChange={(cents) => updateIncome(idx, 'amount', cents)}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeIncome(idx)}
+                                    disabled={incomes.length <= 1}
+                                    className="text-muted-foreground hover:text-destructive shrink-0"
+                                >
+                                    <Trash2Icon className="size-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {/* Deductions Array */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">
+                            Fixed Deductions & Commitments
+                        </CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addDeduction} className="gap-1 text-xs">
+                            <PlusIcon className="size-3.5" />
+                            Add Deduction
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {deductions.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Deduction (e.g. Student Loan, Health Insurance)"
+                                    value={item.description}
+                                    onChange={(e) => updateDeduction(idx, 'description', e.target.value)}
+                                    className="h-10 flex-1 rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                />
+                                <div className="w-40">
+                                    <CurrencyInput
+                                        value={item.amount}
+                                        onCentsChange={(cents) => updateDeduction(idx, 'amount', cents)}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeDeduction(idx)}
+                                    className="text-muted-foreground hover:text-destructive shrink-0"
+                                >
+                                    <Trash2Icon className="size-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {mutation.isError && (
+                    <p className="text-xs text-destructive">
+                        {(mutation.error as Error)?.message || 'Failed to update financial profile.'}
+                    </p>
+                )}
+            </form>
+        </div>
+    );
+}

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
 
@@ -23,7 +23,12 @@ function renderWithSidebar(ui: ReactElement) {
     return render(<SidebarProvider defaultOpen>{ui}</SidebarProvider>);
 }
 
+import { useLedgerStore } from '@/stores/ledgerStore';
+
 describe('SpaceSwitcher', () => {
+    beforeEach(() => {
+        useLedgerStore.setState({ activeLedgerId: null });
+    });
     it('renders skeleton loading state', () => {
         renderWithSidebar(<SpaceSwitcher spaces={[]} isLoading />);
 

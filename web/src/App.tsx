@@ -10,6 +10,12 @@ import LoginPage from '@/features/auth/LoginPage/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage/RegisterPage';
 import DashboardLayout from '@/layouts/DashboardLayout/DashboardLayout';
 import DashboardPage from '@/pages/DashboardPage/DashboardPage';
+import TransactionsPage from '@/pages/TransactionsPage/TransactionsPage';
+import SettlementPage from '@/pages/SettlementPage/SettlementPage';
+import AccountsPage from '@/pages/AccountsPage/AccountsPage';
+import RecurringPage from '@/pages/RecurringPage/RecurringPage';
+import MyFinancePage from '@/pages/MyFinancePage/MyFinancePage';
+import SettingsPage from '@/pages/SettingsPage/SettingsPage';
 
 /**
  * Redirects to /login when the user is not authenticated.
@@ -64,12 +70,12 @@ export default function App() {
                     <Route element={<ProtectedRoute />}>
                         <Route element={<DashboardLayout />}>
                             <Route path="/" element={<DashboardPage />} />
-                            <Route path="/transactions" element={<DashboardPage />} />
-                            <Route path="/settlement" element={<DashboardPage />} />
-                            <Route path="/accounts" element={<DashboardPage />} />
-                            <Route path="/recurring" element={<DashboardPage />} />
-                            <Route path="/my-finance" element={<DashboardPage />} />
-                            <Route path="/settings" element={<DashboardPage />} />
+                            <Route path="/transactions" element={<TransactionsPage />} />
+                            <Route path="/settlement" element={<SettlementPage />} />
+                            <Route path="/accounts" element={<AccountsPage />} />
+                            <Route path="/recurring" element={<RecurringPage />} />
+                            <Route path="/my-finance" element={<MyFinancePage />} />
+                            <Route path="/settings" element={<SettingsPage />} />
                         </Route>
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
