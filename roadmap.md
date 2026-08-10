@@ -69,8 +69,6 @@ poruko/
 ---
 
 ### Open TODOs
-* [ ] **Invitations — bind email in UI:** when creating an invite, optionally set an invitee email so acceptance must use that address (API already supports optional `email`).
-* [ ] **Invitations — pending list on Members page:** show outstanding (unaccepted, unexpired) invitations for the space — token/link, optional bound email, expiry — with revoke/copy actions as needed.
 * [ ] **Hide unauthorized UI actions:** users must not see controls they cannot execute (backend already rejects). Example: on Members, users with the Member role still see Deactivate/Reset 2FA/Invite — gate those on Spatie permissions (e.g. `users`) or role so only admins see them.
 * [x] **Fix/rework individual & manual split transactions:** Add Expense aligns with backend — `individual` = exactly one participant; `manual` = relative weights with live euro preview (not sum-to-amount). Recurring stays Equal/Proportional only (deferred).
 * [ ] **SpaceSwitcher “Add space”:** currently a no-op UI item. Implement create/join flow gated by an env flag for **single-space vs multi-space** mode (default assumption: most users stay on a single space; multi-space is opt-in).
