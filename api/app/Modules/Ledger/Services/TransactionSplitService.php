@@ -39,11 +39,14 @@ class TransactionSplitService
         $count = count($participantUserIds);
         $base = intdiv($amount, $count);
         $remainder = $amount % $count;
+        $lastIndex = $count - 1;
 
         $result = [];
 
         foreach ($participantUserIds as $index => $userId) {
-            $result[$userId] = $base + ($index < $remainder ? 1 : 0);
+            $result[$userId] = $index === $lastIndex
+                ? $base + $remainder
+                : $base;
         }
 
         return $result;

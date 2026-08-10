@@ -415,7 +415,10 @@ class PreviewSettlementActionTest extends TestCase
             'amount' => 10_001,
             'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
-            'participants' => [],
+            'participants' => [
+                ['user_id' => $userA->id],
+                ['user_id' => $userB->id],
+            ],
             'description' => 'Test',
             'date' => '2026-03-15',
         ]));
@@ -423,10 +426,12 @@ class PreviewSettlementActionTest extends TestCase
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
 
-        // Assert — first participant gets the extra cent
+        // Assert — last participant gets the leftover cent (A first, B last)
         $breakdownA = $this->breakdownFor($result, $userA->id);
         $breakdownB = $this->breakdownFor($result, $userB->id);
 
+        $this->assertSame(5_000, $breakdownA['target_liability']);
+        $this->assertSame(5_001, $breakdownB['target_liability']);
         $this->assertSame(10_001, $breakdownA['target_liability'] + $breakdownB['target_liability']);
     }
 

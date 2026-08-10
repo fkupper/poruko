@@ -68,6 +68,8 @@ final readonly class UpdateTransactionAction
             $shareableByUser,
         );
 
+        $this->assertAllocationsMatchAmount($payload->amount, $allocations);
+
         return DB::transaction(function () use ($transaction, $payload, $spaceExpense, $splitClearing, $ledgerAccounts, $allocations): Transaction {
             $transaction->postings()->delete();
 
@@ -169,11 +171,29 @@ final readonly class UpdateTransactionAction
         }
 
         if ($rule === TransactionSplitRule::Manual) {
+            if (count($participants) === 0) {
+                throw new InvalidLedgerPostingException('Manual split requires at least one participant.');
+            }
+
             foreach ($participants as $participant) {
                 if (!isset($participant['share']) || (int) $participant['share'] <= 0) {
                     throw new InvalidLedgerPostingException('Manual split requires share > 0 on all participants.');
                 }
             }
+        }
+    }
+
+    /**
+     * @param array<int, int> $allocations
+     */
+    private function assertAllocationsMatchAmount(int $amount, array $allocations): void
+    {
+        if ($amount > 0 && $allocations === []) {
+            throw new InvalidLedgerPostingException('Split produced no allocations for a positive amount.');
+        }
+
+        if (array_sum($allocations) !== $amount) {
+            throw new InvalidLedgerPostingException('Split allocations must sum to the transaction amount.');
         }
     }
 }

@@ -265,18 +265,36 @@ class LedgerTransactionApiTest extends TestCase
         $ledger->users()->attach($user->id, ['role' => 'admin']);
         setPermissionsTeamId($ledger->id);
         $user->assignRole('Admin');
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $credit = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::UserFunding->value,
+            'owner_id' => $user->id,
+        ]);
+        $spaceExpenseAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', \App\Enums\AccountType::SpaceExpense->value)
+            ->firstOrFail();
+        $poolAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::PoolAsset->value,
+            'owner_id' => null,
+        ]);
 
         Sanctum::actingAs($user);
 
         $fullPayload = array_merge([
             'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 1000,
             'description' => 'Invalid',
             'date' => '2026-03-10',
             'split_rule' => 'equal',
             'participants' => [],
         ], $payload);
+
+        if (($fullPayload['destination_account_id'] ?? null) === '__pool__') {
+            $fullPayload['destination_account_id'] = $poolAccount->id;
+        }
 
         if ($participantUserIndices !== null && isset($fullPayload['participants'])) {
             foreach ($fullPayload['participants'] as $i => $participant) {
@@ -297,6 +315,10 @@ class LedgerTransactionApiTest extends TestCase
                 ['payer_account_id' => null],
                 null,
             ],
+            'destination not space expense' => [
+                ['destination_account_id' => '__pool__'],
+                null,
+            ],
             'manual split without share' => [
                 [
                     'split_rule' => 'manual',
@@ -314,6 +336,13 @@ class LedgerTransactionApiTest extends TestCase
                     ],
                 ],
                 [0],
+            ],
+            'manual split with empty participants' => [
+                [
+                    'split_rule' => 'manual',
+                    'participants' => [],
+                ],
+                null,
             ],
             'individual split with zero participants' => [
                 [

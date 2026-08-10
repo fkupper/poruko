@@ -222,6 +222,72 @@ class PostManualTransactionActionTest extends TestCase
         ]));
     }
 
+    public function testItValidatesManualSplitRequiresAtLeastOneParticipant(): void
+    {
+        // Arrange
+        $ledger = Ledger::factory()->create();
+        $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
+
+        $action = app(PostManualTransactionAction::class);
+
+        // Anticipate
+        $this->expectException(InvalidLedgerPostingException::class);
+        $this->expectExceptionMessage('Manual split requires at least one participant.');
+
+        // Act
+        $action->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 100,
+            'description' => 'Empty manual participants',
+            'date' => '2026-03-10',
+            'type' => 'manual',
+            'split_rule' => 'manual',
+            'participants' => [],
+        ]));
+    }
+
+    public function testItRejectsWhenAllocationsDoNotSumToAmount(): void
+    {
+        // Arrange
+        $ledger = Ledger::factory()->create();
+        $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
+
+        $splitService = $this->createMock(\App\Modules\Ledger\Services\TransactionSplitService::class);
+        $splitService->method('allocateByRule')->willReturn([$user->id => 50]);
+        $this->app->instance(\App\Modules\Ledger\Services\TransactionSplitService::class, $splitService);
+
+        $action = app(PostManualTransactionAction::class);
+
+        // Anticipate
+        $this->expectException(InvalidLedgerPostingException::class);
+        $this->expectExceptionMessage('Split allocations must sum to the transaction amount.');
+
+        // Act
+        $action->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 100,
+            'description' => 'Broken allocations',
+            'date' => '2026-03-10',
+            'type' => 'manual',
+            'split_rule' => 'equal',
+            'participants' => [['user_id' => $user->id]],
+        ]));
+    }
+
     public function testItWorksWithEmptyParticipants(): void
     {
         // Arrange

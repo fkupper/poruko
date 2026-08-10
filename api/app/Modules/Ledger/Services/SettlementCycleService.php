@@ -9,6 +9,8 @@ use Carbon\CarbonInterface;
 class SettlementCycleService
 {
     /**
+     * Calendar month of `$date` (preview/lookup). Cutoff-based due settlement uses {@see resolveDuePeriodEnd}.
+     *
      * @return array{period_start:string, period_end:string}
      */
     public function resolvePeriodForDate(Ledger $ledger, string $date): array

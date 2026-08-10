@@ -11,8 +11,10 @@ use App\Http\Resources\SettlementResource;
 use App\Models\Ledger;
 use App\Modules\Ledger\Actions\ConfirmSettlementAction;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
+use App\Modules\Ledger\Exceptions\CannotSettlePeriodWithEarlierOpenPeriodsException;
 use App\Modules\Ledger\Queries\SettlementIndexQuery;
 use App\Modules\Ledger\Services\SettlementSafetyGateService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -70,10 +72,16 @@ class SettlementController extends Controller
         Ledger $ledger,
         string $cycle,
         ConfirmSettlementAction $action,
-    ): SettlementResource {
+    ): SettlementResource|JsonResponse {
         $data = $request->validated();
         $periodEnd = (string) ($data['period_end'] ?? $cycle);
 
-        return new SettlementResource($action->execute($ledger, $periodEnd));
+        try {
+            return new SettlementResource($action->execute($ledger, $periodEnd));
+        } catch (CannotSettlePeriodWithEarlierOpenPeriodsException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
     }
 }

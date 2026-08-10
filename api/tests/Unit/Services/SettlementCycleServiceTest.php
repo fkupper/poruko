@@ -16,7 +16,7 @@ class SettlementCycleServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testResolvePeriodForDateUsesPreviousCalendarMonth(): void
+    public function testResolvePeriodForDateUsesCalendarMonthOfGivenDate(): void
     {
         $ledger = Ledger::factory()->create([
             'settlement_timezone' => 'UTC',
