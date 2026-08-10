@@ -43,35 +43,19 @@ class StoreRecurringTransactionRequest extends FormRequest
             'destination_account_id' => ['required', 'integer', $destinationAccountExistsInLedger],
             'amount' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
-            'split_rule' => ['required', new Enum(TransactionSplitRule::class)],
-            'participants' => $this->participantsRules(),
+            'split_rule' => [
+                'required',
+                Rule::in([
+                    TransactionSplitRule::Equal->value,
+                    TransactionSplitRule::Proportional->value,
+                ]),
+            ],
+            'participants' => ['nullable', 'array'],
             'participants.*.user_id' => ['required', 'integer', 'exists:users,id', $participantInLedger],
-            'participants.*.share' => Rule::when(
-                $this->input('split_rule') === TransactionSplitRule::Manual->value,
-                ['required', 'numeric', 'gt:0'],
-                ['nullable', 'numeric', 'min:0'],
-            ),
+            'participants.*.share' => ['nullable', 'numeric', 'min:0'],
             'start_date' => ['required', 'date'],
             'frequency' => ['nullable', new Enum(RecurringFrequency::class)],
         ];
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function participantsRules(): array
-    {
-        $splitRule = $this->input('split_rule');
-
-        if ($splitRule === TransactionSplitRule::Individual->value) {
-            return ['required', 'array', 'size:1'];
-        }
-
-        if ($splitRule === TransactionSplitRule::Manual->value) {
-            return ['required', 'array', 'min:1'];
-        }
-
-        return ['nullable', 'array'];
     }
 
     /**
@@ -88,9 +72,7 @@ class StoreRecurringTransactionRequest extends FormRequest
             'amount.min' => 'The amount must be greater than zero.',
             'start_date.required' => 'The start date is required.',
             'split_rule.required' => 'The split rule is required.',
-            'participants.required' => 'Participants are required for the selected split rule.',
-            'participants.min' => 'Manual split requires at least one participant.',
-            'participants.size' => 'Individual split requires exactly one participant.',
+            'split_rule.in' => 'Recurring transactions only support equal or proportional split rules.',
             'participants.*.user_id.exists' => 'One or more selected participants do not exist or are not members of this ledger.',
         ];
     }

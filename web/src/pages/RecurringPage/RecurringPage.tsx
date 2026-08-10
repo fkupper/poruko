@@ -159,6 +159,9 @@ export default function RecurringPage() {
             if (!amountCents || amountCents <= 0) throw new Error('Please enter a valid amount.');
             if (!payerAccountId) throw new Error('Please select a payer account.');
             if (!destinationAccountId) throw new Error('Please select a destination account.');
+            if (splitRule !== 'equal' && splitRule !== 'proportional') {
+                throw new Error('Recurring bills only support Equal or Proportional splits.');
+            }
             const payload = {
                 description,
                 amount: amountCents,
@@ -455,18 +458,36 @@ export default function RecurringPage() {
                         </div>
                         <div>
                             <label className="text-xs font-medium text-muted-foreground block mb-1">Split Rule</label>
-                            <Select value={splitRule} onValueChange={(val) => setSplitRule(val as SplitRule)}>
+                            <Select
+                                value={
+                                    splitRule === 'equal' || splitRule === 'proportional'
+                                        ? splitRule
+                                        : undefined
+                                }
+                                onValueChange={(val) => setSplitRule(val as SplitRule)}
+                            >
                                 <SelectTrigger className="h-10 w-full bg-background">
-                                    <SelectValue placeholder="Select split rule" />
+                                    <SelectValue
+                                        placeholder={
+                                            splitRule === 'individual' || splitRule === 'manual'
+                                                ? `${splitRule} (choose Equal or Proportional)`
+                                                : 'Select split rule'
+                                        }
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         <SelectItem value="proportional">Proportional</SelectItem>
                                         <SelectItem value="equal">Equal</SelectItem>
-                                        <SelectItem value="individual">Individual</SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
+                            {splitRule === 'individual' || splitRule === 'manual' ? (
+                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                    Individual and manual splits are not supported for recurring bills yet. Choose
+                                    Equal or Proportional to save.
+                                </p>
+                            ) : null}
                         </div>
                     </div>
 
@@ -496,7 +517,15 @@ export default function RecurringPage() {
                         <Button type="button" variant="ghost" onClick={resetForm}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={saveMutation.isPending || !description.trim() || (amountCents || 0) <= 0}>
+                        <Button
+                            type="submit"
+                            disabled={
+                                saveMutation.isPending ||
+                                !description.trim() ||
+                                (amountCents || 0) <= 0 ||
+                                (splitRule !== 'equal' && splitRule !== 'proportional')
+                            }
+                        >
                             {editingId ? 'Save Changes' : 'Save Blueprint'}
                         </Button>
                         </DialogFooter>

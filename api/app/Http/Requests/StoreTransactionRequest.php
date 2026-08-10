@@ -94,6 +94,7 @@ class StoreTransactionRequest extends FormRequest
             'participants.required' => 'Participants are required for the selected split rule.',
             'participants.min' => 'Manual split requires at least one participant.',
             'participants.size' => 'Individual split requires exactly one participant.',
+            'participants.*.share.gt' => 'Manual split shares are relative weights and must be greater than zero.',
             'participants.*.user_id.exists' => 'One or more selected participants do not exist or are not members of this ledger.',
         ];
     }

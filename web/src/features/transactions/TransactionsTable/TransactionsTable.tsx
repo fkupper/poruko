@@ -36,6 +36,7 @@ const SPLIT_RULE_OPTIONS = [
     { label: 'Proportional', value: 'proportional' },
     { label: 'Equal', value: 'equal' },
     { label: 'Individual', value: 'individual' },
+    { label: 'Manual', value: 'manual' },
 ];
 
 const TYPE_OPTIONS = [

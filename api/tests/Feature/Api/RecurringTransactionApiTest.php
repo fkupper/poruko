@@ -315,4 +315,69 @@ class RecurringTransactionApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['participants.0.user_id']);
     }
+
+    public function testCreateRejectsIndividualAndManualSplitRules(): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        foreach (['individual', 'manual'] as $splitRule) {
+            $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
+                'payer_account_id' => $credit->id,
+                'destination_account_id' => $destination->id,
+                'amount' => 120000,
+                'description' => 'Unsupported split',
+                'split_rule' => $splitRule,
+                'participants' => [['user_id' => $user->id, 'share' => 1]],
+                'start_date' => '2026-04-01',
+                'frequency' => 'monthly',
+            ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['split_rule']);
+        }
+    }
+
+    public function testUpdateRejectsIndividualAndManualSplitRules(): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
+
+        $blueprint = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $destination->id,
+            'split_rule' => 'equal',
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        foreach (['individual', 'manual'] as $splitRule) {
+            $this->patchJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}", [
+                'split_rule' => $splitRule,
+                'start_date' => '2026-05-01',
+            ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['split_rule']);
+        }
+    }
 }
