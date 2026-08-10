@@ -55,7 +55,17 @@ class Ledger extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<User, $this, LedgerUser> */
+    public function allUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->using(LedgerUser::class)
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
             ->withTimestamps();
     }
 

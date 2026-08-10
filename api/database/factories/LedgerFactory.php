@@ -26,4 +26,22 @@ class LedgerFactory extends Factory
             'settlement_auto_execute_enabled' => fake()->boolean(),
         ];
     }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(function (\App\Models\Ledger $ledger) {
+            \App\Models\Account::factory()->create([
+                'ledger_id' => $ledger->id,
+                'name' => 'Space Expense',
+                'type' => \App\Enums\AccountType::SpaceExpense->value,
+                'owner_id' => null,
+            ]);
+            \App\Models\Account::factory()->create([
+                'ledger_id' => $ledger->id,
+                'name' => 'Split Clearing',
+                'type' => \App\Enums\AccountType::SplitClearing->value,
+                'owner_id' => null,
+            ]);
+        });
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Ledger\Actions;
 
+use App\Enums\AccountType;
 use App\Enums\PostingDirection;
 use App\Enums\TransactionSplitRule;
 use App\Models\Account;
@@ -14,25 +15,57 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class PostManualTransactionAction
 {
+    public function __construct(
+        private readonly \App\Modules\Ledger\Services\TransactionSplitService $splitService,
+        private readonly \App\Modules\Ledger\Services\FinancialProfileService $financialProfileService,
+    ) {}
+
     public function execute(PostManualTransactionData $payload): Transaction
     {
         if ($payload->amount <= 0) {
             throw new InvalidLedgerPostingException('Amount must be greater than zero.');
         }
 
-        $this->assertAccountsBelongToLedger(
-            $payload->ledgerId,
-            $payload->creditAccountId,
-            $payload->debitAccountId,
-        );
-
+        $this->assertAccountsBelongToLedger($payload->ledgerId, $payload->payerAccountId, $payload->destinationAccountId);
         $this->validateParticipants($payload->splitRule, $payload->participants);
 
-        return DB::transaction(function () use ($payload): Transaction {
+        $ledgerAccounts = Account::query()->where('ledger_id', $payload->ledgerId)->get();
+
+        $spaceExpense = $ledgerAccounts->where('id', $payload->destinationAccountId)->where('type', AccountType::SpaceExpense->value)->first();
+        $splitClearing = $ledgerAccounts->where('type', AccountType::SplitClearing->value)->first();
+
+        if (!$spaceExpense) {
+            throw new InvalidLedgerPostingException('Destination account must be a valid Space Expense account.');
+        }
+
+        if (!$splitClearing) {
+            throw new InvalidLedgerPostingException('Split Clearing account missing for ledger.');
+        }
+
+        $userIds = $ledgerAccounts->pluck('owner_id')->filter()->unique()->values()->all();
+        $shareableByUser = $this->financialProfileService->shareableIncomeForUsers(
+            \App\Models\Ledger::find($payload->ledgerId),
+            $userIds,
+            $payload->date,
+        );
+
+        $participantUserIds = count($payload->participants) > 0
+            ? array_values(array_map(fn (array $p): int => (int) $p['user_id'], $payload->participants))
+            : $userIds;
+
+        $allocations = $this->splitService->allocateByRule(
+            $payload->splitRule,
+            $payload->amount,
+            $participantUserIds,
+            $payload->participants,
+            $shareableByUser,
+        );
+
+        return DB::transaction(function () use ($payload, $spaceExpense, $splitClearing, $ledgerAccounts, $allocations): Transaction {
             $transaction = Transaction::query()->create([
                 'ledger_id' => $payload->ledgerId,
-                'credit_account_id' => $payload->creditAccountId,
-                'debit_account_id' => $payload->debitAccountId,
+                'payer_account_id' => $payload->payerAccountId,
+                'destination_account_id' => $payload->destinationAccountId,
                 'amount' => $payload->amount,
                 'type' => $payload->type,
                 'split_rule' => $payload->splitRule,
@@ -42,39 +75,77 @@ final readonly class PostManualTransactionAction
             ]);
 
             $now = Carbon::now()->toDateTimeString();
-            Posting::query()->insert([
-                [
+            $postings = [];
+
+            // 1. Credit Source (Payer)
+            $postings[] = [
+                'transaction_id' => $transaction->id,
+                'account_id' => $payload->payerAccountId,
+                'amount' => $payload->amount,
+                'direction' => PostingDirection::Credit->value,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            // 2. Debit Space Expense
+            $postings[] = [
+                'transaction_id' => $transaction->id,
+                'account_id' => $spaceExpense->id,
+                'amount' => $payload->amount,
+                'direction' => PostingDirection::Debit->value,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            // 3. Credit Split Clearing
+            $postings[] = [
+                'transaction_id' => $transaction->id,
+                'account_id' => $splitClearing->id,
+                'amount' => $payload->amount,
+                'direction' => PostingDirection::Credit->value,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            // 4. Debit User Liabilities
+            foreach ($allocations as $userId => $allocatedAmount) {
+                if ($allocatedAmount <= 0) {
+                    continue;
+                }
+
+                $liabilityAccount = $ledgerAccounts
+                    ->where('type', AccountType::UserLiability->value)
+                    ->where('owner_id', $userId)
+                    ->first();
+
+                if (!$liabilityAccount) {
+                    throw new InvalidLedgerPostingException("Liability account missing for user {$userId}.");
+                }
+
+                $postings[] = [
                     'transaction_id' => $transaction->id,
-                    'account_id' => $payload->creditAccountId,
-                    'amount' => $payload->amount,
-                    'direction' => PostingDirection::Credit->value,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ],
-                [
-                    'transaction_id' => $transaction->id,
-                    'account_id' => $payload->debitAccountId,
-                    'amount' => $payload->amount,
+                    'account_id' => $liabilityAccount->id,
+                    'amount' => $allocatedAmount,
                     'direction' => PostingDirection::Debit->value,
                     'created_at' => $now,
                     'updated_at' => $now,
-                ],
-            ]);
+                ];
+            }
 
-            return $transaction->load(['creditAccount', 'debitAccount', 'postings']);
+            Posting::query()->insert($postings);
+
+            return $transaction->load(['payerAccount', 'postings']);
         });
     }
 
-    private function assertAccountsBelongToLedger(int $ledgerId, int $creditAccountId, int $debitAccountId): void
+    private function assertAccountsBelongToLedger(int $ledgerId, int $payerAccountId, int $destinationAccountId): void
     {
-        $accountIds = collect([$creditAccountId, $debitAccountId])->unique()->values();
-
         $existingCount = Account::query()
             ->where('ledger_id', $ledgerId)
-            ->whereIn('id', $accountIds)
+            ->whereIn('id', [$payerAccountId, $destinationAccountId])
             ->count();
 
-        if ($existingCount !== $accountIds->count()) {
+        if ($existingCount !== ($payerAccountId === $destinationAccountId ? 1 : 2)) {
             throw new InvalidLedgerPostingException('One or more accounts do not belong to the target ledger.');
         }
     }

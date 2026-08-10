@@ -27,6 +27,11 @@ export interface Ledger {
     users_count?: number;
     created_at: string | null;
     updated_at: string | null;
+    my_preferences?: {
+        main_personal_account_id: number | null;
+        default_payment_account_id: number | null;
+        default_expense_account_id: number | null;
+    };
 }
 
 export type SplitRule = 'proportional' | 'equal' | 'individual';
@@ -41,7 +46,12 @@ export interface ParticipantShare {
 export interface Transaction {
     id: number;
     ledger_id: number;
+    settlement_id: number | null;
     payer_account_id?: number;
+    payer_account_name?: string;
+    payer_account_owner_id?: number | null;
+    destination_account_id?: number;
+    destination_account_name?: string;
     amount: number;
     description: string;
     date: string;
@@ -53,6 +63,7 @@ export interface Transaction {
 
 export interface CreateTransactionPayload {
     payer_account_id: number;
+    destination_account_id: number;
     amount: number;
     description: string;
     date: string;
@@ -64,7 +75,10 @@ export interface CreateTransactionPayload {
 export interface LedgerMember {
     id: number;
     name: string;
+    email?: string;
+    role?: string;
     shareable_income: number;
+    is_active?: boolean;
 }
 
 export interface IncomeOrDeductionItem {
@@ -90,6 +104,7 @@ export interface FinancialProfile {
 export interface RecurringBlueprint {
     id: number;
     payer_account_id: number;
+    destination_account_id: number;
     amount: number;
     description: string;
     split_rule: SplitRule;
@@ -98,10 +113,12 @@ export interface RecurringBlueprint {
     valid_from: string;
     valid_to: string | null;
     is_active: boolean;
+    status: 'active' | 'previous_version' | 'deleted';
 }
 
 export interface CreateRecurringPayload {
     payer_account_id: number;
+    destination_account_id: number;
     amount: number;
     description: string;
     split_rule: SplitRule;
@@ -132,9 +149,19 @@ export interface SettlementTransferInstruction {
     instruction: string;
 }
 
+export interface SettlementPeriod {
+    period_start: string;
+    period_end: string;
+    label: string;
+    status: 'settled' | 'open' | 'future';
+    executed_at: string | null;
+}
+
 export interface SettlementPreview {
     period_start: string;
     period_end: string;
+    is_settled: boolean;
+    executed_at: string | null;
     settlement_mode: string;
     summary: SettlementSummary;
     user_breakdowns: SettlementUserBreakdown[];
@@ -167,7 +194,8 @@ export interface Account {
     ledger_id: number;
     owner_id?: number | null;
     name: string;
-    type: 'joint_pool' | 'personal' | 'cash' | 'credit' | 'pool';
+    type: 'pool_asset' | 'space_expense' | 'split_clearing' | 'user_funding' | 'user_liability';
     base_budget?: number;
     balance: number;
+    owner_is_active?: boolean;
 }

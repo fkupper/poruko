@@ -72,8 +72,8 @@ class LedgerAccountController extends Controller
             DeleteAccountResult::LastPersonalAccount => response()->json([
                 'message' => 'Cannot delete your last personal account.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY),
-            DeleteAccountResult::HasPostings => response()->json([
-                'message' => 'Account cannot be deleted once postings exist.',
+            DeleteAccountResult::AttachedToProcess => response()->json([
+                'message' => 'Account cannot be deleted because it is attached to an active process.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY),
         };
     }

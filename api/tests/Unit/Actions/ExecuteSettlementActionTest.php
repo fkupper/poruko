@@ -34,7 +34,11 @@ class ExecuteSettlementActionTest extends TestCase
         $a = User::factory()->create(['name' => 'A']);
         $b = User::factory()->create(['name' => 'B']);
         $ledger->users()->attach($a->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $a->assignRole('Admin');
         $ledger->users()->attach($b->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $b->assignRole('Member');
 
         $aAccount = Account::query()->findOrFail(
             DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $a->id)->value('main_personal_account_id'),
@@ -45,7 +49,7 @@ class ExecuteSettlementActionTest extends TestCase
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::External->value,
+            'type' => AccountType::SpaceExpense->value,
         ]);
 
         FinancialProfile::factory()->create([
@@ -63,17 +67,17 @@ class ExecuteSettlementActionTest extends TestCase
             'deductions' => [],
         ]);
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10000,
             'type' => 'manual',
             'split_rule' => 'equal',
             'participants' => [],
             'description' => 'Shared expense',
             'date' => '2026-03-20',
-        ]);
+        ]));
 
         // Act
         $action = $this->app->make(ExecuteSettlementAction::class);
@@ -108,6 +112,8 @@ class ExecuteSettlementActionTest extends TestCase
         ]);
         $user = User::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
             'user_id' => $user->id,

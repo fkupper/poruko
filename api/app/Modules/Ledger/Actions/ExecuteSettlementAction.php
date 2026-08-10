@@ -55,8 +55,7 @@ readonly class ExecuteSettlementAction
                 $transaction = Transaction::query()->create([
                     'ledger_id' => $ledger->id,
                     'settlement_id' => $settlement->id,
-                    'credit_account_id' => $fromAccountId,
-                    'debit_account_id' => $toAccountId,
+                    'payer_account_id' => $fromAccountId,
                     'amount' => $amount,
                     'type' => TransactionType::Settlement->value,
                     'split_rule' => TransactionSplitRule::Individual->value,
@@ -84,6 +83,13 @@ readonly class ExecuteSettlementAction
                     ],
                 ]);
             }
+
+            Transaction::query()
+                ->where('ledger_id', $ledger->id)
+                ->where('type', '!=', TransactionType::Settlement->value)
+                ->whereNull('settlement_id')
+                ->where('date', '<=', $period['period_end'])
+                ->update(['settlement_id' => $settlement->id]);
 
             $settlement->update([
                 'executed_at' => CarbonImmutable::now(),

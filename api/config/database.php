@@ -63,7 +63,7 @@ return [
     ],
 
     'seeders' => [
-        'dev_leave_settlement_pending' => false,
+        'dev_leave_settlement_pending' => true,
     ],
 
     /*

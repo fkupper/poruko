@@ -27,8 +27,8 @@ class SettlementCycleServiceTest extends TestCase
         $service = $this->app->make(SettlementCycleService::class);
         $period = $service->resolvePeriodForDate($ledger, '2026-04-01');
 
-        $this->assertSame('2026-03-01', $period['period_start']);
-        $this->assertSame('2026-03-31', $period['period_end']);
+        $this->assertSame('2026-04-01', $period['period_start']);
+        $this->assertSame('2026-04-30', $period['period_end']);
     }
 
     public function testResolvePeriodForDateHandlesLeapYearMonthEnd(): void
@@ -42,8 +42,8 @@ class SettlementCycleServiceTest extends TestCase
         $service = $this->app->make(SettlementCycleService::class);
         $period = $service->resolvePeriodForDate($ledger, '2024-03-10');
 
-        $this->assertSame('2024-02-01', $period['period_start']);
-        $this->assertSame('2024-02-29', $period['period_end']);
+        $this->assertSame('2024-03-01', $period['period_start']);
+        $this->assertSame('2024-03-31', $period['period_end']);
     }
 
     public function testResolveDuePeriodEndReturnsNullBeforeCutoff(): void

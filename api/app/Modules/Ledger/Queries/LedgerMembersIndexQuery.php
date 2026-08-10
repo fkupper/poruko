@@ -19,7 +19,7 @@ class LedgerMembersIndexQuery
      */
     public function execute(Ledger $ledger, string $date): Collection
     {
-        $users = $ledger->users()->get();
+        $users = $ledger->allUsers()->get();
 
         /** @var list<int> $userIds */
         $userIds = array_values($users->modelKeys());
@@ -35,6 +35,9 @@ class LedgerMembersIndexQuery
                 id: $user->id,
                 name: $user->name,
                 shareable_income: $shareableByUser[$user->id] ?? 0,
+                email: $user->email,
+                role: $user->pivot->role ?? 'member',
+                is_active: $user->pivot->deleted_at === null,
             );
         });
     }

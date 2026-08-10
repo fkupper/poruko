@@ -25,11 +25,25 @@ class RecurringTransactionPolicy
 
     public function update(User $user, RecurringTransaction $recurringTransaction): bool
     {
-        return $user->ledgers()->whereKey($recurringTransaction->ledger_id)->exists();
+        if ($user->can('recurring')) {
+            return true;
+        }
+
+        if ($recurringTransaction->payerAccount && $recurringTransaction->payerAccount->owner_id === $user->id) {
+            return true;
+        }
+
+        foreach ($recurringTransaction->participants as $participant) {
+            if (isset($participant['user_id']) && $participant['user_id'] === $user->id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function delete(User $user, RecurringTransaction $recurringTransaction): bool
     {
-        return $user->ledgers()->whereKey($recurringTransaction->ledger_id)->exists();
+        return $this->update($user, $recurringTransaction);
     }
 }

@@ -19,15 +19,11 @@ class AccountFactory extends Factory
      */
     public function definition(): array
     {
-        $type = fake()->randomElement([
-            AccountType::Personal->value,
-            AccountType::Pool->value,
-            AccountType::External->value,
-        ]);
+        $type = fake()->randomElement(AccountType::publicTypes());
 
         return [
             'ledger_id' => Ledger::factory(),
-            'owner_id' => in_array($type, [AccountType::Pool->value, AccountType::External->value], true)
+            'owner_id' => in_array($type, [AccountType::PoolAsset->value, AccountType::SpaceExpense->value, AccountType::SplitClearing->value], true)
                 ? null
                 : User::factory(),
             'type' => $type,

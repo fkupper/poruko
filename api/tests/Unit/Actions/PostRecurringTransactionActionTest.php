@@ -7,6 +7,7 @@ use App\Models\Account;
 use App\Models\Ledger;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Modules\Ledger\Actions\PostRecurringTransactionAction;
 use App\Modules\Ledger\Data\MaterializeRecurringTransactionData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,13 +24,16 @@ class PostRecurringTransactionActionTest extends TestCase
     public function testItMaterializesBlueprintIntoTransactionWithSourceLink(): void
     {
         $ledger = Ledger::factory()->create();
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $user = User::factory()->create();
+        \App\Models\LedgerUser::query()->create(['ledger_id' => $ledger->id, 'user_id' => $user->id, 'role' => 'admin']);
+        Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id, 'type' => \App\Enums\AccountType::UserLiability->value]);
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 50000,
             'description' => 'Rent',
             'split_rule' => 'equal',
@@ -50,6 +54,6 @@ class PostRecurringTransactionActionTest extends TestCase
         $this->assertSame(TransactionType::Recurring, $transaction->type);
         $this->assertSame($blueprint->id, $transaction->source_recurring_transaction_id);
         $this->assertSame('2026-03-01', $transaction->date->format('Y-m-d'));
-        $this->assertCount(2, $transaction->postings);
+        $this->assertCount(4, $transaction->postings);
     }
 }

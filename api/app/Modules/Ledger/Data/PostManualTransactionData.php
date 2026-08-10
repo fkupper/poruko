@@ -9,8 +9,8 @@ final readonly class PostManualTransactionData
      */
     public function __construct(
         public int $ledgerId,
-        public int $creditAccountId,
-        public int $debitAccountId,
+        public int $payerAccountId,
+        public int $destinationAccountId,
         public int $amount,
         public string $splitRule,
         public array $participants,
@@ -20,7 +20,7 @@ final readonly class PostManualTransactionData
     ) {}
 
     /**
-     * @param array<string, mixed> $payload Must contain ledger_id, credit_account_id, debit_account_id, amount, split_rule, participants, date
+     * @param array<string, mixed> $payload Must contain ledger_id, payer_account_id, amount, split_rule, participants, date
      */
     public static function fromArray(array $payload): self
     {
@@ -29,8 +29,8 @@ final readonly class PostManualTransactionData
 
         return new self(
             ledgerId: (int) $payload['ledger_id'],
-            creditAccountId: (int) $payload['credit_account_id'],
-            debitAccountId: (int) $payload['debit_account_id'],
+            payerAccountId: (int) $payload['payer_account_id'],
+            destinationAccountId: (int) $payload['destination_account_id'],
             amount: (int) $payload['amount'],
             splitRule: (string) $payload['split_rule'],
             participants: $participants,

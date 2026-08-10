@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  */
 class LedgerUser extends Pivot
 {
+    use \Illuminate\Database\Eloquent\SoftDeletes;
+
     public $incrementing = true;
 
     protected $table = 'ledger_user';

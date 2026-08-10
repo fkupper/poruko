@@ -8,5 +8,8 @@ final readonly class LedgerMemberListItem
         public int $id,
         public string $name,
         public int $shareable_income,
+        public string $email,
+        public string $role,
+        public bool $is_active = true,
     ) {}
 }

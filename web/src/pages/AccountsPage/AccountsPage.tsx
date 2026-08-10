@@ -1,32 +1,60 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAccounts, createAccount } from '@/api/accounts';
+import { useNavigate } from 'react-router-dom';
+import { fetchAccounts, createAccount, updateAccount, deleteAccount } from '@/api/accounts';
+import { fetchLedgers } from '@/api/ledgers';
 import { centsToCurrency } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
+import { useAuthStore } from '@/stores/authStore';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PlusIcon, WalletIcon, LandmarkIcon, CreditCardIcon, BanknoteIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { PlusIcon, WalletIcon, LandmarkIcon, CreditCardIcon, BanknoteIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, UserXIcon, ArrowLeftRightIcon } from 'lucide-react';
 import type { Account } from '@/api/types';
 
 const ACCOUNT_TYPE_ICONS: Record<Account['type'], React.ReactNode> = {
-    joint_pool: <LandmarkIcon className="size-5 text-emerald-500" />,
-    pool: <LandmarkIcon className="size-5 text-emerald-500" />,
-    personal: <WalletIcon className="size-5 text-blue-500" />,
-    cash: <BanknoteIcon className="size-5 text-amber-500" />,
-    credit: <CreditCardIcon className="size-5 text-purple-500" />,
+    pool_asset: <LandmarkIcon className="size-5 text-emerald-500" />,
+    space_expense: <WalletIcon className="size-5 text-purple-500" />,
+    split_clearing: <LandmarkIcon className="size-5 text-slate-500" />,
+    user_funding: <CreditCardIcon className="size-5 text-blue-500" />,
+    user_liability: <BanknoteIcon className="size-5 text-amber-500" />,
 };
 
 export default function AccountsPage() {
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const user = useAuthStore((s) => s.user);
 
     const [isAddOpen, setIsAddOpen] = React.useState(false);
+    const [editingId, setEditingId] = React.useState<number | null>(null);
     const [name, setName] = React.useState('');
-    const [type, setType] = React.useState<Account['type']>('personal');
+    const [type, setType] = React.useState<Account['type']>('user_funding');
     const [initialBalance, setInitialBalance] = React.useState(0);
+    const [showDeactivatedAccounts, setShowDeactivatedAccounts] = React.useState(false);
+
+    const resetForm = () => {
+        setName('');
+        setType('user_funding');
+        setInitialBalance(0);
+        setEditingId(null);
+        setIsAddOpen(false);
+    };
+
+    const handleEdit = (acc: Account) => {
+        setName(acc.name);
+        setType(acc.type);
+        setInitialBalance(acc.balance);
+        setEditingId(acc.id);
+        setIsAddOpen(true);
+    };
 
     const { data: accounts = [], isPending } = useQuery({
         queryKey: ['accounts', activeLedgerId],
@@ -34,9 +62,17 @@ export default function AccountsPage() {
         enabled: !!activeLedgerId,
     });
 
-    const mutation = useMutation({
+    const { data: ledgers } = useQuery({ queryKey: ['ledgers'], queryFn: fetchLedgers });
+
+    const saveMutation = useMutation({
         mutationFn: async () => {
             if (!activeLedgerId) throw new Error('No active space.');
+            if (editingId) {
+                return updateAccount(activeLedgerId, editingId, {
+                    name,
+                    current_funds: initialBalance,
+                });
+            }
             return createAccount(activeLedgerId, {
                 name,
                 type,
@@ -45,15 +81,120 @@ export default function AccountsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
-            setIsAddOpen(false);
-            setName('');
-            setInitialBalance(0);
+            resetForm();
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: number) => {
+            if (!activeLedgerId) throw new Error('No active space.');
+            return deleteAccount(activeLedgerId, id);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
         },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        mutation.mutate();
+        saveMutation.mutate();
+    };
+
+    const myAccounts = accounts.filter((a) => (a.type === 'user_funding' || a.type === 'user_liability') && a.owner_id === user?.id);
+    const poolAssets = accounts.filter((a) => a.type === 'pool_asset');
+    const spaceExpenses = accounts.filter((a) => a.type === 'space_expense');
+    const systemAccounts = accounts.filter((a) => a.type === 'split_clearing');
+    
+    const otherUsersAccounts = accounts.filter((a) => {
+        if (a.type !== 'user_funding' && a.type !== 'user_liability') return false;
+        if (a.owner_id === user?.id || a.owner_id === null) return false;
+        if (!showDeactivatedAccounts && a.owner_is_active === false) return false;
+        return true;
+    });
+
+    const hasAnyOtherMemberAccounts = accounts.some((a) => 
+        (a.type === 'user_funding' || a.type === 'user_liability') && 
+        a.owner_id !== user?.id && 
+        a.owner_id !== null
+    );
+
+    const activeLedger = (ledgers || []).find((l) => l.id === activeLedgerId);
+    const prefs = activeLedger?.my_preferences;
+
+    const hasAiToken = !!localStorage.getItem('byok_llm_key');
+    const aiTargetId = localStorage.getItem(`ai_target_account_${activeLedgerId}`);
+
+    const renderAccountCard = (acc: Account) => {
+        const canEdit = acc.type !== 'split_clearing' && (acc.owner_id === user?.id || acc.owner_id === null);
+
+        const isDefaultPayment = acc.id === prefs?.default_payment_account_id;
+        const isDefaultExpense = acc.id === prefs?.default_expense_account_id;
+        const isAiTarget = hasAiToken && String(acc.id) === aiTargetId;
+
+        return (
+            <Card key={acc.id} className="relative overflow-hidden">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                        {ACCOUNT_TYPE_ICONS[acc.type] || ACCOUNT_TYPE_ICONS.user_funding}
+                        <span className="truncate pr-2">{acc.name}</span>
+                    </CardTitle>
+                    <div className="flex items-center gap-2 shrink-0">
+                        {acc.owner_is_active === false && (
+                            <Badge variant="secondary" className="text-[10px] text-muted-foreground gap-1">
+                                <UserXIcon className="size-3" /> Deactivated Member
+                            </Badge>
+                        )}
+                        {isDefaultPayment && <Badge variant="secondary" className="text-[10px]">Default Payment</Badge>}
+                        {isDefaultExpense && <Badge variant="secondary" className="text-[10px]">Default Expense</Badge>}
+                        {isAiTarget && <Badge variant="default" className="text-[10px] bg-amber-500 hover:bg-amber-600 text-white">AI Target</Badge>}
+                        <Badge variant="outline" className="capitalize text-[10px]">
+                            {acc.type.replace('_', ' ')}
+                        </Badge>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2">
+                                    <MoreHorizontalIcon className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/transactions?account=${acc.id}`)}>
+                                    <ArrowLeftRightIcon className="mr-2 size-4" />
+                                    View Transactions
+                                </DropdownMenuItem>
+                                {canEdit && (
+                                    <>
+                                        <DropdownMenuItem onClick={() => handleEdit(acc)}>
+                                            <PencilIcon className="mr-2 size-4" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                                            onClick={() => {
+                                                if (confirm('Are you sure you want to delete this account?')) {
+                                                    deleteMutation.mutate(acc.id);
+                                                }
+                                            }}
+                                        >
+                                            <TrashIcon className="mr-2 size-4" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </CardHeader>
+            <CardContent className="pt-4">
+                <p className="text-xs text-muted-foreground">Account Balance</p>
+                <div className="text-2xl font-bold font-mono text-foreground mt-1">
+                    {centsToCurrency(acc.balance)}
+                </div>
+                <div className="mt-3 text-[11px] text-muted-foreground font-mono">
+                    ID: #{acc.id}
+                </div>
+            </CardContent>
+        </Card>
+        );
     };
 
     return (
@@ -83,50 +224,90 @@ export default function AccountsPage() {
                     No accounts registered yet. Click "Add Account" to register a payment source.
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {accounts.map((acc) => (
-                        <Card key={acc.id} className="relative overflow-hidden">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                    {ACCOUNT_TYPE_ICONS[acc.type] || ACCOUNT_TYPE_ICONS.personal}
-                                    {acc.name}
-                                </CardTitle>
-                                <Badge variant="outline" className="capitalize text-[10px]">
-                                    {acc.type.replace('_', ' ')}
-                                </Badge>
-                            </CardHeader>
-                            <CardContent className="pt-4">
-                                <p className="text-xs text-muted-foreground">Account Balance</p>
-                                <div className="text-2xl font-bold font-mono text-foreground mt-1">
-                                    {centsToCurrency(acc.balance)}
+                <div className="space-y-8">
+                    {myAccounts.length > 0 && (
+                        <section>
+                            <h2 className="text-lg font-semibold mb-3">My Personal Accounts</h2>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {myAccounts.map(renderAccountCard)}
+                            </div>
+                        </section>
+                    )}
+                    {poolAssets.length > 0 && (
+                        <section>
+                            <h2 className="text-lg font-semibold mb-3">Joint Pool Assets</h2>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {poolAssets.map(renderAccountCard)}
+                            </div>
+                        </section>
+                    )}
+                    {spaceExpenses.length > 0 && (
+                        <section>
+                            <h2 className="text-lg font-semibold mb-3">Space Expenses</h2>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {spaceExpenses.map(renderAccountCard)}
+                            </div>
+                        </section>
+                    )}
+                    {hasAnyOtherMemberAccounts && (
+                        <section>
+                            <div className="flex items-center justify-between mb-3">
+                                <h2 className="text-lg font-semibold">Other Members' Accounts</h2>
+                                <div className="flex items-center space-x-2">
+                                    <Switch
+                                        id="show-deactivated"
+                                        checked={showDeactivatedAccounts}
+                                        onCheckedChange={setShowDeactivatedAccounts}
+                                    />
+                                    <Label htmlFor="show-deactivated" className="text-sm font-normal text-muted-foreground cursor-pointer">
+                                        Show deactivated members
+                                    </Label>
                                 </div>
-                                <div className="mt-3 text-[11px] text-muted-foreground font-mono">
-                                    ID: #{acc.id}
+                            </div>
+                            {otherUsersAccounts.length > 0 ? (
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {otherUsersAccounts.map(renderAccountCard)}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                            ) : (
+                                <div className="text-sm text-muted-foreground p-4 border rounded-lg border-dashed text-center">
+                                    No active accounts found for other members.
+                                </div>
+                            )}
+                        </section>
+                    )}
+                    {systemAccounts.length > 0 && (
+                        <section>
+                            <h2 className="text-lg font-semibold mb-3">System / Clearing</h2>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {systemAccounts.map(renderAccountCard)}
+                            </div>
+                        </section>
+                    )}
                 </div>
             )}
 
             {/* Modal */}
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogHeader>
-                    <DialogTitle>Add Space Account</DialogTitle>
-                </DialogHeader>
+            <Dialog open={isAddOpen} onOpenChange={(open) => {
+                setIsAddOpen(open);
+                if (!open) resetForm();
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingId ? 'Edit Space Account' : 'Add Space Account'}</DialogTitle>
+                    </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-xs font-medium text-muted-foreground block mb-1">
                             Account Name
                         </label>
-                        <input
+                        <Input
                             type="text"
                             placeholder="e.g. Joint Revolut Pool, Bob Checking"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
-                            className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                            className="h-10 w-full"
                         />
                     </div>
 
@@ -134,44 +315,44 @@ export default function AccountsPage() {
                         <label className="text-xs font-medium text-muted-foreground block mb-1">
                             Account Type
                         </label>
-                        <select
-                            value={type}
-                            onChange={(e) => setType(e.target.value as Account['type'])}
-                            className="h-10 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <option value="joint_pool">Joint Pool (Clearinghouse)</option>
-                            <option value="personal">Personal Account</option>
-                            <option value="credit">Credit Card</option>
-                            <option value="cash">Cash</option>
-                        </select>
+                        <Select value={type} onValueChange={(val) => setType(val as Account['type'])} disabled={!!editingId}>
+                            <SelectTrigger className="h-10 w-full bg-background">
+                                <SelectValue placeholder="Select account type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="user_funding">Personal / Funding Account</SelectItem>
+                                <SelectItem value="pool_asset">Joint Pool</SelectItem>
+                                <SelectItem value="space_expense">Space Category (Expense)</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div>
                         <label className="text-xs font-medium text-muted-foreground block mb-1">
-                            Starting Balance (€)
+                            {editingId ? 'Current Funds (€)' : 'Starting Balance (€)'}
                         </label>
                         <CurrencyInput
                             value={initialBalance}
-                            onCentsChange={setInitialBalance}
+                            onCentsChange={(cents) => setInitialBalance(cents || 0)}
                         />
                     </div>
 
-                    {mutation.isError && (
+                    {saveMutation.isError && (
                         <p className="text-xs text-destructive">
-                            {(mutation.error as Error)?.message || 'Failed to create account.'}
+                            {(saveMutation.error as Error)?.message || 'Failed to save account.'}
                         </p>
                     )}
 
                     <DialogFooter>
-                        <Button type="button" variant="ghost" onClick={() => setIsAddOpen(false)}>
+                        <Button type="button" variant="ghost" onClick={resetForm}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={mutation.isPending || !name.trim()}>
-                            Create Account
+                        <Button type="submit" disabled={saveMutation.isPending || !name.trim()}>
+                            {editingId ? 'Save Changes' : 'Create Account'}
                         </Button>
-                    </DialogFooter>
-                </form>
-                <DialogClose onClose={() => setIsAddOpen(false)} />
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
             </Dialog>
         </div>
     );

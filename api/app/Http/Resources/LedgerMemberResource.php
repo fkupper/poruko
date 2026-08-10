@@ -22,6 +22,9 @@ class LedgerMemberResource extends JsonResource
             'id' => $member->id,
             'name' => $member->name,
             'shareable_income' => $member->shareable_income,
+            'email' => $member->email,
+            'role' => $member->role,
+            'is_active' => $member->is_active,
         ];
     }
 }

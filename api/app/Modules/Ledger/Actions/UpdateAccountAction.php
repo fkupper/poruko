@@ -9,7 +9,27 @@ final readonly class UpdateAccountAction
 {
     public function execute(Account $account, UpdateAccountData $data): Account
     {
-        $account->update($data->toArray());
+        $updatePayload = $data->toArray();
+
+        if ($data->currentFunds !== null) {
+            $credits = (int) $account->getAttribute('total_credits');
+            $debits = (int) $account->getAttribute('total_debits');
+
+            $currentBalance = $account->base_budget;
+
+            if ($credits > 0 || $debits > 0) {
+                $currentBalance += match ($account->type) {
+                    \App\Enums\AccountType::SplitClearing,
+                    \App\Enums\AccountType::UserFunding => $credits - $debits,
+                    default => $debits - $credits,
+                };
+            }
+
+            $difference = $data->currentFunds - $currentBalance;
+            $updatePayload['base_budget'] = $account->base_budget + $difference;
+        }
+
+        $account->update($updatePayload);
 
         return $account->refresh();
     }

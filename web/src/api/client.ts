@@ -32,6 +32,14 @@ client.interceptors.response.use(
             window.location.href = '/login';
         }
 
+        // Redirect to /account if 2FA is enforced but not set up
+        const message = (axiosError.response as any)?.data?.message;
+        if (status === 403 && message === 'Two-factor authentication must be enabled.') {
+            if (window.location.pathname !== '/account') {
+                window.location.href = '/account';
+            }
+        }
+
         return Promise.reject(error);
     },
 );

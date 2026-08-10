@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { createLedger } from '@/api/ledgers';
 import { fetchCurrencies } from '@/api/currencies';
 import { updateFinancialProfile } from '@/api/finances';
@@ -11,6 +14,10 @@ import { useLedgerStore } from '@/stores/ledgerStore';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field, FieldLabel, FieldError, FieldGroup, FieldContent } from '@/components/ui/field';
 import { centsToCurrency } from '@/lib/currency';
 import {
     ArrowRightIcon,
@@ -27,6 +34,33 @@ import {
     UserIcon,
     WalletIcon,
 } from 'lucide-react';
+
+const step1Schema = z.object({
+    spaceName: z.string().min(1, 'Space name is required'),
+    currencyCode: z.string().min(1),
+    settlementMode: z.enum(['joint_clearinghouse', 'direct_p2p']),
+    settlementTimezone: z.string().min(1, 'Timezone is required'),
+    settlementCutoffDay: z.number().int().min(1).max(31),
+    settlementAutoExecuteEnabled: z.boolean(),
+});
+
+const step2Schema = z.object({
+    incomeDescription: z.string().min(1, 'Description is required'),
+    incomeCents: z.number().min(0),
+    deductions: z.array(z.object({
+        description: z.string().min(1, 'Required'),
+        amount: z.number().min(0),
+    })),
+});
+
+const step3Schema = z.object({
+    accountName: z.string().min(1, 'Account name is required'),
+    accountBalanceCents: z.number(),
+});
+
+type Step1Values = z.infer<typeof step1Schema>;
+type Step2Values = z.infer<typeof step2Schema>;
+type Step3Values = z.infer<typeof step3Schema>;
 
 export function SetupWizard() {
     const navigate = useNavigate();
@@ -49,56 +83,56 @@ export function SetupWizard() {
         { code: 'GBP', symbol: '£', name: 'British Pound' },
     ], [currenciesData]);
 
-    // Step 1 state
-    const [spaceName, setSpaceName] = React.useState('');
-    const [currencyCode, setCurrencyCode] = React.useState('EUR');
-    const [settlementMode, setSettlementMode] = React.useState<'joint_clearinghouse' | 'direct_p2p'>(
-        'joint_clearinghouse'
-    );
+    const form1 = useForm<Step1Values>({
+        resolver: zodResolver(step1Schema),
+        defaultValues: {
+            spaceName: '',
+            currencyCode: 'EUR',
+            settlementMode: 'joint_clearinghouse',
+            settlementTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+            settlementCutoffDay: 31,
+            settlementAutoExecuteEnabled: false,
+        }
+    });
+
+    const form2 = useForm<Step2Values>({
+        resolver: zodResolver(step2Schema),
+        defaultValues: {
+            incomeDescription: 'Base Salary',
+            incomeCents: 100000,
+            deductions: [],
+        }
+    });
+
+    const { fields: deductionFields, append: appendDeduction, remove: removeDeduction } = useFieldArray({
+        control: form2.control,
+        name: 'deductions'
+    });
+
+    const form3 = useForm<Step3Values>({
+        resolver: zodResolver(step3Schema),
+        defaultValues: {
+            accountName: 'Personal Checking',
+            accountBalanceCents: 0,
+        }
+    });
 
     // Preset default currency when backend default (e.g. from Docker env) arrives
     React.useEffect(() => {
-        if (currenciesData?.default) {
-            setCurrencyCode(currenciesData.default);
+        if (currenciesData?.default && !form1.formState.isDirty) {
+            form1.setValue('currencyCode', currenciesData.default);
         }
-    }, [currenciesData]);
+    }, [currenciesData, form1]);
 
+    const watchedCurrencyCode = form1.watch('currencyCode');
     const activeCurrencySymbol = React.useMemo(() => {
-        const match = currencies.find((c) => c.code === currencyCode);
+        const match = currencies.find((c) => c.code === watchedCurrencyCode);
         return match?.symbol ?? '€';
-    }, [currencies, currencyCode]);
+    }, [currencies, watchedCurrencyCode]);
 
-    // Step 2 state: Impersonal suggestion 1,000 = 100000 cents
-    const [incomeDescription, setIncomeDescription] = React.useState('Base Salary');
-    const [incomeCents, setIncomeCents] = React.useState(100000);
-    const [deductions, setDeductions] = React.useState<IncomeOrDeductionItem[]>([]);
-
-    const handleAddDeduction = () => {
-        setDeductions((prev) => [
-            ...prev,
-            { description: '', amount: 0 },
-        ]);
-    };
-
-    const handleUpdateDeduction = (index: number, field: 'description' | 'amount', value: string | number) => {
-        setDeductions((prev) => {
-            const next = [...prev];
-            next[index] = { ...next[index], [field]: value };
-            return next;
-        });
-    };
-
-    const handleRemoveDeduction = (index: number) => {
-        setDeductions((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const totalDeductionsCents = React.useMemo(() => {
-        return deductions.reduce((sum, d) => sum + Math.max(0, d.amount), 0);
-    }, [deductions]);
-
-    const netCapacityCents = React.useMemo(() => {
-        return Math.max(0, incomeCents - totalDeductionsCents);
-    }, [incomeCents, totalDeductionsCents]);
+    const incomeCents = form2.watch('incomeCents');
+    const totalDeductionsCents = form2.watch('deductions').reduce((sum, d) => sum + Math.max(0, d.amount || 0), 0);
+    const netCapacityCents = Math.max(0, incomeCents - totalDeductionsCents);
 
     // Step 3 state: Fetch user's automatically initialized personal account
     const { data: existingAccounts } = useQuery({
@@ -110,30 +144,32 @@ export function SetupWizard() {
     const userPersonalAccount = React.useMemo(() => {
         if (!existingAccounts) return null;
         return (
-            existingAccounts.find((a) => a.type === 'personal' && a.owner_id === currentUser?.id) ||
-            existingAccounts.find((a) => a.type === 'personal') ||
+            existingAccounts.find((a) => a.type === 'user_funding' && a.owner_id === currentUser?.id) ||
+            existingAccounts.find((a) => a.type === 'user_funding') ||
             null
         );
     }, [existingAccounts, currentUser]);
 
-    const [accountName, setAccountName] = React.useState('Personal Checking');
-    const [accountBalanceCents, setAccountBalanceCents] = React.useState(0);
-
     // Pre-populate Step 3 fields with existing account details when available
     React.useEffect(() => {
-        if (userPersonalAccount) {
-            setAccountName(userPersonalAccount.name);
-            setAccountBalanceCents(userPersonalAccount.base_budget ?? userPersonalAccount.balance ?? 0);
+        if (userPersonalAccount && !form3.formState.isDirty) {
+            form3.reset({
+                accountName: userPersonalAccount.name,
+                accountBalanceCents: userPersonalAccount.base_budget ?? userPersonalAccount.balance ?? 0,
+            });
         }
-    }, [userPersonalAccount]);
+    }, [userPersonalAccount, form3]);
 
     // Mutation 1: Create Space
     const createSpaceMutation = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (values: Step1Values) => {
             return createLedger({
-                name: spaceName.trim() || 'Our Household',
-                currency: currencyCode,
-                settlement_mode: settlementMode,
+                name: values.spaceName.trim() || 'Our Household',
+                currency: values.currencyCode,
+                settlement_mode: values.settlementMode,
+                settlement_timezone: values.settlementTimezone,
+                settlement_cutoff_day: values.settlementCutoffDay,
+                settlement_auto_execute_enabled: values.settlementAutoExecuteEnabled,
             });
         },
         onSuccess: (ledger) => {
@@ -146,15 +182,15 @@ export function SetupWizard() {
 
     // Mutation 2: Save Profile
     const profileMutation = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (values: Step2Values) => {
             if (!createdLedger || !currentUser) throw new Error('Space or user missing');
-            const description = incomeDescription.trim() || 'Base Salary';
-            const amount = Math.max(0, incomeCents);
+            const description = values.incomeDescription.trim() || 'Base Salary';
+            const amount = Math.max(0, values.incomeCents);
             const incomes: IncomeOrDeductionItem[] = [
                 { description, amount }
             ];
 
-            const cleanedDeductions: IncomeOrDeductionItem[] = deductions
+            const cleanedDeductions: IncomeOrDeductionItem[] = values.deductions
                 .map((d) => ({
                     description: d.description.trim() || 'Fixed Commitment',
                     amount: Math.max(0, d.amount),
@@ -172,20 +208,19 @@ export function SetupWizard() {
 
     // Mutation 3: Update existing auto-created Personal Account
     const accountMutation = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (values: Step3Values) => {
             if (!createdLedger) throw new Error('Space missing');
-            const name = accountName.trim() || 'Personal Checking';
+            const name = values.accountName.trim() || 'Personal Checking';
             if (userPersonalAccount) {
                 return updateAccount(createdLedger.id, userPersonalAccount.id, {
                     name,
-                    base_budget: accountBalanceCents,
-                    balance: accountBalanceCents,
+                    current_funds: values.accountBalanceCents,
                 });
             }
             return createAccount(createdLedger.id, {
                 name,
-                type: 'personal',
-                balance: accountBalanceCents,
+                type: 'user_funding',
+                balance: values.accountBalanceCents,
             });
         },
         onSuccess: () => {
@@ -207,9 +242,9 @@ export function SetupWizard() {
     };
 
     return (
-        <Card className="w-full max-w-xl shadow-lg border">
+        <Card className="w-full max-w-xl shadow-lg border border-border bg-card">
             {/* Stepper Header */}
-            <CardHeader className="border-b bg-muted/20 pb-4">
+            <CardHeader className="border-b border-border bg-muted/20 pb-4">
                 <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     <span>Onboarding Wizard</span>
                     <span>Step {currentStep} of 4</span>
@@ -229,7 +264,7 @@ export function SetupWizard() {
             <CardContent className="pt-6 space-y-5">
                 {/* STEP 1: Create Space & Primary Currency */}
                 {currentStep === 1 && (
-                    <div className="space-y-4">
+                    <form id="step1-form" onSubmit={form1.handleSubmit((v) => createSpaceMutation.mutate(v))} className="space-y-4">
                         <div className="space-y-1">
                             <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                                 <PiggyBankIcon className="size-5 text-primary" />
@@ -240,84 +275,170 @@ export function SetupWizard() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <FieldGroup className="grid grid-cols-3 gap-3">
                             <div className="col-span-2">
-                                <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                    Space Name
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Our Home, Apartment 4B"
-                                    value={spaceName}
-                                    onChange={(e) => setSpaceName(e.target.value)}
-                                    className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                <Controller
+                                    control={form1.control}
+                                    name="spaceName"
+                                    render={({ field, fieldState }) => (
+                                        <Field>
+                                            <FieldLabel>Space Name</FieldLabel>
+                                            <FieldContent>
+                                                <Input {...field} placeholder="e.g. Our Home, Apartment 4B" className="bg-transparent" />
+                                            </FieldContent>
+                                            <FieldError errors={[fieldState.error]} />
+                                        </Field>
+                                    )}
                                 />
                             </div>
 
                             <div>
-                                <label className="text-xs font-medium text-muted-foreground block mb-1 flex items-center gap-1">
-                                    <CoinsIcon className="size-3.5" />
-                                    Currency
-                                </label>
-                                <select
-                                    value={currencyCode}
-                                    onChange={(e) => setCurrencyCode(e.target.value)}
-                                    className="h-10 w-full rounded-lg border border-input bg-card px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono"
-                                >
-                                    {currencies.map((c) => (
-                                        <option key={c.code} value={c.code}>
-                                            {c.code} ({c.symbol})
-                                        </option>
-                                    ))}
-                                </select>
+                                <Controller
+                                    control={form1.control}
+                                    name="currencyCode"
+                                    render={({ field, fieldState }) => (
+                                        <Field>
+                                            <FieldLabel className="flex items-center gap-1">
+                                                <CoinsIcon className="size-3.5" />
+                                                Currency
+                                            </FieldLabel>
+                                            <FieldContent>
+                                                <Select value={field.value} onValueChange={field.onChange}>
+                                                    <SelectTrigger className="font-mono bg-card">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {currencies.map((c) => (
+                                                            <SelectItem key={c.code} value={c.code}>
+                                                                {c.code} ({c.symbol})
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FieldContent>
+                                            <FieldError errors={[fieldState.error]} />
+                                        </Field>
+                                    )}
+                                />
                             </div>
-                        </div>
+                        </FieldGroup>
 
                         <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-2">
-                                Settlement Mode
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setSettlementMode('joint_clearinghouse')}
-                                    className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all ${
-                                        settlementMode === 'joint_clearinghouse'
-                                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                            : 'bg-card hover:bg-muted/50'
-                                    }`}
-                                >
-                                    <LandmarkIcon className="size-5 text-emerald-500" />
-                                    <div>
-                                        <div className="text-xs font-semibold text-foreground">
-                                            Joint Clearinghouse
-                                        </div>
-                                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                                            Refill a shared house pool account at settlement.
-                                        </div>
-                                    </div>
-                                </button>
+                            <Controller
+                                control={form1.control}
+                                name="settlementMode"
+                                render={({ field }) => (
+                                    <Field>
+                                        <FieldLabel>Settlement Mode</FieldLabel>
+                                        <FieldContent className="grid grid-cols-2 gap-3 mt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => field.onChange('joint_clearinghouse')}
+                                                className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all ${
+                                                    field.value === 'joint_clearinghouse'
+                                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                                        : 'bg-card hover:bg-muted/50'
+                                                }`}
+                                            >
+                                                <LandmarkIcon className="size-5 text-inflow" />
+                                                <div>
+                                                    <div className="text-xs font-semibold text-foreground">
+                                                        Joint Clearinghouse
+                                                    </div>
+                                                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                                                        Refill a shared house pool account at settlement.
+                                                    </div>
+                                                </div>
+                                            </button>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setSettlementMode('direct_p2p')}
-                                    className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all ${
-                                        settlementMode === 'direct_p2p'
-                                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                            : 'bg-card hover:bg-muted/50'
-                                    }`}
-                                >
-                                    <HandshakeIcon className="size-5 text-blue-500" />
-                                    <div>
-                                        <div className="text-xs font-semibold text-foreground">
-                                            Direct P2P
+                                            <button
+                                                type="button"
+                                                onClick={() => field.onChange('direct_p2p')}
+                                                className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all ${
+                                                    field.value === 'direct_p2p'
+                                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                                        : 'bg-card hover:bg-muted/50'
+                                                }`}
+                                            >
+                                                <HandshakeIcon className="size-5 text-info" />
+                                                <div>
+                                                    <div className="text-xs font-semibold text-foreground">
+                                                        Direct P2P
+                                                    </div>
+                                                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                                                        Direct peer-to-peer transfers between members.
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+                        </div>
+
+                        <div className="space-y-3 pt-3 border-t border-border">
+                            <h3 className="text-sm font-semibold text-foreground">Settlement Automation</h3>
+                            <FieldGroup className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Controller
+                                        control={form1.control}
+                                        name="settlementTimezone"
+                                        render={({ field, fieldState }) => (
+                                            <Field>
+                                                <FieldLabel>Timezone</FieldLabel>
+                                                <FieldContent>
+                                                    <Input {...field} className="bg-transparent" />
+                                                </FieldContent>
+                                                <FieldError errors={[fieldState.error]} />
+                                            </Field>
+                                        )}
+                                    />
+                                </div>
+                                <div>
+                                    <Controller
+                                        control={form1.control}
+                                        name="settlementCutoffDay"
+                                        render={({ field, fieldState }) => (
+                                            <Field>
+                                                <FieldLabel>Cutoff Day</FieldLabel>
+                                                <FieldContent>
+                                                    <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
+                                                        <SelectTrigger className="bg-card">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="1">1st of the month</SelectItem>
+                                                            <SelectItem value="15">15th of the month</SelectItem>
+                                                            <SelectItem value="31">Last day of the month</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FieldContent>
+                                                <FieldError errors={[fieldState.error]} />
+                                            </Field>
+                                        )}
+                                    />
+                                </div>
+                            </FieldGroup>
+                            
+                            <Controller
+                                control={form1.control}
+                                name="settlementAutoExecuteEnabled"
+                                render={({ field }) => (
+                                    <Field orientation="horizontal" className="items-start gap-2 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                                        <Checkbox 
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            className="mt-1"
+                                        />
+                                        <div>
+                                            <div className="text-sm font-medium text-foreground">Auto-Approve & Execute</div>
+                                            <div className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">
+                                                Enabling this will automatically close the period. This carries an operational risk of falling out of sync with real-world accounts if mistakes occur.
+                                            </div>
                                         </div>
-                                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                                            Direct peer-to-peer transfers between members.
-                                        </div>
-                                    </div>
-                                </button>
-                            </div>
+                                    </Field>
+                                )}
+                            />
                         </div>
 
                         {createSpaceMutation.isError && (
@@ -325,12 +446,12 @@ export function SetupWizard() {
                                 {getErrorMessage(createSpaceMutation.error)}
                             </p>
                         )}
-                    </div>
+                    </form>
                 )}
 
                 {/* STEP 2: Financial Profile & Fixed Deductions */}
                 {currentStep === 2 && (
-                    <div className="space-y-5">
+                    <form id="step2-form" onSubmit={form2.handleSubmit((v) => profileMutation.mutate(v))} className="space-y-5">
                         <div className="space-y-1">
                             <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                                 <UserIcon className="size-5 text-primary" />
@@ -342,33 +463,41 @@ export function SetupWizard() {
                         </div>
 
                         {/* Income Source */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                    Primary Income Source
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Base Salary"
-                                    value={incomeDescription}
-                                    onChange={(e) => setIncomeDescription(e.target.value)}
-                                    className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                    Monthly Income ({activeCurrencySymbol})
-                                </label>
-                                <CurrencyInput
-                                    value={incomeCents}
-                                    onCentsChange={setIncomeCents}
-                                    currencySymbol={activeCurrencySymbol}
-                                />
-                            </div>
-                        </div>
+                        <FieldGroup className="grid grid-cols-2 gap-3">
+                            <Controller
+                                control={form2.control}
+                                name="incomeDescription"
+                                render={({ field, fieldState }) => (
+                                    <Field>
+                                        <FieldLabel>Primary Income Source</FieldLabel>
+                                        <FieldContent>
+                                            <Input {...field} placeholder="e.g. Base Salary" className="bg-transparent" />
+                                        </FieldContent>
+                                        <FieldError errors={[fieldState.error]} />
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                control={form2.control}
+                                name="incomeCents"
+                                render={({ field, fieldState }) => (
+                                    <Field>
+                                        <FieldLabel>Monthly Income ({activeCurrencySymbol})</FieldLabel>
+                                        <FieldContent>
+                                            <CurrencyInput
+                                                value={field.value}
+                                                onCentsChange={field.onChange}
+                                                currencySymbol={activeCurrencySymbol}
+                                            />
+                                        </FieldContent>
+                                        <FieldError errors={[fieldState.error]} />
+                                    </Field>
+                                )}
+                            />
+                        </FieldGroup>
 
                         {/* Fixed Deductions & Commitments (Optional) */}
-                        <div className="space-y-3 border-t pt-4">
+                        <div className="space-y-3 border-t border-border pt-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -384,41 +513,47 @@ export function SetupWizard() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={handleAddDeduction}
-                                    className="gap-1 h-8 text-xs"
+                                    onClick={() => appendDeduction({ description: '', amount: 0 })}
+                                    className="gap-1 h-8 text-xs bg-background"
                                 >
                                     <PlusIcon className="size-3.5" />
                                     Add Deduction
                                 </Button>
                             </div>
 
-                            {deductions.length === 0 ? (
-                                <div className="rounded-lg border border-dashed p-3 text-center text-xs text-muted-foreground">
+                            {deductionFields.length === 0 ? (
+                                <div className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
                                     No fixed deductions added yet. Click <strong>+ Add Deduction</strong> if you have monthly commitments.
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {deductions.map((deduction, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Health Insurance, Taxes"
-                                                value={deduction.description}
-                                                onChange={(e) => handleUpdateDeduction(idx, 'description', e.target.value)}
-                                                className="h-9 flex-1 rounded-lg border border-input bg-transparent px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    {deductionFields.map((field, idx) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <Controller
+                                                control={form2.control}
+                                                name={`deductions.${idx}.description`}
+                                                render={({ field: inputField }) => (
+                                                    <Input {...inputField} placeholder="e.g. Health Insurance, Taxes" className="h-9 flex-1 bg-transparent text-xs" />
+                                                )}
                                             />
-                                            <div className="w-36">
-                                                <CurrencyInput
-                                                    value={deduction.amount}
-                                                    onCentsChange={(val) => handleUpdateDeduction(idx, 'amount', val)}
-                                                    currencySymbol={activeCurrencySymbol}
-                                                />
-                                            </div>
+                                            <Controller
+                                                control={form2.control}
+                                                name={`deductions.${idx}.amount`}
+                                                render={({ field: amountField }) => (
+                                                    <div className="w-36">
+                                                        <CurrencyInput
+                                                            value={amountField.value}
+                                                            onCentsChange={amountField.onChange}
+                                                            currencySymbol={activeCurrencySymbol}
+                                                        />
+                                                    </div>
+                                                )}
+                                            />
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleRemoveDeduction(idx)}
+                                                onClick={() => removeDeduction(idx)}
                                                 className="size-9 text-muted-foreground hover:text-destructive shrink-0"
                                             >
                                                 <Trash2Icon className="size-4" />
@@ -430,7 +565,7 @@ export function SetupWizard() {
                         </div>
 
                         {/* Capacity Summary Preview */}
-                        <div className="rounded-lg border bg-muted/30 p-3 text-xs flex items-center justify-between text-muted-foreground">
+                        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs flex items-center justify-between text-muted-foreground">
                             <span>Net Shareable Capacity:</span>
                             <span className="font-semibold text-foreground text-sm">
                                 {centsToCurrency(netCapacityCents, activeCurrencySymbol)}
@@ -442,12 +577,12 @@ export function SetupWizard() {
                                 {getErrorMessage(profileMutation.error)}
                             </p>
                         )}
-                    </div>
+                    </form>
                 )}
 
                 {/* STEP 3: Payment Account (Updating auto-created personal account) */}
                 {currentStep === 3 && (
-                    <div className="space-y-4">
+                    <form id="step3-form" onSubmit={form3.handleSubmit((v) => accountMutation.mutate(v))} className="space-y-4">
                         <div className="space-y-1">
                             <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                                 <WalletIcon className="size-5 text-primary" />
@@ -458,42 +593,51 @@ export function SetupWizard() {
                             </p>
                         </div>
 
-                        <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                Account Name
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Personal Checking, Revolut"
-                                value={accountName}
-                                onChange={(e) => setAccountName(e.target.value)}
-                                className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        <FieldGroup>
+                            <Controller
+                                control={form3.control}
+                                name="accountName"
+                                render={({ field, fieldState }) => (
+                                    <Field>
+                                        <FieldLabel>Account Name</FieldLabel>
+                                        <FieldContent>
+                                            <Input {...field} placeholder="e.g. Personal Checking, Revolut" className="bg-transparent" />
+                                        </FieldContent>
+                                        <FieldError errors={[fieldState.error]} />
+                                    </Field>
+                                )}
                             />
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                Initial Balance ({activeCurrencySymbol})
-                            </label>
-                            <CurrencyInput
-                                value={accountBalanceCents}
-                                onCentsChange={setAccountBalanceCents}
-                                currencySymbol={activeCurrencySymbol}
+                            <Controller
+                                control={form3.control}
+                                name="accountBalanceCents"
+                                render={({ field, fieldState }) => (
+                                    <Field>
+                                        <FieldLabel>Initial Balance ({activeCurrencySymbol})</FieldLabel>
+                                        <FieldContent>
+                                            <CurrencyInput
+                                                value={field.value}
+                                                onCentsChange={field.onChange}
+                                                currencySymbol={activeCurrencySymbol}
+                                            />
+                                        </FieldContent>
+                                        <FieldError errors={[fieldState.error]} />
+                                    </Field>
+                                )}
                             />
-                        </div>
+                        </FieldGroup>
 
                         {accountMutation.isError && (
                             <p className="text-xs text-destructive">
                                 {getErrorMessage(accountMutation.error)}
                             </p>
                         )}
-                    </div>
+                    </form>
                 )}
 
                 {/* STEP 4: All Set */}
                 {currentStep === 4 && (
                     <div className="space-y-4 text-center py-4">
-                        <div className="size-12 rounded-full bg-emerald-500/15 text-emerald-600 mx-auto flex items-center justify-center">
+                        <div className="size-12 rounded-full bg-inflow/15 text-inflow mx-auto flex items-center justify-center">
                             <CheckCircle2Icon className="size-7" />
                         </div>
                         <div className="space-y-1">
@@ -501,43 +645,43 @@ export function SetupWizard() {
                                 You're All Set!
                             </h2>
                             <p className="text-sm text-muted-foreground">
-                                Your space <strong>"{createdLedger?.name || spaceName || 'Our Household'}"</strong> is ready to use.
+                                Your space <strong>"{createdLedger?.name || form1.watch('spaceName') || 'Our Household'}"</strong> is ready to use.
                             </p>
                         </div>
 
-                        <div className="rounded-xl border bg-muted/20 p-4 text-xs space-y-2 text-left max-w-md mx-auto font-mono">
-                            <div className="flex justify-between border-b pb-1">
+                        <div className="rounded-xl border border-border bg-muted/20 p-4 text-xs space-y-2 text-left max-w-md mx-auto font-mono">
+                            <div className="flex justify-between border-b border-border pb-1">
                                 <span className="text-muted-foreground">Space:</span>
                                 <span className="font-semibold">{createdLedger?.name}</span>
                             </div>
-                            <div className="flex justify-between border-b pb-1">
+                            <div className="flex justify-between border-b border-border pb-1">
                                 <span className="text-muted-foreground">Currency:</span>
-                                <span className="font-semibold">{currencyCode} ({activeCurrencySymbol})</span>
+                                <span className="font-semibold">{form1.watch('currencyCode')} ({activeCurrencySymbol})</span>
                             </div>
-                            <div className="flex justify-between border-b pb-1">
+                            <div className="flex justify-between border-b border-border pb-1">
                                 <span className="text-muted-foreground">Gross Income:</span>
-                                <span className="font-semibold text-emerald-600">{centsToCurrency(incomeCents, activeCurrencySymbol)}</span>
+                                <span className="font-semibold text-inflow">{centsToCurrency(incomeCents, activeCurrencySymbol)}</span>
                             </div>
                             {totalDeductionsCents > 0 && (
-                                <div className="flex justify-between border-b pb-1">
+                                <div className="flex justify-between border-b border-border pb-1">
                                     <span className="text-muted-foreground">Fixed Deductions:</span>
-                                    <span className="font-semibold text-rose-500">-{centsToCurrency(totalDeductionsCents, activeCurrencySymbol)}</span>
+                                    <span className="font-semibold text-destructive">-{centsToCurrency(totalDeductionsCents, activeCurrencySymbol)}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between border-b pb-1">
+                            <div className="flex justify-between border-b border-border pb-1">
                                 <span className="text-muted-foreground">Net Shareable Capacity:</span>
                                 <span className="font-semibold text-foreground">{centsToCurrency(netCapacityCents, activeCurrencySymbol)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Payment Account:</span>
-                                <span className="font-semibold">{accountName}</span>
+                                <span className="font-semibold">{form3.watch('accountName')}</span>
                             </div>
                         </div>
                     </div>
                 )}
             </CardContent>
 
-            <CardFooter className="flex items-center justify-between border-t bg-muted/10 pt-4">
+            <CardFooter className="flex items-center justify-between border-t border-border bg-muted/10 pt-4">
                 {currentStep === 1 && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <SparklesIcon className="size-3.5 text-primary" />
@@ -571,8 +715,9 @@ export function SetupWizard() {
 
                 {currentStep === 1 && (
                     <Button
-                        onClick={() => createSpaceMutation.mutate()}
-                        disabled={createSpaceMutation.isPending || !spaceName.trim()}
+                        type="submit"
+                        form="step1-form"
+                        disabled={createSpaceMutation.isPending}
                         className="gap-2 ml-auto"
                     >
                         {createSpaceMutation.isPending ? (
@@ -586,7 +731,8 @@ export function SetupWizard() {
 
                 {currentStep === 2 && (
                     <Button
-                        onClick={() => profileMutation.mutate()}
+                        type="submit"
+                        form="step2-form"
                         disabled={profileMutation.isPending}
                         className="gap-2 ml-auto"
                     >
@@ -601,8 +747,9 @@ export function SetupWizard() {
 
                 {currentStep === 3 && (
                     <Button
-                        onClick={() => accountMutation.mutate()}
-                        disabled={accountMutation.isPending || !accountName.trim()}
+                        type="submit"
+                        form="step3-form"
+                        disabled={accountMutation.isPending}
                         className="gap-2 ml-auto"
                     >
                         {accountMutation.isPending ? (

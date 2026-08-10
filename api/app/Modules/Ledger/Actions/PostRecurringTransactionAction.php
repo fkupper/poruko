@@ -30,8 +30,9 @@ final readonly class PostRecurringTransactionAction
 
         $postData = PostManualTransactionData::fromArray([
             'ledger_id' => $blueprint->ledger_id,
-            'credit_account_id' => $blueprint->credit_account_id,
-            'debit_account_id' => $blueprint->debit_account_id,
+            'payer_account_id' => $blueprint->payer_account_id,
+            'destination_account_id' => $blueprint->destination_account_id,
+            'destination_account_id' => $blueprint->destination_account_id,
             'amount' => $blueprint->amount,
             'split_rule' => $splitRule,
             'participants' => $participants,
@@ -44,7 +45,7 @@ final readonly class PostRecurringTransactionAction
             $transaction = $this->postManualTransactionAction->execute($postData);
             $transaction->update(['source_recurring_transaction_id' => $blueprint->id]);
 
-            return $transaction->fresh(['creditAccount', 'debitAccount', 'postings']);
+            return $transaction->fresh(['payerAccount', 'postings']);
         });
     }
 }

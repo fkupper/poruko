@@ -1,5 +1,9 @@
 <?php
 
+if (!class_exists(AuthIn::class)) {
+    return [];
+}
+
 use Knuckles\Scribe\Config\AuthIn;
 use function Knuckles\Scribe\Config\configureStrategy;
 use Knuckles\Scribe\Config\Defaults;

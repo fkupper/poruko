@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -17,6 +18,8 @@ class Account extends Model
 {
     /** @use HasFactory<\Database\Factories\AccountFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     /** @var list<string> */
     protected $fillable = [
@@ -64,8 +67,4 @@ class Account extends Model
     }
 
     /** @return HasMany<Transaction, $this> */
-    public function debitTransactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class, 'debit_account_id');
-    }
 }

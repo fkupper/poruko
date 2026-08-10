@@ -26,7 +26,7 @@ class PersonalAccountQuery
         return Account::query()
             ->where('ledger_id', $ledgerId)
             ->where('owner_id', $ownerId)
-            ->where('type', AccountType::Personal)
+            ->where('type', AccountType::UserFunding)
             ->count();
     }
 }

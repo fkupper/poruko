@@ -6,6 +6,7 @@ import { centsToCurrency } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusIcon, Trash2Icon, UserIcon, SaveIcon, Loader2Icon, CheckCircle2Icon } from 'lucide-react';
@@ -108,7 +109,7 @@ export default function MyFinancePage() {
     }
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -191,17 +192,17 @@ export default function MyFinancePage() {
                     <CardContent className="space-y-3">
                         {incomes.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-3">
-                                <input
+                                <Input
                                     type="text"
                                     placeholder="Source (e.g. Salary, Freelance)"
                                     value={item.description}
                                     onChange={(e) => updateIncome(idx, 'description', e.target.value)}
-                                    className="h-10 flex-1 rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="h-10 flex-1"
                                 />
                                 <div className="w-40">
                                     <CurrencyInput
                                         value={item.amount}
-                                        onCentsChange={(cents) => updateIncome(idx, 'amount', cents)}
+                                        onCentsChange={(cents) => updateIncome(idx, 'amount', cents || 0)}
                                     />
                                 </div>
                                 <Button
@@ -233,17 +234,17 @@ export default function MyFinancePage() {
                     <CardContent className="space-y-3">
                         {deductions.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-3">
-                                <input
+                                <Input
                                     type="text"
                                     placeholder="Deduction (e.g. Student Loan, Health Insurance)"
                                     value={item.description}
                                     onChange={(e) => updateDeduction(idx, 'description', e.target.value)}
-                                    className="h-10 flex-1 rounded-lg border border-input bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="h-10 flex-1"
                                 />
                                 <div className="w-40">
                                     <CurrencyInput
                                         value={item.amount}
-                                        onCentsChange={(cents) => updateDeduction(idx, 'amount', cents)}
+                                        onCentsChange={(cents) => updateDeduction(idx, 'amount', cents || 0)}
                                     />
                                 </div>
                                 <Button

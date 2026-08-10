@@ -11,7 +11,6 @@ use App\Modules\Ledger\Data\PostManualTransactionData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -21,23 +20,25 @@ class PostManualTransactionActionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testItCreatesExactlyTwoBalancedPostingsForAnySplitRule(): void
+    public function testItCreatesBalancedPostingsForAnySplitRule(): void
     {
         // Arrange
         $ledger = Ledger::factory()->create();
         $user = User::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
-        $creditAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
-        $debitAccount = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
 
         // Act
         $transaction = $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditAccount->id,
-            'debit_account_id' => $debitAccount->id,
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 5000,
             'description' => 'Groceries',
             'date' => '2026-03-10',
@@ -48,23 +49,30 @@ class PostManualTransactionActionTest extends TestCase
 
         // Assert
         $this->assertSame(5000, $transaction->amount);
-        $this->assertCount(2, $transaction->postings);
+        $this->assertCount(4, $transaction->postings);
 
-        $credit = $transaction->postings->firstWhere('direction', PostingDirection::Credit);
-        $debit = $transaction->postings->firstWhere('direction', PostingDirection::Debit);
+        $payerCredit = $transaction->postings->firstWhere('account_id', $payerAccount->id);
+        $expenseDebit = $transaction->postings->firstWhere('account_id', $spaceExpenseAccount->id);
 
-        $this->assertSame(5000, $credit->amount);
-        $this->assertSame($creditAccount->id, $credit->account_id);
-        $this->assertSame(5000, $debit->amount);
-        $this->assertSame($debitAccount->id, $debit->account_id);
+        $this->assertNotNull($payerCredit);
+        $this->assertNotNull($expenseDebit);
+
+        $this->assertSame(5000, $payerCredit->amount);
+        $this->assertSame(PostingDirection::Credit, $payerCredit->direction);
+        $this->assertSame(5000, $expenseDebit->amount);
+        $this->assertSame(PostingDirection::Debit, $expenseDebit->direction);
     }
 
     public function testItRejectsNonPositiveAmount(): void
     {
         // Arrange
         $ledger = Ledger::factory()->create();
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
 
@@ -75,8 +83,8 @@ class PostManualTransactionActionTest extends TestCase
         // Act
         $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 0,
             'description' => 'Invalid',
             'date' => '2026-03-10',
@@ -86,23 +94,20 @@ class PostManualTransactionActionTest extends TestCase
         ]));
     }
 
-    #[DataProvider('accountOutsideLedgerDataProvider')]
-    public function testItRejectsAccountOutsideTargetLedger(string $foreignAccount): void
+    public function testItRejectsAccountOutsideTargetLedger(): void
     {
         // Arrange
         $ledger = Ledger::factory()->create();
         $otherLedger = Ledger::factory()->create();
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
         $foreignCredit = Account::factory()->create(['ledger_id' => $otherLedger->id]);
-        $foreignDebit = Account::factory()->create(['ledger_id' => $otherLedger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $payload = [
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $foreignAccount === 'credit' ? $foreignCredit->id : $credit->id,
-            'debit_account_id' => $foreignAccount === 'debit' ? $foreignDebit->id : $debit->id,
+            'payer_account_id' => $foreignCredit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 100,
-            'description' => "Foreign {$foreignAccount}",
+            'description' => 'Foreign payer',
             'date' => '2026-03-10',
             'type' => 'manual',
             'split_rule' => 'equal',
@@ -113,18 +118,10 @@ class PostManualTransactionActionTest extends TestCase
 
         // Anticipate
         $this->expectException(InvalidLedgerPostingException::class);
-        $this->expectExceptionMessage('do not belong to the target ledger');
+        $this->expectExceptionMessage('One or more accounts do not belong to the target ledger.');
 
         // Act
         $action->execute(PostManualTransactionData::fromArray($payload));
-    }
-
-    public static function accountOutsideLedgerDataProvider(): array
-    {
-        return [
-            'credit account outside ledger' => ['credit'],
-            'debit account outside ledger' => ['debit'],
-        ];
     }
 
     public function testItStoresParticipantsAsIs(): void
@@ -132,8 +129,11 @@ class PostManualTransactionActionTest extends TestCase
         // Arrange
         $ledger = Ledger::factory()->create();
         $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Member');
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
         $participants = [
@@ -143,8 +143,8 @@ class PostManualTransactionActionTest extends TestCase
         // Act
         $transaction = $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 1000,
             'description' => 'With participants',
             'date' => '2026-03-10',
@@ -164,7 +164,7 @@ class PostManualTransactionActionTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
 
@@ -175,8 +175,8 @@ class PostManualTransactionActionTest extends TestCase
         // Act
         $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 100,
             'description' => 'Too many',
             'date' => '2026-03-10',
@@ -194,8 +194,11 @@ class PostManualTransactionActionTest extends TestCase
         // Arrange
         $ledger = Ledger::factory()->create();
         $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Member');
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
 
@@ -206,8 +209,8 @@ class PostManualTransactionActionTest extends TestCase
         // Act
         $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 100,
             'description' => 'No share',
             'date' => '2026-03-10',
@@ -223,16 +226,20 @@ class PostManualTransactionActionTest extends TestCase
     {
         // Arrange
         $ledger = Ledger::factory()->create();
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
 
         // Act
         $transaction = $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 500,
             'description' => 'All users default',
             'date' => '2026-03-10',
@@ -244,24 +251,28 @@ class PostManualTransactionActionTest extends TestCase
         // Assert
         $this->assertSame(500, $transaction->amount);
         $this->assertSame([], $transaction->participants);
-        $this->assertCount(2, $transaction->postings);
+
+        $this->assertCount(4, $transaction->postings);
     }
 
-    public function testItCreatesTwoPostingsForProportionalSplit(): void
+    public function testItCreatesFourPostingsForProportionalSplit(): void
     {
         // Arrange
         $ledger = Ledger::factory()->create();
         $user = User::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Member');
         $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $action = app(PostManualTransactionAction::class);
 
         // Act
         $transaction = $action->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 1000,
             'description' => 'Proportional kept as metadata',
             'date' => '2026-03-10',
@@ -271,8 +282,8 @@ class PostManualTransactionActionTest extends TestCase
         ]));
 
         // Assert
-        $this->assertCount(2, $transaction->postings);
-        $this->assertSame(1000, (int) $transaction->postings->where('direction', PostingDirection::Credit)->sum('amount'));
-        $this->assertSame(1000, (int) $transaction->postings->where('direction', PostingDirection::Debit)->sum('amount'));
+        $this->assertCount(4, $transaction->postings);
+        $this->assertSame(2000, (int) $transaction->postings->where('direction', PostingDirection::Credit)->sum('amount'));
+        $this->assertSame(2000, (int) $transaction->postings->where('direction', PostingDirection::Debit)->sum('amount'));
     }
 }

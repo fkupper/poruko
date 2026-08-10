@@ -19,6 +19,15 @@ class StoreAccountRequest extends FormRequest
             && $this->user()?->can('create', [Account::class, $ledger]) === true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (in_array($this->input('type'), [AccountType::UserFunding->value, AccountType::UserLiability->value]) && empty($this->input('owner_id'))) {
+            $this->merge([
+                'owner_id' => $this->user()?->id,
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

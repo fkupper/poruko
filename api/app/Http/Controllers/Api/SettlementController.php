@@ -22,10 +22,17 @@ class SettlementController extends Controller
         private readonly SettlementSafetyGateService $settlementSafetyGateService,
     ) {}
 
-    public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action): Response
+    public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action, \App\Modules\Ledger\Services\SettlementCycleService $cycleService): Response
     {
-        $date = (string) $request->validated()['date'];
-        $preview = $action->execute($ledger, $date);
+        $date = $request->validated()['date'] ?? null;
+
+        if ($date === null) {
+            $period = $cycleService->resolveNextPendingPeriod($ledger);
+        } else {
+            $period = $cycleService->resolvePeriodForDate($ledger, (string) $date);
+        }
+
+        $preview = $action->executeForPeriod($ledger, $period);
         $gate = $this->settlementSafetyGateService->evaluate($ledger, $preview);
 
         return response([
@@ -36,6 +43,13 @@ class SettlementController extends Controller
                     'reason' => $gate['reason'],
                 ],
             ],
+        ]);
+    }
+
+    public function periods(Ledger $ledger, \App\Modules\Ledger\Services\SettlementCycleService $cycleService): \Illuminate\Http\JsonResponse
+    {
+        return response()->json([
+            'data' => $cycleService->getAvailablePeriods($ledger),
         ]);
     }
 

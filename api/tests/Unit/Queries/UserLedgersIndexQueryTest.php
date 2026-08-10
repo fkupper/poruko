@@ -24,9 +24,13 @@ class UserLedgersIndexQueryTest extends TestCase
 
         $userLedger = Ledger::factory()->create(['name' => 'My Ledger']);
         $userLedger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($userLedger->id);
+        $user->assignRole('Admin');
 
         $otherLedger = Ledger::factory()->create(['name' => 'Other Ledger']);
         $otherLedger->users()->attach($otherUser->id, ['role' => 'admin']);
+        setPermissionsTeamId($otherLedger->id);
+        $otherUser->assignRole('Admin');
 
         $query = app(UserLedgersIndexQuery::class);
 
@@ -44,7 +48,12 @@ class UserLedgersIndexQueryTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
-        $ledger->users()->attach(User::factory()->create()->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $member = User::factory()->create();
+        $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
 
         $query = app(UserLedgersIndexQuery::class);
 

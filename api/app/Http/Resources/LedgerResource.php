@@ -29,6 +29,13 @@ class LedgerResource extends JsonResource
             'settlement_cutoff_time' => $this->settlement_cutoff_time,
             'settlement_auto_execute_enabled' => $this->settlement_auto_execute_enabled,
             'users_count' => $this->whenCounted('users'),
+            'my_preferences' => $this->when($this->pivot, function () {
+                return [
+                    'main_personal_account_id' => $this->pivot->main_personal_account_id,
+                    'default_payment_account_id' => $this->pivot->default_payment_account_id,
+                    'default_expense_account_id' => $this->pivot->default_expense_account_id,
+                ];
+            }),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

@@ -23,12 +23,10 @@ class UpdateRecurringTransactionActionTest extends TestCase
     {
         $ledger = Ledger::factory()->create();
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 100000,
             'valid_from' => '2026-01-01',
             'valid_to' => null,
@@ -59,12 +57,10 @@ class UpdateRecurringTransactionActionTest extends TestCase
     {
         $ledger = Ledger::factory()->create();
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'valid_from' => '2026-01-01',
             'valid_to' => '2026-05-31',
         ]);

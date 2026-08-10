@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { fetchLedgers } from '@/api/ledgers';
@@ -14,11 +14,14 @@ export function SpaceGuard() {
     });
 
     // Track whether user ALREADY had spaces when SpaceGuard originally loaded
-    const hadSpacesOnMountRef = useRef<boolean | null>(null);
+    const [hadSpacesOnMount, setHadSpacesOnMount] = useState<boolean | null>(null);
 
-    if (!isPending && hadSpacesOnMountRef.current === null) {
-        hadSpacesOnMountRef.current = !isError && Array.isArray(ledgers) && ledgers.length > 0;
-    }
+    useEffect(() => {
+        if (!isPending && hadSpacesOnMount === null) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setHadSpacesOnMount(!isError && Array.isArray(ledgers) && ledgers.length > 0);
+        }
+    }, [isPending, isError, ledgers, hadSpacesOnMount]);
 
     if (isPending) {
         return (
@@ -39,7 +42,7 @@ export function SpaceGuard() {
     }
 
     // Only redirect away from /setup if the user ALREADY had spaces when they arrived
-    if (hadSpacesOnMountRef.current && isSetupPage) {
+    if (hadSpacesOnMount === true && isSetupPage) {
         return <Navigate to="/" replace />;
     }
 

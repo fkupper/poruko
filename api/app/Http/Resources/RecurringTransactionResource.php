@@ -27,9 +27,7 @@ class RecurringTransactionResource extends JsonResource
             'id' => $model->id,
             'ledger_id' => $model->ledger_id,
             'credit_account_id' => $model->credit_account_id,
-            'credit_account_name' => $this->whenLoaded('creditAccount', fn () => $model->creditAccount?->name),
-            'debit_account_id' => $model->debit_account_id,
-            'debit_account_name' => $this->whenLoaded('debitAccount', fn () => $model->debitAccount?->name),
+            'payer_account_name' => $this->whenLoaded('payerAccount', fn () => $model->payerAccount?->name),
             'amount' => $model->amount,
             'description' => $model->description,
             'split_rule' => $model->split_rule instanceof TransactionSplitRule ? $model->split_rule->value : (string) $model->split_rule,
@@ -38,6 +36,7 @@ class RecurringTransactionResource extends JsonResource
             'valid_from' => $model->valid_from->format('Y-m-d'),
             'valid_to' => $validTo,
             'is_active' => $isActive,
+            'status' => $model->status,
             'created_at' => $model->created_at?->toISOString(),
             'updated_at' => $model->updated_at?->toISOString(),
         ];

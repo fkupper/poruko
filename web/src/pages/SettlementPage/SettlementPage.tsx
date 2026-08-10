@@ -1,36 +1,59 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchSettlementPreview, executeSettlement } from '@/api/settlements';
+import { useSearchParams } from 'react-router-dom';
+import { fetchSettlementPreview, fetchSettlementPeriods, executeSettlement } from '@/api/settlements';
 import { centsToCurrency, formatPercent } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
+import { TransactionsTable } from '@/features/transactions/TransactionsTable/TransactionsTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
 import {
     AlertTriangleIcon,
     ArrowRightIcon,
     ChevronDownIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
     ChevronUpIcon,
     HandCoinsIcon,
     LockIcon,
-    ShieldAlertIcon,
 } from 'lucide-react';
 
 export default function SettlementPage() {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const selectedDate = searchParams.get('date') || undefined;
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [showMathBreakdown, setShowMathBreakdown] = React.useState(true);
     const [confirmText, setConfirmText] = React.useState('');
 
-    const { data: settlement, isPending, isError, refetch } = useQuery({
-        queryKey: ['settlement-preview', activeLedgerId],
-        queryFn: () => fetchSettlementPreview(activeLedgerId!),
+    const { data: periods = [] } = useQuery({
+        queryKey: ['settlement-periods', activeLedgerId],
+        queryFn: () => fetchSettlementPeriods(activeLedgerId!),
         enabled: !!activeLedgerId,
     });
+
+    const { data: settlement, isPending, isError, refetch } = useQuery({
+        queryKey: ['settlement-preview', activeLedgerId, selectedDate],
+        queryFn: () => fetchSettlementPreview(activeLedgerId!, selectedDate),
+        enabled: !!activeLedgerId,
+    });
+
+    const currentIndex = periods.findIndex((p) => p.period_end === settlement?.period_end);
+    const prevPeriod = currentIndex > 0 ? periods[currentIndex - 1] : null;
+    const nextPeriod = currentIndex >= 0 && currentIndex < periods.length - 1 ? periods[currentIndex + 1] : null;
 
     const mutation = useMutation({
         mutationFn: async () => {
@@ -39,6 +62,7 @@ export default function SettlementPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['settlement-preview', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['settlement-periods', activeLedgerId] });
             queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
             setIsConfirmOpen(false);
             setConfirmText('');
@@ -58,15 +82,75 @@ export default function SettlementPage() {
                     </p>
                 </div>
                 {settlement && (
-                    <Button
-                        onClick={() => setIsConfirmOpen(true)}
-                        className="gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                    >
-                        <LockIcon className="size-4" />
-                        Execute & Lock Month
-                    </Button>
+                    settlement.is_settled ? (
+                        <Button variant="outline" disabled className="gap-2 shrink-0">
+                            <LockIcon className="size-4 text-muted-foreground" />
+                            Month Locked & Settled
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={() => setIsConfirmOpen(true)}
+                            className="gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                        >
+                            <LockIcon className="size-4" />
+                            Execute & Lock Month
+                        </Button>
+                    )
                 )}
             </div>
+
+            {/* Period Navigation Header */}
+            {periods.length > 0 && (
+                <div className="rounded-xl border bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            disabled={!prevPeriod}
+                            onClick={() => prevPeriod && setSearchParams({ date: prevPeriod.period_end })}
+                        >
+                            <ChevronLeftIcon className="size-4" />
+                        </Button>
+
+                        <span className="font-semibold text-sm font-mono px-2 min-w-[110px] text-center">
+                            {periods.find((p) => p.period_end === settlement?.period_end)?.label || settlement?.period_end}
+                        </span>
+
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            disabled={!nextPeriod}
+                            onClick={() => nextPeriod && setSearchParams({ date: nextPeriod.period_end })}
+                        >
+                            <ChevronRightIcon className="size-4" />
+                        </Button>
+
+                        <select
+                            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:outline-hidden"
+                            value={settlement?.period_end || ''}
+                            onChange={(e) => setSearchParams({ date: e.target.value })}
+                        >
+                            {periods.map((p) => (
+                                <option key={p.period_end} value={p.period_end}>
+                                    {p.label} ({p.status.toUpperCase()})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {settlement?.is_settled ? (
+                        <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                            <LockIcon className="size-3.5" />
+                            SETTLED {settlement.executed_at ? `(${new Date(settlement.executed_at).toLocaleDateString()})` : ''}
+                        </Badge>
+                    ) : (
+                        <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                            <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                            OPEN CYCLE
+                        </Badge>
+                    )}
+                </div>
+            )}
 
             {isPending ? (
                 <div className="h-64 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
@@ -209,17 +293,36 @@ export default function SettlementPage() {
                             </CardContent>
                         )}
                     </Card>
+
+                    {/* Cycle Transactions */}
+                    <Card>
+                        <CardHeader pb-2>
+                            <CardTitle className="text-base font-semibold text-foreground">
+                                Cycle Transactions ({settlement.period_start} to {settlement.period_end})
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <TransactionsTable
+                                fixedFilters={{
+                                    from_date: settlement.period_start,
+                                    to_date: settlement.period_end,
+                                }}
+                                showFilters={false}
+                            />
+                        </CardContent>
+                    </Card>
                 </>
             )}
 
             {/* High-Friction Confirmation Modal */}
             <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-destructive">
-                        <ShieldAlertIcon className="size-5" />
-                        High-Friction Action: Confirm Settlement Execution
-                    </DialogTitle>
-                </DialogHeader>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangleIcon className="size-5" />
+                            Confirm Settlement Cycle Execution
+                        </DialogTitle>
+                    </DialogHeader>
 
                 <div className="space-y-4 text-sm text-muted-foreground">
                     <p>
@@ -236,12 +339,12 @@ export default function SettlementPage() {
                         Type <strong>CONFIRM</strong> below to authorize locking this period.
                     </div>
 
-                    <input
+                    <Input
                         type="text"
                         placeholder="Type CONFIRM"
                         value={confirmText}
                         onChange={(e) => setConfirmText(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 font-mono text-sm uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="h-10 uppercase font-mono"
                     />
                 </div>
 
@@ -261,9 +364,9 @@ export default function SettlementPage() {
                         onClick={() => mutation.mutate()}
                     >
                         Execute Settlement & Lock
-                    </Button>
-                </DialogFooter>
-                <DialogClose onClose={() => setIsConfirmOpen(false)} />
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
             </Dialog>
         </div>
     );

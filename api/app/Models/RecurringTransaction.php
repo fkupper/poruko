@@ -23,13 +23,20 @@ class RecurringTransaction extends Model
 {
     /** @use HasFactory<\Database\Factories\RecurringTransactionFactory> */
     use HasFactory;
+
     use SoftDeletes;
+
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_PREVIOUS_VERSION = 'previous_version';
+
+    public const STATUS_DELETED = 'deleted';
 
     /** @var list<string> */
     protected $fillable = [
         'ledger_id',
-        'credit_account_id',
-        'debit_account_id',
+        'payer_account_id',
+        'destination_account_id',
         'amount',
         'description',
         'split_rule',
@@ -61,21 +68,33 @@ class RecurringTransaction extends Model
     }
 
     /** @return BelongsTo<Account, $this> */
-    public function creditAccount(): BelongsTo
+    public function destinationAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'credit_account_id');
+        return $this->belongsTo(Account::class, 'destination_account_id');
     }
 
-    /** @return BelongsTo<Account, $this> */
-    public function debitAccount(): BelongsTo
+    public function payerAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'debit_account_id');
+        return $this->belongsTo(Account::class, 'payer_account_id');
     }
 
     /** @return HasMany<Transaction, $this> */
     public function materializedTransactions(): HasMany
     {
         return $this->hasMany(Transaction::class, 'source_recurring_transaction_id');
+    }
+
+    public function getStatusAttribute(): string
+    {
+        if ($this->trashed()) {
+            return self::STATUS_DELETED;
+        }
+
+        if ($this->valid_to !== null) {
+            return self::STATUS_PREVIOUS_VERSION;
+        }
+
+        return self::STATUS_ACTIVE;
     }
 
     /**
@@ -85,6 +104,24 @@ class RecurringTransaction extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereNull('valid_to');
+    }
+
+    /**
+     * @param Builder<RecurringTransaction> $query
+     * @return Builder<RecurringTransaction>
+     */
+    public function scopePreviousVersion(Builder $query): Builder
+    {
+        return $query->whereNotNull('valid_to');
+    }
+
+    /**
+     * @param Builder<RecurringTransaction> $query
+     * @return Builder<RecurringTransaction>
+     */
+    public function scopeDeleted(Builder $query): Builder
+    {
+        return $query->onlyTrashed();
     }
 
     /**

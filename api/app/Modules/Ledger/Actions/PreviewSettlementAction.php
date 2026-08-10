@@ -105,12 +105,12 @@ readonly class PreviewSettlementAction
      *   }>
      * }
      */
-    private function executeForPeriod(Ledger $ledger, array $period): array
+    public function executeForPeriod(Ledger $ledger, array $period): array
     {
         $periodStart = $period['period_start'];
         $periodEnd = $period['period_end'];
 
-        $users = $ledger->users()->select(['users.id', 'users.name'])->get();
+        $users = $ledger->allUsers()->select(['users.id', 'users.name'])->get();
         /** @var list<int> $userIds */
         $userIds = array_values(array_map('intval', $users->pluck('id')->all()));
 
@@ -131,51 +131,83 @@ readonly class PreviewSettlementAction
         $liabilityByUser = array_fill_keys($userIds, 0);
         $outOfPocketByUser = array_fill_keys($userIds, 0);
 
-        $transactions = Transaction::query()
-            ->with('creditAccount')
-            ->where('ledger_id', $ledger->id)
-            ->where('type', '!=', 'settlement')
-            ->betweenDates($periodStart, $periodEnd)
+        // Fetch all postings up to periodEnd for all ledger accounts
+        $postings = \App\Models\Posting::query()
+            ->with('transaction')
+            ->whereIn('account_id', $allAccounts->keys())
+            ->whereHas('transaction', function ($q) use ($periodEnd) {
+                $q->where('date', '<=', $periodEnd);
+            })
             ->get();
 
-        foreach ($transactions as $transaction) {
-            $amount = (int) $transaction->amount;
-            $splitRule = $transaction->split_rule instanceof BackedEnum
-                ? $transaction->split_rule->value
-                : (string) $transaction->split_rule;
-            $participantsRaw = $transaction->participants;
-            $participants = \is_array($participantsRaw) ? $participantsRaw : [];
+        foreach ($postings as $posting) {
+            $account = $allAccounts[$posting->account_id];
+            $amount = (int) $posting->amount;
 
-            /** @var list<int> $participantUserIds */
-            $participantUserIds = count($participants) > 0
-                ? array_values(array_map(fn (array $p): int => (int) $p['user_id'], $participants))
-                : $userIds;
+            $type = $account->type instanceof BackedEnum ? $account->type->value : (string) $account->type;
 
-            $allocations = $this->allocateByRule($splitRule, $amount, $participantUserIds, $participants, $shareableByUser);
+            $txDate = is_string($posting->transaction->date)
+                ? mb_substr($posting->transaction->date, 0, 10)
+                : $posting->transaction->date->toDateString();
 
-            foreach ($allocations as $userId => $allocatedAmount) {
-                if (array_key_exists($userId, $liabilityByUser)) {
-                    $liabilityByUser[$userId] += $allocatedAmount;
+            if ($txDate >= $periodStart) {
+                if ($type === AccountType::UserLiability->value && $account->owner_id !== null) {
+                    // Liability: Debits increase it, Credits decrease it
+                    if ($posting->direction->value === \App\Enums\PostingDirection::Debit->value) {
+                        $liabilityByUser[$account->owner_id] += $amount;
+                    } else {
+                        $liabilityByUser[$account->owner_id] -= $amount;
+                    }
+                } elseif ($type === AccountType::UserFunding->value && $account->owner_id !== null) {
+                    // Funding (Equity): Credits increase it (user paid), Debits decrease it (user was reimbursed)
+                    if ($posting->direction->value === \App\Enums\PostingDirection::Credit->value) {
+                        $outOfPocketByUser[$account->owner_id] += $amount;
+                    } else {
+                        $outOfPocketByUser[$account->owner_id] -= $amount;
+                    }
                 }
-            }
-
-            $creditAccount = $transaction->creditAccount;
-
-            $creditAccountTypeValue = $creditAccount->type instanceof BackedEnum
-                ? $creditAccount->type->value
-                : (string) $creditAccount->type;
-
-            if (
-                $creditAccount !== null
-                && $creditAccountTypeValue === AccountType::Personal->value
-                && $creditAccount->owner_id !== null
-                && array_key_exists($creditAccount->owner_id, $outOfPocketByUser)
-            ) {
-                $outOfPocketByUser[$creditAccount->owner_id] += $amount;
             }
         }
 
-        $totalSharedSpend = (int) $transactions->sum('amount');
+        $totalSharedSpend = 0;
+        $poolCurrentBalance = 0;
+
+        foreach ($allAccounts as $account) {
+            $type = $account->type instanceof BackedEnum ? $account->type->value : (string) $account->type;
+
+            if ($type === AccountType::PoolAsset->value) {
+                $poolCurrentBalance += (int) $account->base_budget;
+            }
+        }
+
+        foreach ($postings as $posting) {
+            $account = $allAccounts[$posting->account_id];
+            $type = $account->type instanceof BackedEnum ? $account->type->value : (string) $account->type;
+
+            if ($type === AccountType::PoolAsset->value) {
+                if ($posting->direction->value === \App\Enums\PostingDirection::Debit->value) {
+                    $poolCurrentBalance += (int) $posting->amount;
+                } else {
+                    $poolCurrentBalance -= (int) $posting->amount;
+                }
+            }
+
+            if ($type === AccountType::SpaceExpense->value) {
+                // Check if the transaction belongs to the current cycle
+                $txDate = is_string($posting->transaction->date)
+                    ? mb_substr($posting->transaction->date, 0, 10)
+                    : $posting->transaction->date->toDateString();
+
+                if ($txDate >= $periodStart) {
+                    if ($posting->direction->value === \App\Enums\PostingDirection::Debit->value) {
+                        $totalSharedSpend += (int) $posting->amount;
+                    } else {
+                        $totalSharedSpend -= (int) $posting->amount;
+                    }
+                }
+            }
+        }
+
         $totalShareable = max(1, array_sum($shareableByUser));
 
         /** @var list<array{user_id:int, name:string, active_ratio:float, target_liability:int, paid_out_of_pocket:int, net_balance:int}> $userBreakdowns */
@@ -184,7 +216,7 @@ readonly class PreviewSettlementAction
         foreach ($users as $user) {
             $liability = $liabilityByUser[$user->id] ?? 0;
             $outOfPocket = $outOfPocketByUser[$user->id] ?? 0;
-            $netBalance = $outOfPocket - $liability;
+            $netBalance = $outOfPocket - $liability; // Positive means they are owed, Negative means they owe
             $ratio = $shareableByUser[$user->id] / $totalShareable;
 
             $userBreakdowns[] = [
@@ -206,132 +238,25 @@ readonly class PreviewSettlementAction
             $allAccounts,
         );
 
+        $settlementModel = \App\Models\Settlement::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('period_end', $periodEnd)
+            ->first();
+
         return [
             'ledger_id' => $ledger->id,
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
+            'is_settled' => $settlementModel && $settlementModel->executed_at !== null,
+            'executed_at' => $settlementModel?->executed_at?->toIso8601String(),
             'settlement_mode' => $ledger->settlement_mode->value,
             'summary' => [
-                'total_shared_spend' => $totalSharedSpend,
-                'pool_current_balance' => 0,
+                'total_shared_spend' => (int) $totalSharedSpend,
+                'pool_current_balance' => (int) $poolCurrentBalance,
             ],
             'user_breakdowns' => $userBreakdowns,
             'required_transfers' => $requiredTransfers,
         ];
-    }
-
-    /**
-     * @param list<int> $participantUserIds
-     * @param list<array{user_id: int, share?: int|float}> $participantsRaw
-     * @param array<int, int> $shareableByUser
-     * @return array<int, int> userId => allocated cents
-     */
-    private function allocateByRule(
-        string $splitRule,
-        int $amount,
-        array $participantUserIds,
-        array $participantsRaw,
-        array $shareableByUser,
-    ): array {
-        if (count($participantUserIds) === 0) {
-            return [];
-        }
-
-        return match ($splitRule) {
-            'equal' => $this->allocateEqual($amount, $participantUserIds),
-            'proportional' => $this->allocateProportional($amount, $participantUserIds, $shareableByUser),
-            'individual' => [$participantUserIds[0] => $amount],
-            'manual' => $this->allocateManual($amount, $participantsRaw),
-            default => $this->allocateEqual($amount, $participantUserIds),
-        };
-    }
-
-    /**
-     * @param list<int> $participantUserIds
-     * @return array<int, int>
-     */
-    private function allocateEqual(int $amount, array $participantUserIds): array
-    {
-        $count = count($participantUserIds);
-        $base = intdiv($amount, $count);
-        $remainder = $amount % $count;
-
-        $result = [];
-
-        foreach ($participantUserIds as $index => $userId) {
-            $result[$userId] = $base + ($index < $remainder ? 1 : 0);
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param list<int> $participantUserIds
-     * @param array<int, int> $shareableByUser
-     * @return array<int, int>
-     */
-    private function allocateProportional(int $amount, array $participantUserIds, array $shareableByUser): array
-    {
-        $totalShareable = 0;
-
-        foreach ($participantUserIds as $userId) {
-            $totalShareable += $shareableByUser[$userId] ?? 0;
-        }
-
-        if ($totalShareable <= 0) {
-            return $this->allocateEqual($amount, $participantUserIds);
-        }
-
-        $result = [];
-        $runningTotal = 0;
-        $lastIndex = count($participantUserIds) - 1;
-
-        foreach ($participantUserIds as $index => $userId) {
-            if ($index === $lastIndex) {
-                $result[$userId] = $amount - $runningTotal;
-            } else {
-                $allocated = (int) floor(($shareableByUser[$userId] ?? 0) / $totalShareable * $amount);
-                $result[$userId] = $allocated;
-                $runningTotal += $allocated;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param list<array{user_id: int, share?: int|float}> $participantsRaw
-     * @return array<int, int>
-     */
-    private function allocateManual(int $amount, array $participantsRaw): array
-    {
-        $totalShare = 0.0;
-
-        foreach ($participantsRaw as $p) {
-            $totalShare += (float) ($p['share'] ?? 0);
-        }
-
-        if ($totalShare <= 0) {
-            return [];
-        }
-
-        $result = [];
-        $runningTotal = 0;
-        $lastIndex = count($participantsRaw) - 1;
-
-        foreach ($participantsRaw as $index => $p) {
-            $userId = (int) $p['user_id'];
-
-            if ($index === $lastIndex) {
-                $result[$userId] = $amount - $runningTotal;
-            } else {
-                $allocated = (int) floor(((float) ($p['share'] ?? 0)) / $totalShare * $amount);
-                $result[$userId] = $allocated;
-                $runningTotal += $allocated;
-            }
-        }
-
-        return $result;
     }
 
     /**
@@ -372,6 +297,11 @@ readonly class PreviewSettlementAction
             ])
             ->values();
 
+        $getLiabilityAccount = fn ($userId) => $allAccounts->firstWhere(
+            fn ($a) => ($a->type instanceof BackedEnum ? $a->type->value : (string) $a->type) === AccountType::UserLiability->value
+            && $a->owner_id === $userId,
+        );
+
         if ($ledger->settlement_mode === SettlementMode::JointClearinghouse) {
             $poolAccount = $allAccounts->first(
                 static function (Account $account): bool {
@@ -379,7 +309,7 @@ readonly class PreviewSettlementAction
                         ? $account->type->value
                         : (string) $account->type;
 
-                    return $typeValue === AccountType::Pool->value;
+                    return $typeValue === AccountType::PoolAsset->value;
                 },
             );
 
@@ -388,8 +318,8 @@ readonly class PreviewSettlementAction
             }
 
             $transfers = $debtors
-                ->map(function (array $debtor) use ($mainAccountByUser, $poolAccount): ?array {
-                    $fromAccount = $mainAccountByUser[$debtor['user_id']] ?? null;
+                ->map(function (array $debtor) use ($getLiabilityAccount, $poolAccount): ?array {
+                    $fromAccount = $getLiabilityAccount($debtor['user_id']);
 
                     if (!$fromAccount instanceof Account || $debtor['amount'] === 0) {
                         return null;
@@ -399,7 +329,7 @@ readonly class PreviewSettlementAction
                         'from_account_id' => $fromAccount->id,
                         'to_account_id' => $poolAccount->id,
                         'amount' => $debtor['amount'],
-                        'instruction' => "{$debtor['name']} needs to transfer {$debtor['amount']} cents to the Joint Pool",
+                        'instruction' => "{$debtor['name']} needs to transfer to the Joint Pool",
                     ];
                 })
                 ->filter()
@@ -414,7 +344,7 @@ readonly class PreviewSettlementAction
                         'from_account_id' => $poolAccount->id,
                         'to_account_id' => $toAccount->id,
                         'amount' => $creditor['amount'],
-                        'instruction' => "Pool transfers {$creditor['amount']} cents to {$creditor['name']}",
+                        'instruction' => "Pool transfers to {$creditor['name']}",
                     ];
                 }
             }
@@ -428,7 +358,7 @@ readonly class PreviewSettlementAction
 
         foreach ($debtors as $debtor) {
             $remainingDebt = (int) $debtor['amount'];
-            $fromAccount = $mainAccountByUser[$debtor['user_id']] ?? null;
+            $fromAccount = $getLiabilityAccount($debtor['user_id']);
 
             if (!$fromAccount instanceof Account) {
                 continue;
@@ -452,6 +382,7 @@ readonly class PreviewSettlementAction
                     continue;
                 }
 
+                // Creditors get paid into their Funding Account to reduce the amount the Space owes them
                 $toAccount = $mainAccountByUser[$creditorUserId] ?? null;
 
                 if (!$toAccount instanceof Account) {
@@ -467,7 +398,7 @@ readonly class PreviewSettlementAction
                     'from_account_id' => $fromAccount->id,
                     'to_account_id' => $toAccount->id,
                     'amount' => $transferAmount,
-                    'instruction' => "{$debtor['name']} transfers {$transferAmount} cents to {$creditorName}",
+                    'instruction' => "{$debtor['name']} transfers to {$creditorName}",
                 ];
 
                 $remainingDebt -= $transferAmount;

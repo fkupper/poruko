@@ -12,6 +12,9 @@ export default defineConfig({
     },
     server: {
         host: true, // needed for Docker to expose the port
+        watch: {
+            usePolling: true, // Needed for Docker on Mac to detect file changes reliably
+        },
         proxy: {
             '/api': {
                 // In Docker: traffic goes to the `api` service on the internal network.

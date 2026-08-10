@@ -18,10 +18,11 @@ class SettlementIndexQuery
             ->where('ledger_id', $ledger->id)
             ->with(['transactions' => function ($query): void {
                 $query->where('type', TransactionType::Settlement->value)
-                    ->with(['creditAccount', 'debitAccount'])
+                    ->with(['payerAccount'])
                     ->orderBy('date')
                     ->orderBy('id');
-            }])
+            },
+            ])
             ->latest('period_end')
             ->limit($limit)
             ->get();

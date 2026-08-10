@@ -12,7 +12,7 @@ class ConfirmSettlementCycleRequest extends FormRequest
         $ledger = $this->route('ledger');
 
         return $ledger instanceof Ledger
-            && $this->user()?->can('update', $ledger) === true;
+            && $this->user()?->can('manageSettlements', $ledger) === true;
     }
 
     protected function prepareForValidation(): void

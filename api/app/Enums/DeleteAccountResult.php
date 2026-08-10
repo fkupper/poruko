@@ -7,5 +7,5 @@ enum DeleteAccountResult
     case Deleted;
     case MainPersonalAccount;
     case LastPersonalAccount;
-    case HasPostings;
+    case AttachedToProcess;
 }

@@ -28,8 +28,14 @@ class LedgerApiTest extends TestCase
         $foreignLedger = Ledger::factory()->create(['name' => 'Foreign Ledger']);
 
         $ledgerA->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledgerA->id);
+        $user->assignRole('Admin');
         $ledgerB->users()->attach($user->id, ['role' => 'member']);
+        setPermissionsTeamId($ledgerB->id);
+        $user->assignRole('Member');
         $foreignLedger->users()->attach($otherUser->id, ['role' => 'admin']);
+        setPermissionsTeamId($foreignLedger->id);
+        $otherUser->assignRole('Admin');
 
         Sanctum::actingAs($user);
 

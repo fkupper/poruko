@@ -24,13 +24,23 @@ class RecurringTransactionController extends Controller
 
         $query = RecurringTransaction::query()
             ->forLedger($ledger->id)
-            ->with(['creditAccount', 'debitAccount'])
+            ->with(['payerAccount'])
             ->orderByDesc('valid_from');
 
-        if (request()->boolean('include_inactive', true)) {
+        $status = request()->query('status');
+
+        if ($status === RecurringTransaction::STATUS_ACTIVE) {
+            $query->active();
+        } elseif ($status === RecurringTransaction::STATUS_PREVIOUS_VERSION) {
+            $query->previousVersion();
+        } elseif ($status === RecurringTransaction::STATUS_DELETED) {
+            $query->onlyTrashed();
+        } elseif ($status === 'all') {
+            $query->withTrashed();
+        } elseif (request()->boolean('include_inactive', true)) {
             $query->withTrashed();
         } else {
-            $query->whereNull('valid_to');
+            $query->active();
         }
 
         return RecurringTransactionResource::collection($query->get());
@@ -44,7 +54,7 @@ class RecurringTransactionController extends Controller
         $data = CreateRecurringTransactionData::fromArray($request->validated());
         $blueprint = $action->execute($ledger, $data);
 
-        return RecurringTransactionResource::make($blueprint->load(['creditAccount', 'debitAccount']))
+        return RecurringTransactionResource::make($blueprint->load(['payerAccount']))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -62,7 +72,7 @@ class RecurringTransactionController extends Controller
         $updated = $action->execute($recurringTransaction, $data);
 
         return RecurringTransactionResource::make(
-            $updated->load(['creditAccount', 'debitAccount']),
+            $updated->load(['payerAccount']),
         );
     }
 

@@ -46,6 +46,7 @@ class UpdateAccountRequest extends FormRequest
                 Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId),
             ],
             'code' => $codeRules,
+            'current_funds' => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
     }
 

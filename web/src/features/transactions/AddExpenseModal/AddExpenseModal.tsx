@@ -1,32 +1,93 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { fetchLedgerMembers } from '@/api/members';
 import { fetchAccounts } from '@/api/accounts';
-import { createTransaction } from '@/api/transactions';
-import type { ParticipantShare, SplitRule } from '@/api/types';
+import { fetchLedgers } from '@/api/ledgers';
+import { createTransaction, updateTransaction } from '@/api/transactions';
+import type { ParticipantShare, SplitRule, Transaction } from '@/api/types';
 import { centsToCurrency, formatPercent } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
-import { Loader2Icon, SparklesIcon } from 'lucide-react';
+import { Loader2Icon, ReceiptIcon } from 'lucide-react';
+import { AccountSelector } from '@/components/ui/account-selector';
 
 interface AddExpenseModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    transaction?: Transaction | null;
 }
 
-export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
+export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseModalProps) {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
 
     const [description, setDescription] = React.useState('');
-    const [amountCents, setAmountCents] = React.useState(0);
+    const [amountCents, setAmountCents] = React.useState<number | null>(null);
     const [date, setDate] = React.useState(() => new Date().toISOString().split('T')[0]);
     const [payerAccountId, setPayerAccountId] = React.useState<number | null>(null);
+    const [destinationAccountId, setDestinationAccountId] = React.useState<number | null>(null);
     const [splitRule, setSplitRule] = React.useState<SplitRule>('proportional');
     const [manualShares, setManualShares] = React.useState<Record<number, number>>({});
+
+    const { data: ledgers } = useQuery({ queryKey: ['ledgers'], queryFn: fetchLedgers });
+
+    React.useEffect(() => {
+        if (open) {
+            if (transaction) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setDescription(transaction.description || '');
+                 
+                setAmountCents(transaction.amount);
+                 
+                setDate(transaction.date);
+                 
+                setPayerAccountId(transaction.payer_account_id ?? null);
+                 
+                setDestinationAccountId(transaction.destination_account_id ?? null);
+                 
+                setSplitRule(transaction.split_rule);
+                
+                const mShares: Record<number, number> = {};
+                if (transaction.participants) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    transaction.participants.forEach((p: any) => {
+                        mShares[p.user_id] = p.share || p.share_amount || 0;
+                    });
+                }
+                 
+                setManualShares(mShares);
+            } else {
+                 
+                setDescription('');
+                 
+                setAmountCents(null);
+                 
+                setDate(new Date().toISOString().split('T')[0]);
+                
+                const activeLedger = (ledgers || []).find(l => l.id === activeLedgerId);
+                const prefs = activeLedger?.my_preferences;
+                
+                 
+                setPayerAccountId(prefs?.default_payment_account_id ?? prefs?.main_personal_account_id ?? null);
+                 
+                setDestinationAccountId(prefs?.default_expense_account_id ?? null);
+                
+                 
+                setSplitRule('proportional');
+                 
+                setManualShares({});
+            }
+        }
+    }, [open, transaction, ledgers, activeLedgerId]);
 
     // Fetch accounts for payer selection
     const { data: accounts } = useQuery({
@@ -37,10 +98,16 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
     // Auto-select first account if not set
     React.useEffect(() => {
-        if (accounts && accounts.length > 0 && payerAccountId === null) {
-            setPayerAccountId(accounts[0].id);
+        if (accounts && accounts.length > 0) {
+            if (payerAccountId === null) {
+                setPayerAccountId(accounts[0].id);
+            }
+            if (destinationAccountId === null) {
+                const spaceExpense = accounts.find(a => a.type === 'space_expense');
+                setDestinationAccountId(spaceExpense?.id ?? accounts[0].id);
+            }
         }
-    }, [accounts, payerAccountId]);
+    }, [accounts, payerAccountId, destinationAccountId]);
 
     // Fetch members & shareable incomes for dynamic proportional calculation
     const { data: members = [], isPending: isLoadingMembers } = useQuery({
@@ -56,50 +123,47 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
     // Calculate splits per member
     const calculatedParticipants = React.useMemo<ParticipantShare[]>(() => {
-        if (!members.length || amountCents <= 0) return [];
+        const amt = amountCents || 0;
+        if (!members.length || amt <= 0) return [];
 
         if (splitRule === 'equal') {
-            const perPerson = Math.floor(amountCents / members.length);
-            const remainder = amountCents - perPerson * members.length;
+            const perPerson = Math.floor(amt / members.length);
+            const remainder = amt - perPerson * members.length;
             return members.map((m, idx) => ({
                 user_id: m.id,
-                share_amount: idx === 0 ? perPerson + remainder : perPerson,
-                share_ratio: 1 / members.length,
+                share_amount: perPerson + (idx === 0 ? remainder : 0),
             }));
         }
 
         if (splitRule === 'proportional') {
             if (totalShareableIncome <= 0) {
-                const perPerson = Math.floor(amountCents / members.length);
-                return members.map((m) => ({
+                // Fallback to equal split if no shareable income set
+                const perPerson = Math.floor(amt / members.length);
+                const remainder = amt - perPerson * members.length;
+                return members.map((m, idx) => ({
                     user_id: m.id,
-                    share_amount: perPerson,
-                    share_ratio: 1 / members.length,
+                    share_amount: perPerson + (idx === 0 ? remainder : 0),
                 }));
             }
 
             let sumShares = 0;
-            const shares = members.map((m) => {
+            const shares = members.map((m, idx) => {
+                if (idx === members.length - 1) {
+                    return amt - sumShares;
+                }
                 const ratio = m.shareable_income / totalShareableIncome;
-                const shareAmount = Math.round(amountCents * ratio);
-                sumShares += shareAmount;
-                return {
-                    user_id: m.id,
-                    share_amount: shareAmount,
-                    share_ratio: ratio,
-                };
+                const share = Math.round(amt * ratio);
+                sumShares += share;
+                return share;
             });
 
-            // Adjust first member to balance parent total exactly
-            const diff = amountCents - sumShares;
-            if (diff !== 0 && shares.length > 0) {
-                shares[0].share_amount = (shares[0].share_amount || 0) + diff;
-            }
-
-            return shares;
+            return members.map((m, idx) => ({
+                user_id: m.id,
+                share_amount: shares[idx],
+            }));
         }
 
-        // Individual manual overrides
+        // Manual split rule
         return members.map((m) => ({
             user_id: m.id,
             share_amount: manualShares[m.id] ?? 0,
@@ -109,19 +173,31 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
     const mutation = useMutation({
         mutationFn: async () => {
             if (!activeLedgerId) throw new Error('No active space selected.');
-            if (!payerAccountId && accounts && accounts.length > 0) {
+            if (!amountCents || amountCents <= 0) throw new Error('Please enter a valid amount.');
+            const selectedPayerId = payerAccountId || (accounts?.find(a => a.type !== 'space_expense')?.id);
+            const selectedDestinationId = destinationAccountId || (accounts?.find(a => a.type === 'space_expense')?.id);
+            if (!selectedPayerId) {
                 throw new Error('Please select a payer account.');
             }
+            if (!selectedDestinationId) {
+                throw new Error('Please select a destination account.');
+            }
 
-            return createTransaction(activeLedgerId, {
-                description: description || 'Expense',
+            const payload = {
+                description: description.trim() || 'Expense',
                 amount: amountCents,
                 date,
-                payer_account_id: payerAccountId || accounts?.[0]?.id || 1,
-                type: 'manual',
+                payer_account_id: selectedPayerId,
+                destination_account_id: selectedDestinationId,
+                type: 'manual' as const,
                 split_rule: splitRule,
                 participants: calculatedParticipants,
-            });
+            };
+
+            if (transaction) {
+                return updateTransaction(activeLedgerId, transaction.id, payload);
+            }
+            return createTransaction(activeLedgerId, payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
@@ -129,7 +205,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             onOpenChange(false);
             // Reset form
             setDescription('');
-            setAmountCents(0);
+            setAmountCents(null);
         },
     });
 
@@ -140,9 +216,10 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                    <SparklesIcon className="size-5 text-primary" />
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                    <ReceiptIcon className="size-5 text-primary" />
                     Log New Expense
                 </DialogTitle>
             </DialogHeader>
@@ -189,33 +266,23 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                     </div>
                 </div>
 
-                {/* Payer Account Select */}
-                <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        Paid From Account
-                    </label>
-                    {accounts && accounts.length > 0 ? (
-                        <select
-                            value={payerAccountId ?? ''}
-                            onChange={(e) => setPayerAccountId(Number(e.target.value))}
-                            className="h-10 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            {accounts.map((acc) => (
-                                <option key={acc.id} value={acc.id}>
-                                    {acc.name} ({centsToCurrency(acc.balance)})
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        <input
-                            type="number"
-                            placeholder="Account ID (Default 1)"
-                            value={payerAccountId ?? 1}
-                            onChange={(e) => setPayerAccountId(Number(e.target.value))}
-                            className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                        />
-                    )}
-                </div>
+                
+                <AccountSelector
+                    label="Paid From Account"
+                    usage="payer"
+                    accounts={accounts}
+                    value={payerAccountId}
+                    onChange={setPayerAccountId}
+                />
+                
+                <AccountSelector
+                    label="Category (Destination)"
+                    usage="destination"
+                    accounts={accounts}
+                    value={destinationAccountId}
+                    onChange={setDestinationAccountId}
+                />
+
 
                 {/* Split Rule Selector */}
                 <div>
@@ -277,7 +344,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                                         {splitRule === 'individual' ? (
                                             <CurrencyInput
                                                 value={manualShares[member.id] || 0}
-                                                onCentsChange={(cents) => setManualShares((prev) => ({ ...prev, [member.id]: cents }))}
+                                                onCentsChange={(cents) => setManualShares((prev) => ({ ...prev, [member.id]: cents || 0 }))}
                                                 className="w-28 h-7 text-xs"
                                             />
                                         ) : (
@@ -302,13 +369,13 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={mutation.isPending || amountCents <= 0}>
+                    <Button type="submit" disabled={mutation.isPending || (amountCents || 0) <= 0}>
                         {mutation.isPending ? <Loader2Icon className="size-4 animate-spin mr-2" /> : null}
                         Save Expense
                     </Button>
-                </DialogFooter>
-            </form>
-            <DialogClose onClose={() => onOpenChange(false)} />
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
     );
 }

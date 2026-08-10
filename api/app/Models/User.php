@@ -8,14 +8,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     use HasApiTokens;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
+    use HasRoles;
     use Notifiable;
+    use TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -56,7 +62,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id')
             ->withTimestamps();
     }
 

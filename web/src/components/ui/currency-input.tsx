@@ -1,15 +1,16 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { currencyToCents } from '@/lib/currency';
+import { Input } from '@/components/ui/input';
 
 export interface CurrencyInputProps extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> {
-    value?: number; // Integer cents
-    onCentsChange?: (cents: number) => void;
+    value?: number | null; // Integer cents
+    onCentsChange?: (cents: number | null) => void;
     currencySymbol?: string;
 }
 
 export function CurrencyInput({
-    value = 0,
+    value,
     onCentsChange,
     currencySymbol = '€',
     className,
@@ -18,25 +19,31 @@ export function CurrencyInput({
 }: CurrencyInputProps) {
     // Keep local string for smooth typing experience
     const [displayVal, setDisplayVal] = React.useState<string>(() => {
+        if (value == null) return '';
         return (value / 100).toFixed(2);
     });
 
     // Update display when value prop changes externally
     React.useEffect(() => {
-        const currentCents = currencyToCents(displayVal);
+        const currentCents = displayVal === '' ? null : currencyToCents(displayVal);
         if (currentCents !== value) {
-            setDisplayVal((value / 100).toFixed(2));
+            setDisplayVal(value == null ? '' : (value / 100).toFixed(2));
         }
     }, [value, displayVal]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         setDisplayVal(val);
-        const cents = currencyToCents(val);
-        onCentsChange?.(cents);
+        if (val === '') {
+            onCentsChange?.(null);
+        } else {
+            const cents = currencyToCents(val);
+            onCentsChange?.(cents);
+        }
     };
 
     const handleBlur = () => {
+        if (displayVal === '') return;
         const cents = currencyToCents(displayVal);
         setDisplayVal((cents / 100).toFixed(2));
     };
@@ -46,17 +53,14 @@ export function CurrencyInput({
             <span className="absolute left-3 text-muted-foreground font-mono text-sm pointer-events-none">
                 {currencySymbol}
             </span>
-            <input
+            <Input
                 type="text"
                 inputMode="decimal"
                 value={displayVal}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 disabled={disabled}
-                className={cn(
-                    'h-10 w-full min-w-0 rounded-lg border border-input bg-transparent pl-8 pr-3 py-1 font-mono text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive',
-                    className
-                )}
+                className={cn('h-10 w-full pl-8 font-mono', className)}
                 {...props}
             />
         </div>

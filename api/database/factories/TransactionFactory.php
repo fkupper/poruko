@@ -22,10 +22,7 @@ class TransactionFactory extends Factory
     {
         return [
             'ledger_id' => Ledger::factory(),
-            'credit_account_id' => fn (array $attributes) => Account::factory()->create([
-                'ledger_id' => $attributes['ledger_id'],
-            ])->id,
-            'debit_account_id' => fn (array $attributes) => Account::factory()->create([
+            'payer_account_id' => fn (array $attributes) => Account::factory()->create([
                 'ledger_id' => $attributes['ledger_id'],
             ])->id,
             'amount' => fake()->numberBetween(100, 100_000),

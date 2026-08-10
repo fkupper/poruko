@@ -24,14 +24,14 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
         ]);
 
         Sanctum::actingAs($user);
@@ -40,7 +40,59 @@ class RecurringTransactionApiTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $blueprint->id)
-            ->assertJsonPath('data.0.amount', $blueprint->amount);
+            ->assertJsonPath('data.0.amount', $blueprint->amount)
+            ->assertJsonPath('data.0.status', 'active');
+    }
+
+    public function testMemberCanFilterRecurringTransactionsByStatus(): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+
+        $activeBp = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'valid_to' => null,
+        ]);
+
+        $previousBp = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'valid_to' => '2026-01-01',
+        ]);
+
+        $deletedBp = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+        ]);
+        $deletedBp->delete();
+
+        Sanctum::actingAs($user);
+
+        // Filter active
+        $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=active")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $activeBp->id)
+            ->assertJsonPath('data.0.status', 'active');
+
+        // Filter previous_version
+        $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=previous_version")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $previousBp->id)
+            ->assertJsonPath('data.0.status', 'previous_version');
+
+        // Filter deleted
+        $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=deleted")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $deletedBp->id)
+            ->assertJsonPath('data.0.status', 'deleted');
     }
 
     public function testMemberCanCreateRecurringTransaction(): void
@@ -48,15 +100,15 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         Sanctum::actingAs($user);
 
         $response = $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 120000,
             'description' => 'Monthly Rent',
             'split_rule' => 'proportional',
@@ -84,14 +136,14 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 100000,
             'valid_from' => '2026-01-01',
             'valid_to' => null,
@@ -124,14 +176,14 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
         ]);
 
         Sanctum::actingAs($user);
@@ -148,13 +200,11 @@ class RecurringTransactionApiTest extends TestCase
         $ledger = Ledger::factory()->create();
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         Sanctum::actingAs($user);
 
         $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 1000,
             'start_date' => '2026-04-01',
             'split_rule' => 'equal',

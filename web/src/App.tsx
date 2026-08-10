@@ -16,6 +16,9 @@ import AccountsPage from '@/pages/AccountsPage/AccountsPage';
 import RecurringPage from '@/pages/RecurringPage/RecurringPage';
 import MyFinancePage from '@/pages/MyFinancePage/MyFinancePage';
 import SettingsPage from '@/pages/SettingsPage/SettingsPage';
+import AccountSettingsPage from '@/pages/AccountSettingsPage/AccountSettingsPage';
+import MembersPage from '@/pages/MembersPage/MembersPage';
+import IngestionPage from '@/pages/IngestionPage/IngestionPage';
 import SetupPage from '@/pages/SetupPage/SetupPage';
 import { SpaceGuard } from '@/routes/SpaceGuard';
 
@@ -79,7 +82,10 @@ export default function App() {
                                 <Route path="/accounts" element={<AccountsPage />} />
                                 <Route path="/recurring" element={<RecurringPage />} />
                                 <Route path="/my-finance" element={<MyFinancePage />} />
+                                <Route path="/ingestion" element={<IngestionPage />} />
+                                <Route path="/account" element={<AccountSettingsPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
+                                <Route path="/members" element={<MembersPage />} />
                             </Route>
                         </Route>
                     </Route>

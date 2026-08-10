@@ -20,8 +20,8 @@ class Transaction extends Model
         'ledger_id',
         'source_recurring_transaction_id',
         'settlement_id',
-        'credit_account_id',
-        'debit_account_id',
+        'payer_account_id',
+        'destination_account_id',
         'amount',
         'type',
         'split_rule',
@@ -63,15 +63,14 @@ class Transaction extends Model
     }
 
     /** @return BelongsTo<Account, $this> */
-    public function creditAccount(): BelongsTo
+    public function destinationAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'credit_account_id');
+        return $this->belongsTo(Account::class, 'destination_account_id');
     }
 
-    /** @return BelongsTo<Account, $this> */
-    public function debitAccount(): BelongsTo
+    public function payerAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'debit_account_id');
+        return $this->belongsTo(Account::class, 'payer_account_id');
     }
 
     /** @return HasMany<Posting, $this> */

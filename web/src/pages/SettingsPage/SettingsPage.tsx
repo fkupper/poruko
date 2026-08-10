@@ -1,269 +1,458 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchPendingTransactions, uploadBankStatement, approvePendingTransactions } from '@/api/ingestion';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { updateLedgerSettings, updateMyPreferences, fetchLedgers } from '@/api/ledgers';
+import { fetchCurrencies } from '@/api/currencies';
 import { fetchAccounts } from '@/api/accounts';
-import { centsToCurrency } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-    BotIcon,
-    CheckCircle2Icon,
-    FileSpreadsheetIcon,
-    KeyIcon,
     Loader2Icon,
-    SparklesIcon,
-    UploadCloudIcon,
+    SettingsIcon,
+    AlertTriangleIcon,
+    GlobeIcon,
+    SaveIcon,
+    CheckCircle2Icon,
+    UserCircleIcon,
 } from 'lucide-react';
-import type { ApprovePendingItem } from '@/api/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Field, FieldLabel, FieldError, FieldGroup, FieldContent } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+
+const automationSchema = z.object({
+    name: z.string().min(1, 'Space name is required'),
+    currency_code: z.string().length(3, 'Currency is required'),
+    settlement_timezone: z.string().min(1, 'Timezone is required'),
+    settlement_cutoff_day: z.number().int().min(1).max(31),
+    settlement_auto_execute_enabled: z.boolean(),
+    ack: z.boolean().optional(),
+    default_payment_account_id: z.number().nullable().optional(),
+    default_expense_account_id: z.number().nullable().optional(),
+}).refine((data) => !data.settlement_auto_execute_enabled || data.ack, {
+    message: 'You must acknowledge the risks to enable Auto-Approve & Execute',
+    path: ['ack'],
+});
+
+type AutomationFormValues = z.infer<typeof automationSchema>;
 
 export default function SettingsPage() {
+    const [saveSuccess, setSaveSuccess] = React.useState(false);
+    const [isFormHydrated, setIsFormHydrated] = React.useState(false);
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
-
-    const [apiKey, setApiKey] = React.useState('');
-    const [selectedAccount, setSelectedAccount] = React.useState<number | null>(null);
-    const [uploading, setUploading] = React.useState(false);
-    const [uploadMsg, setUploadMsg] = React.useState<string | null>(null);
-
-    // Fetch pending AI transactions
-    const { data: pendingTx = [], isPending } = useQuery({
-        queryKey: ['pending-ingestion', activeLedgerId],
-        queryFn: () => fetchPendingTransactions(activeLedgerId!),
-        enabled: !!activeLedgerId,
+    const user = useAuthStore((s) => s.user);
+    
+    const { data: ledgers = [] } = useQuery({
+        queryKey: ['ledgers'],
+        queryFn: fetchLedgers,
     });
 
-    // Fetch accounts for target upload selection
-    const { data: accounts = [] } = useQuery({
+    const { data: accounts = [], isLoading: isLoadingAccounts } = useQuery({
         queryKey: ['accounts', activeLedgerId],
         queryFn: () => fetchAccounts(activeLedgerId!),
         enabled: !!activeLedgerId,
     });
 
+    // If no ledger is selected, default to the first one
     React.useEffect(() => {
-        if (accounts.length > 0 && selectedAccount === null) {
-            setSelectedAccount(accounts[0].id);
+        if (ledgers.length && activeLedgerId === null) {
+            useLedgerStore.getState().setActiveLedgerId(ledgers[0].id);
         }
-    }, [accounts, selectedAccount]);
+    }, [ledgers, activeLedgerId]);
+    
+    const activeLedger = ledgers.find(l => l.id === activeLedgerId) ?? ledgers[0];
 
-    const approveMutation = useMutation({
-        mutationFn: async (txs: ApprovePendingItem[]) => {
-            if (!activeLedgerId) return;
-            await approvePendingTransactions(activeLedgerId, txs);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['pending-ingestion', activeLedgerId] });
-            queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
+    const { data: currenciesData } = useQuery({
+        queryKey: ['currencies'],
+        queryFn: fetchCurrencies,
+    });
+    const currencies = currenciesData?.available ?? [];
+
+    const timezones = React.useMemo(() => {
+        try {
+            const tzs = Intl.supportedValuesOf('timeZone');
+            return ['UTC', ...tzs.filter(tz => tz !== 'UTC')];
+        } catch {
+            return ['UTC'];
+        }
+    }, []);
+
+    const form = useForm<AutomationFormValues>({
+        resolver: zodResolver(automationSchema),
+        defaultValues: {
+            name: '',
+            currency_code: '',
+            settlement_timezone: 'UTC',
+            settlement_cutoff_day: 1, // Default to 1st of the month
+            settlement_auto_execute_enabled: false,
+            ack: false,
+            default_payment_account_id: null,
+            default_expense_account_id: null,
         },
     });
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !activeLedgerId) return;
-
-        setUploading(true);
-        setUploadMsg(null);
-        try {
-            const res = await uploadBankStatement(activeLedgerId, file, selectedAccount || 1);
-            setUploadMsg(res.message || 'Statement uploaded & queued for processing!');
-            queryClient.invalidateQueries({ queryKey: ['pending-ingestion', activeLedgerId] });
-        } catch (err) {
-            setUploadMsg((err as Error).message || 'Failed to upload bank statement.');
-        } finally {
-            setUploading(false);
+    React.useEffect(() => {
+        if (activeLedger) {
+            form.reset({
+                name: activeLedger.name || '',
+                currency_code: activeLedger.currency || currenciesData?.default || 'EUR',
+                settlement_timezone: activeLedger.settlement_timezone || 'UTC',
+                settlement_cutoff_day: activeLedger.settlement_cutoff_day || 1, // Fallback to 1st
+                settlement_auto_execute_enabled: activeLedger.settlement_auto_execute_enabled || false,
+                ack: activeLedger.settlement_auto_execute_enabled || false,
+                default_payment_account_id: activeLedger.my_preferences?.default_payment_account_id ?? null,
+                default_expense_account_id: activeLedger.my_preferences?.default_expense_account_id ?? null,
+            });
+            setIsFormHydrated(true);
         }
+    }, [activeLedger, currenciesData, form]);
+
+    const settingsMutation = useMutation({
+        mutationFn: async (values: AutomationFormValues) => {
+            const targetLedgerId = activeLedgerId ?? activeLedger?.id;
+            if (!targetLedgerId) return;
+
+            await updateMyPreferences(targetLedgerId, {
+                default_payment_account_id: values.default_payment_account_id,
+                default_expense_account_id: values.default_expense_account_id,
+            });
+
+            return updateLedgerSettings(targetLedgerId, {
+                name: values.name,
+                currency_code: values.currency_code,
+                settlement_timezone: values.settlement_timezone,
+                settlement_cutoff_day: values.settlement_cutoff_day,
+                settlement_auto_execute_enabled: values.settlement_auto_execute_enabled,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['ledgers'] });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        },
+    });
+
+    const onSettingsSubmit = (values: AutomationFormValues) => {
+        settingsMutation.mutate(values);
     };
 
     return (
-        <div className="space-y-6 max-w-5xl">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                    <SparklesIcon className="size-6 text-primary" />
-                    AI Ingestion & Space Settings
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Configure Bring-Your-Own-Key (BYOK) AI parsing, upload CSV statements, and review the approval queue.
-                </p>
-            </div>
-
-            {/* BYOK Configuration Card */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                        <KeyIcon className="size-4 text-amber-500" />
-                        Bring Your Own Key (BYOK) LLM Provider
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <p className="text-xs text-muted-foreground">
-                        Provide your OpenAI or Anthropic API Key to parse uploaded bank statements into double-entry postings.
+        <form onSubmit={form.handleSubmit(onSettingsSubmit)} className="space-y-6 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                        <SettingsIcon className="size-6 text-primary" />
+                        Space Settings
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Configure your space preferences and automation settings.
                     </p>
-                    <div className="flex gap-2">
-                        <input
-                            type="password"
-                            placeholder="sk-proj-..."
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="h-10 flex-1 rounded-lg border border-input bg-transparent px-3 py-1 font-mono text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                        />
-                        <Button variant="secondary" onClick={() => alert('API Key saved locally for statement ingestion.')}>
-                            Save Key
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                </div>
+                <Button 
+                    type="submit"
+                    disabled={settingsMutation.isPending}
+                    className="gap-2 shrink-0"
+                >
+                    {settingsMutation.isPending ? (
+                        <Loader2Icon className="size-4 animate-spin" />
+                    ) : saveSuccess ? (
+                        <CheckCircle2Icon className="size-4" />
+                    ) : (
+                        <SaveIcon className="size-4" />
+                    )}
+                    {saveSuccess ? 'Saved!' : 'Save Settings'}
+                </Button>
+            </div>
 
-            {/* Bank Statement Upload Dropzone */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                        <FileSpreadsheetIcon className="size-4 text-emerald-500" />
-                        Bank Statement CSV Ingestion
+            {/* General Settings Card */}
+            <Card className="bg-surface border-border">
+                <CardHeader className="pb-3 border-b border-border mb-4">
+                    <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
+                        <GlobeIcon className="size-5 text-info" />
+                        General Settings
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                Target Account
-                            </label>
-                            <select
-                                value={selectedAccount ?? ''}
-                                onChange={(e) => setSelectedAccount(Number(e.target.value))}
-                                className="h-10 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                                {accounts.map((acc) => (
-                                    <option key={acc.id} value={acc.id}>
-                                        {acc.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                Upload Statement CSV
-                            </label>
-                            <label className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/20 text-xs font-medium hover:bg-muted/40 transition-colors">
-                                {uploading ? (
-                                    <Loader2Icon className="size-4 animate-spin" />
-                                ) : (
-                                    <UploadCloudIcon className="size-4 text-primary" />
-                                )}
-                                {uploading ? 'Processing CSV with AI...' : 'Choose CSV File'}
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={handleFileUpload}
-                                    disabled={uploading}
-                                    className="hidden"
-                                />
-                            </label>
-                        </div>
-                    </div>
-
-                    {uploadMsg && (
-                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                            {uploadMsg}
-                        </p>
-                    )}
+                <CardContent className="space-y-5">
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                        <Controller
+                            control={form.control}
+                            name="name"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel>Space Name</FieldLabel>
+                                    <FieldContent>
+                                        <Input
+                                            {...field}
+                                            placeholder="Enter space name"
+                                            className="h-10 w-full bg-background"
+                                        />
+                                    </FieldContent>
+                                    <FieldError errors={[fieldState.error]} />
+                                </Field>
+                            )}
+                        />
+                        <Controller
+                            control={form.control}
+                            name="currency_code"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel>Base Currency</FieldLabel>
+                                    <FieldContent>
+                                        {(isFormHydrated && currencies.length > 0) ? (
+                                            <Select
+                                                key={field.value || 'currency-empty'}
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <SelectTrigger className="h-10 w-full bg-background">
+                                                    <SelectValue placeholder="Select currency" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {currencies.map((currency) => (
+                                                        <SelectItem key={currency.code} value={currency.code}>
+                                                            {currency.code} - {currency.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Select disabled>
+                                                <SelectTrigger className="h-10 w-full bg-background">
+                                                    <SelectValue placeholder="Loading..." />
+                                                </SelectTrigger>
+                                            </Select>
+                                        )}
+                                    </FieldContent>
+                                    <FieldError errors={[fieldState.error]} />
+                                </Field>
+                            )}
+                        />
+                    </FieldGroup>
                 </CardContent>
             </Card>
 
-            {/* Approval Queue Table (Propose-Then-Commit) */}
-            <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                            <BotIcon className="size-5 text-primary" />
-                            Pending AI Approval Queue ("Propose-Then-Commit")
-                        </h2>
-                        <p className="text-xs text-muted-foreground">
-                            Review AI suggested split rules, raw descriptions, and rationale before committing to ledger.
-                        </p>
-                    </div>
-                    {pendingTx.length > 0 && (
-                        <Button
-                            size="sm"
-                            onClick={() => approveMutation.mutate(pendingTx.map((t) => ({ pending_transaction_id: t.id })))}
-                            disabled={approveMutation.isPending}
-                            className="gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
-                            <CheckCircle2Icon className="size-4" />
-                            Approve All ({pendingTx.length})
-                        </Button>
-                    )}
-                </div>
+            {/* User Preferences Card */}
+            <Card className="bg-surface border-border">
+                <CardHeader className="pb-3 border-b border-border mb-4">
+                    <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
+                        <UserCircleIcon className="size-5 text-info" />
+                        My Default Accounts
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                    <p className="text-sm text-muted-foreground">
+                        Set your preferred accounts to be pre-selected when logging transactions. These settings only apply to you.
+                    </p>
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                        <Controller
+                            control={form.control}
+                            name="default_payment_account_id"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel>Default Payment Account</FieldLabel>
+                                    <FieldContent>
+                                        {(() => {
+                                            const paymentAccounts = accounts.filter(a => (a.type === 'user_funding' || a.type === 'user_liability') && a.owner_id === user?.id);
+                                            return (
+                                                <Select
+                                                    key={(!isLoadingAccounts && isFormHydrated) ? `payment-ready-${paymentAccounts.length}` : 'payment-loading'}
+                                                    value={field.value ? String(field.value) : ""}
+                                                    onValueChange={(v) => field.onChange(Number(v))}
+                                                    disabled={isLoadingAccounts || !isFormHydrated}
+                                                >
+                                                    <SelectTrigger className="h-10 w-full bg-background">
+                                                        <SelectValue placeholder={(!isLoadingAccounts && isFormHydrated) ? "Select payment account" : "Loading..."} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {paymentAccounts.map((acc) => (
+                                                            <SelectItem key={acc.id} value={String(acc.id)}>
+                                                                {acc.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            );
+                                        })()}
+                                    </FieldContent>
+                                    <FieldError errors={[fieldState.error]} />
+                                </Field>
+                            )}
+                        />
+                        <Controller
+                            control={form.control}
+                            name="default_expense_account_id"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel>Default Expense Category</FieldLabel>
+                                    <FieldContent>
+                                        {(() => {
+                                            const expenseAccounts = accounts.filter(a => a.type === 'space_expense' || a.type === 'pool_asset');
+                                            return (
+                                                <Select
+                                                    key={(!isLoadingAccounts && isFormHydrated) ? `expense-ready-${expenseAccounts.length}` : 'expense-loading'}
+                                                    value={field.value ? String(field.value) : ""}
+                                                    onValueChange={(v) => field.onChange(Number(v))}
+                                                    disabled={isLoadingAccounts || !isFormHydrated}
+                                                >
+                                                    <SelectTrigger className="h-10 w-full bg-background">
+                                                        <SelectValue placeholder={(!isLoadingAccounts && isFormHydrated) ? "Select expense account" : "Loading..."} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {expenseAccounts.map((acc) => (
+                                                            <SelectItem key={acc.id} value={String(acc.id)}>
+                                                                {acc.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            );
+                                        })()}
+                                    </FieldContent>
+                                    <FieldError errors={[fieldState.error]} />
+                                </Field>
+                            )}
+                        />
+                    </FieldGroup>
+                </CardContent>
+            </Card>
 
-                {isPending ? (
-                    <div className="h-40 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
-                        Loading pending approval queue...
-                    </div>
-                ) : pendingTx.length === 0 ? (
-                    <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm space-y-1">
-                        <CheckCircle2Icon className="size-8 text-emerald-500 mx-auto" />
-                        <p className="font-medium">No transactions awaiting review</p>
-                        <p className="text-xs">Upload a CSV above to run AI categorization.</p>
-                    </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Raw Statement Snippet</TableHead>
-                                <TableHead>Suggested Categorization</TableHead>
-                                <TableHead>Split Rule</TableHead>
-                                <TableHead>AI Rationale</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {pendingTx.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="font-mono text-xs text-muted-foreground">
-                                        {item.raw_description}
-                                        <div className="text-[10px]">{item.date}</div>
-                                    </TableCell>
-                                    <TableCell className="font-medium text-foreground">
-                                        {item.suggested_description}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="capitalize text-[11px]">
-                                            {item.suggested_split_rule}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
-                                        {item.rationale || 'High-confidence AI categorization based on payee keywords.'}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono font-semibold text-foreground">
-                                        {centsToCurrency(item.suggested_amount)}
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-1">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                                approveMutation.mutate([
-                                                    {
-                                                        pending_transaction_id: item.id,
-                                                        description: item.suggested_description,
-                                                        amount: item.suggested_amount,
-                                                        split_rule: item.suggested_split_rule,
-                                                    },
-                                                ])
-                                            }
-                                            className="text-emerald-600 hover:bg-emerald-500/10"
-                                        >
-                                            <CheckCircle2Icon className="size-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-            </div>
-        </div>
+            {/* Automation Settings Card */}
+            <Card className="bg-surface border-border">
+                <CardHeader className="pb-3 border-b border-border mb-4">
+                    <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
+                        <SettingsIcon className="size-5 text-info" />
+                        Settlement Automation Settings
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                            <Controller
+                                control={form.control}
+                                name="settlement_timezone"
+                                render={({ field, fieldState }) => (
+                                    <Field>
+                                        <FieldLabel>Timezone</FieldLabel>
+                                        <FieldContent>
+                                            {isFormHydrated ? (
+                                                <Select
+                                                    key={field.value || 'tz-empty'}
+                                                    value={field.value}
+                                                    onValueChange={field.onChange}
+                                                >
+                                                    <SelectTrigger className="h-10 w-full bg-background">
+                                                        <SelectValue placeholder="Select timezone" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {timezones.map((tz) => (
+                                                            <SelectItem key={tz} value={tz}>
+                                                                {tz}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <Select disabled>
+                                                    <SelectTrigger className="h-10 w-full bg-background">
+                                                        <SelectValue placeholder="Loading..." />
+                                                    </SelectTrigger>
+                                                </Select>
+                                            )}
+                                        </FieldContent>
+                                        <FieldError errors={[fieldState.error]} />
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                control={form.control}
+                                name="settlement_cutoff_day"
+                                render={({ field, fieldState }) => (
+                                    <Field>
+                                        <FieldLabel>Cutoff Day</FieldLabel>
+                                        <FieldContent>
+                                            {isFormHydrated ? (
+                                                <Select
+                                                    key={field.value ?? 'cutoff-empty'}
+                                                    value={String(field.value)}
+                                                    onValueChange={(val) => field.onChange(Number(val))}
+                                                >
+                                                    <SelectTrigger className="h-10 w-full bg-background">
+                                                        <SelectValue placeholder="Select a day" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="1">1st of the month</SelectItem>
+                                                        <SelectItem value="15">15th of the month</SelectItem>
+                                                        <SelectItem value="31">Last day of the month</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <Select disabled>
+                                                    <SelectTrigger className="h-10 w-full bg-background">
+                                                        <SelectValue placeholder="Loading..." />
+                                                    </SelectTrigger>
+                                                </Select>
+                                            )}
+                                        </FieldContent>
+                                        <FieldError errors={[fieldState.error]} />
+                                    </Field>
+                                )}
+                            />
+                        </FieldGroup>
+
+                        <div className="rounded-lg border bg-background p-4 space-y-3">
+                            <Controller
+                                control={form.control}
+                                name="settlement_auto_execute_enabled"
+                                render={({ field }) => (
+                                    <Field orientation="horizontal" className="items-start gap-3 cursor-pointer">
+                                        <Checkbox
+                                            id="auto_execute"
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            disabled={!form.watch('ack') && !field.value}
+                                            className="mt-1"
+                                        />
+                                        <label htmlFor="auto_execute" className="cursor-pointer">
+                                            <div className="text-sm font-semibold text-primary flex items-center gap-2">
+                                                Auto-Approve & Execute <AlertTriangleIcon className="size-4 text-amber-500" />
+                                            </div>
+                                            <div className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                                                Enabling this feature will automatically close the period at the cutoff time. 
+                                                This carries an operational risk of falling out of sync with real-world accounts if mistakes occur.
+                                            </div>
+                                        </label>
+                                    </Field>
+                                )}
+                            />
+                            {!form.watch('settlement_auto_execute_enabled') && (
+                                <Controller
+                                    control={form.control}
+                                    name="ack"
+                                    render={({ field, fieldState }) => (
+                                        <div className="ml-8 space-y-1">
+                                            <Field orientation="horizontal" className="items-center gap-2 cursor-pointer">
+                                                <Checkbox
+                                                    id="ack_checkbox"
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                />
+                                                <label htmlFor="ack_checkbox" className="text-xs font-medium text-primary cursor-pointer">
+                                                    I understand and agree to the operational risks.
+                                                </label>
+                                            </Field>
+                                            <FieldError errors={[fieldState.error]} />
+                                        </div>
+                                    )}
+                                />
+                            )}
+                        </div>
+                        
+                </CardContent>
+            </Card>
+        </form>
     );
 }

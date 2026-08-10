@@ -24,7 +24,11 @@ class LedgerUserApiTest extends TestCase
         $bob = User::factory()->create(['name' => 'Bob']);
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($alice->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $alice->assignRole('Admin');
         $ledger->users()->attach($bob->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $bob->assignRole('Member');
 
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
@@ -55,6 +59,8 @@ class LedgerUserApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,

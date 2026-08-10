@@ -15,7 +15,7 @@ class LedgerMemberMainAccountsQuery
      */
     public function get(Ledger $ledger, Collection $allAccounts): array
     {
-        $mainAccountIdByUser = LedgerUser::query()
+        $mainAccountIdByUser = LedgerUser::withTrashed()
             ->where('ledger_id', $ledger->id)
             ->whereNotNull('main_personal_account_id')
             ->pluck('main_personal_account_id', 'user_id');

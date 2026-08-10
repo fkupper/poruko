@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 
-import { login } from '@/api/auth';
+import { login, challengeTwoFactor } from '@/api/auth';
 import type { ApiError } from '@/api/types';
 import { useAuthStore } from '@/stores/authStore';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -30,6 +31,9 @@ type FormValues = z.infer<typeof schema>;
 export default function LoginPage() {
     const navigate = useNavigate();
     const setAuth = useAuthStore((s) => s.setAuth);
+    const [requiresTwoFactor, setRequiresTwoFactor] = React.useState(false);
+    const [twoFactorCode, setTwoFactorCode] = React.useState('');
+    const [useRecoveryCode, setUseRecoveryCode] = React.useState(false);
 
     const {
         register,
@@ -43,8 +47,14 @@ export default function LoginPage() {
 
     const mutation = useMutation({
         mutationFn: login,
-        onSuccess: ({ user, token }) => {
-            setAuth(user, token);
+        onSuccess: (data) => {
+            if (data.two_factor) {
+                // Save temporary token and show 2FA form
+                useAuthStore.getState().setAuth(data.user, data.token);
+                setRequiresTwoFactor(true);
+                return;
+            }
+            setAuth(data.user, data.token);
             navigate('/');
         },
         onError: (error: AxiosError<ApiError>) => {
@@ -53,64 +63,138 @@ export default function LoginPage() {
         },
     });
 
+    const challengeMutation = useMutation({
+        mutationFn: () => {
+            const payload = useRecoveryCode 
+                ? { recovery_code: twoFactorCode } 
+                : { code: twoFactorCode };
+            return challengeTwoFactor(payload);
+        },
+        onSuccess: ({ user, token }) => {
+            setAuth(user, token);
+            navigate('/');
+        },
+        onError: (error: AxiosError<ApiError>) => {
+            const message = error.response?.data?.message ?? 'Invalid code. Please try again.';
+            setError('root', { message });
+        },
+    });
+
     return (
         <div className="flex min-h-svh items-center justify-center p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader>
-                    <CardTitle>Welcome back</CardTitle>
-                    <CardDescription>Sign in to your Poruko account</CardDescription>
+                    <CardTitle>{requiresTwoFactor ? 'Two-Factor Authentication' : 'Welcome back'}</CardTitle>
+                    <CardDescription>{requiresTwoFactor ? 'Enter your authenticator code to continue' : 'Sign in to your Poruko account'}</CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>
-                    <CardContent>
-                        <FieldGroup>
-                            {errors.root && (
-                                <Alert variant="destructive">
-                                    <AlertDescription>{errors.root.message}</AlertDescription>
-                                </Alert>
-                            )}
-                            <Field data-invalid={!!errors.email || undefined}>
-                                <FieldLabel htmlFor="email">Email</FieldLabel>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="you@example.com"
-                                    aria-invalid={!!errors.email}
-                                    {...register('email')}
-                                />
-                                {errors.email && <FieldError>{errors.email.message}</FieldError>}
-                            </Field>
-                            <Field data-invalid={!!errors.password || undefined}>
-                                <FieldLabel htmlFor="password">Password</FieldLabel>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    aria-invalid={!!errors.password}
-                                    {...register('password')}
-                                />
-                                {errors.password && (
-                                    <FieldError>{errors.password.message}</FieldError>
+                {requiresTwoFactor ? (
+                    <form onSubmit={(e) => { e.preventDefault(); challengeMutation.mutate(); }}>
+                        <CardContent>
+                            <FieldGroup>
+                                {errors.root && (
+                                    <Alert variant="destructive">
+                                        <AlertDescription>{errors.root.message}</AlertDescription>
+                                    </Alert>
                                 )}
-                            </Field>
-                        </FieldGroup>
-                    </CardContent>
-                    <CardFooter className="flex flex-col gap-3">
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={isSubmitting || mutation.isPending}
-                        >
-                            {mutation.isPending && <Spinner data-icon="inline-start" />}
-                            {mutation.isPending ? 'Signing in…' : 'Sign in'}
-                        </Button>
-                        <p className="text-sm text-muted-foreground">
-                            {"Don't have an account? "}
-                            <Link to="/register" className="text-foreground underline underline-offset-4">
-                                Register
-                            </Link>
-                        </p>
-                    </CardFooter>
-                </form>
+                                <Field>
+                                    <FieldLabel htmlFor="code">{useRecoveryCode ? 'Recovery Code' : 'Authentication Code'}</FieldLabel>
+                                    <Input
+                                        id="code"
+                                        type="text"
+                                        placeholder={useRecoveryCode ? 'e.g. 1a2b-3c4d' : '6-digit code'}
+                                        value={twoFactorCode}
+                                        onChange={(e) => setTwoFactorCode(e.target.value)}
+                                        autoComplete="one-time-code"
+                                        className="font-mono"
+                                    />
+                                </Field>
+                            </FieldGroup>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setUseRecoveryCode(!useRecoveryCode);
+                                    setTwoFactorCode('');
+                                }}
+                                className="text-sm text-muted-foreground hover:text-foreground mt-4 underline underline-offset-4"
+                            >
+                                {useRecoveryCode ? 'Use authentication code instead' : 'Use a recovery code'}
+                            </button>
+                        </CardContent>
+                        <CardFooter className="flex flex-col gap-3">
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={!twoFactorCode || challengeMutation.isPending}
+                            >
+                                {challengeMutation.isPending && <Spinner data-icon="inline-start" />}
+                                {challengeMutation.isPending ? 'Verifying…' : 'Verify'}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => {
+                                    setRequiresTwoFactor(false);
+                                    useAuthStore.getState().logout();
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                        </CardFooter>
+                    </form>
+                ) : (
+                    <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>
+                        <CardContent>
+                            <FieldGroup>
+                                {errors.root && (
+                                    <Alert variant="destructive">
+                                        <AlertDescription>{errors.root.message}</AlertDescription>
+                                    </Alert>
+                                )}
+                                <Field data-invalid={!!errors.email || undefined}>
+                                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="you@example.com"
+                                        aria-invalid={!!errors.email}
+                                        {...register('email')}
+                                    />
+                                    {errors.email && <FieldError>{errors.email.message}</FieldError>}
+                                </Field>
+                                <Field data-invalid={!!errors.password || undefined}>
+                                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        aria-invalid={!!errors.password}
+                                        {...register('password')}
+                                    />
+                                    {errors.password && (
+                                        <FieldError>{errors.password.message}</FieldError>
+                                    )}
+                                </Field>
+                            </FieldGroup>
+                        </CardContent>
+                        <CardFooter className="flex flex-col gap-3">
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isSubmitting || mutation.isPending}
+                            >
+                                {mutation.isPending && <Spinner data-icon="inline-start" />}
+                                {mutation.isPending ? 'Signing in…' : 'Sign in'}
+                            </Button>
+                            <p className="text-sm text-muted-foreground">
+                                {"Don't have an account? "}
+                                <Link to="/register" className="text-foreground underline underline-offset-4">
+                                    Register
+                                </Link>
+                            </p>
+                        </CardFooter>
+                    </form>
+                )}
             </Card>
         </div>
     );

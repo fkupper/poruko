@@ -34,13 +34,15 @@ class ShowSettlementBreakdownCommandTest extends TestCase
         ]);
         $user = User::factory()->create(['name' => 'Alice']);
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $personalAccount = Account::query()->findOrFail(
             DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $user->id)->value('main_personal_account_id'),
         );
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
-            'type' => 'external',
+            'type' => 'space_expense',
             'owner_id' => null,
             'name' => 'External',
         ]);
@@ -55,8 +57,7 @@ class ShowSettlementBreakdownCommandTest extends TestCase
 
         Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $personalAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $personalAccount->id,
             'amount' => 10000,
             'type' => 'manual',
             'split_rule' => 'equal',
@@ -83,7 +84,7 @@ class ShowSettlementBreakdownCommandTest extends TestCase
         $this->assertStringContainsString('100.00 €', $output);
         $this->assertStringContainsString('2026-02', $output);
         $this->assertStringContainsString('Groceries', $output);
-        $this->assertStringContainsString("Alice's Personal Account", $output);
-        $this->assertStringContainsString('External', $output);
+        $this->assertStringContainsString("Alice's Funding Account", $output);
+        $this->assertStringContainsString('Multiple Accounts', $output);
     }
 }

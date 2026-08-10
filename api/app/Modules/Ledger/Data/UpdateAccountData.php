@@ -12,6 +12,7 @@ final readonly class UpdateAccountData
         public ?int $ownerId = null,
         public ?int $baseBudget = null,
         public ?string $code = null,
+        public ?int $currentFunds = null,
     ) {}
 
     /**
@@ -20,6 +21,7 @@ final readonly class UpdateAccountData
     public static function fromArray(array $validated): self
     {
         $type = null;
+
         if (isset($validated['type'])) {
             $type = $validated['type'] instanceof AccountType
                 ? $validated['type']
@@ -34,6 +36,7 @@ final readonly class UpdateAccountData
             ownerId: isset($validated['owner_id']) && $validated['owner_id'] !== null ? (int) $validated['owner_id'] : null,
             baseBudget: $baseBudgetRaw !== null ? (int) $baseBudgetRaw : null,
             code: isset($validated['code']) && $validated['code'] !== null ? (string) $validated['code'] : null,
+            currentFunds: isset($validated['current_funds']) ? (int) $validated['current_funds'] : null,
         );
     }
 

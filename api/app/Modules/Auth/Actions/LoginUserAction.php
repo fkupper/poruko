@@ -19,11 +19,22 @@ final readonly class LoginUserAction
             return null;
         }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        if ($user->two_factor_secret) {
+            $token = $user->createToken('2fa-token', ['issue-2fa'])->plainTextToken;
+
+            return [
+                'user' => $user,
+                'token' => $token,
+                'two_factor' => true,
+            ];
+        }
+
+        $token = $user->createToken('api-token', ['*'])->plainTextToken;
 
         return [
             'user' => $user,
             'token' => $token,
+            'two_factor' => false,
         ];
     }
 }

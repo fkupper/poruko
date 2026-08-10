@@ -17,11 +17,18 @@ export async function createAccount(
 export async function updateAccount(
     ledgerId: number,
     accountId: number,
-    payload: { name?: string; base_budget?: number; balance?: number }
+    payload: { name?: string; current_funds?: number }
 ): Promise<Account> {
     const { data } = await client.patch<{ data: Account }>(
         `/ledgers/${ledgerId}/accounts/${accountId}`,
         payload
     );
     return data.data;
+}
+
+export async function deleteAccount(
+    ledgerId: number,
+    accountId: number
+): Promise<void> {
+    await client.delete(`/ledgers/${ledgerId}/accounts/${accountId}`);
 }

@@ -1,11 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 
-import { register as registerApi } from '@/api/auth';
+import { register as registerApi, acceptInvitation } from '@/api/auth';
 import type { ApiError } from '@/api/types';
 import { useAuthStore } from '@/stores/authStore';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -34,6 +34,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const inviteToken = searchParams.get('invite');
     const setAuth = useAuthStore((s) => s.setAuth);
 
     const {
@@ -47,7 +49,12 @@ export default function RegisterPage() {
     });
 
     const mutation = useMutation({
-        mutationFn: (values: Omit<FormValues, 'passwordConfirmation'>) => registerApi(values),
+        mutationFn: (values: Omit<FormValues, 'passwordConfirmation'>) => {
+            if (inviteToken) {
+                return acceptInvitation({ ...values, token: inviteToken });
+            }
+            return registerApi(values);
+        },
         onSuccess: ({ user, token }) => {
             setAuth(user, token);
             navigate('/');
@@ -62,8 +69,8 @@ export default function RegisterPage() {
         <div className="flex min-h-svh items-center justify-center p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader>
-                    <CardTitle>Create an account</CardTitle>
-                    <CardDescription>Join Poruko to manage your shared finances</CardDescription>
+                    <CardTitle>{inviteToken ? 'Accept Invitation' : 'Create an account'}</CardTitle>
+                    <CardDescription>{inviteToken ? 'Register to join the space' : 'Join Poruko to manage your shared finances'}</CardDescription>
                 </CardHeader>
                 <form
                     onSubmit={handleSubmit(({ passwordConfirmation, ...values }) => {

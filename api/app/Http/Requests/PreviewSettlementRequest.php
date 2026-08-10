@@ -21,7 +21,7 @@ class PreviewSettlementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date'],
+            'date' => ['nullable', 'date'],
         ];
     }
 

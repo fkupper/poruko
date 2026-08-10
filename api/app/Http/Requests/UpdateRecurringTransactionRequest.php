@@ -29,8 +29,7 @@ class UpdateRecurringTransactionRequest extends FormRequest
         $participantInLedger = Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId);
 
         return [
-            'credit_account_id' => ['sometimes', 'required', 'integer', $accountExistsInLedger],
-            'debit_account_id' => ['sometimes', 'required', 'integer', $accountExistsInLedger, 'different:credit_account_id'],
+            'payer_account_id' => ['sometimes', 'required', 'integer', $accountExistsInLedger],
             'amount' => ['sometimes', 'required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
             'split_rule' => ['sometimes', 'required', new Enum(TransactionSplitRule::class)],

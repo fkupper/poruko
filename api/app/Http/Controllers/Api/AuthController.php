@@ -41,6 +41,54 @@ class AuthController extends Controller
         return response()->json([
             'user' => UserResource::make($result['user']),
             'token' => $result['token'],
+            'two_factor' => $result['two_factor'] ?? false,
+        ]);
+    }
+
+    public function challenge(Request $request): JsonResponse
+    {
+        $request->validate([
+            'code' => ['nullable', 'string'],
+            'recovery_code' => ['nullable', 'string'],
+        ]);
+
+        $user = $request->user();
+
+        if (!$user->tokenCan('issue-2fa')) {
+            return response()->json(['message' => 'Invalid token.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $valid = false;
+
+        $engine = app(\Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider::class);
+
+        if ($code = $request->input('code')) {
+            $valid = $engine->verify(decrypt($user->two_factor_secret), $code);
+        } elseif ($recoveryCode = $request->input('recovery_code')) {
+            $recoveryCodes = json_decode(decrypt($user->two_factor_recovery_codes), true);
+            $valid = collect($recoveryCodes)->contains($recoveryCode);
+
+            if ($valid) {
+                // Remove the used recovery code
+                $user->forceFill([
+                    'two_factor_recovery_codes' => encrypt(json_encode(collect($recoveryCodes)->reject(fn ($code) => $code === $recoveryCode)->values()->all())),
+                ])->save();
+            }
+        }
+
+        if (!$valid) {
+            return response()->json(['message' => 'The provided two factor authentication code was invalid.'], 422);
+        }
+
+        // Delete the temporary token
+        $user->currentAccessToken()->delete();
+
+        // Issue real token
+        $token = $user->createToken('api-token', ['*'])->plainTextToken;
+
+        return response()->json([
+            'user' => UserResource::make($user),
+            'token' => $token,
         ]);
     }
 

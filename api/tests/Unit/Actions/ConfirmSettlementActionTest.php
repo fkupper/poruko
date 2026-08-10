@@ -3,13 +3,11 @@
 namespace Tests\Unit\Actions;
 
 use App\Enums\AccountType;
-use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\FinancialProfile;
 use App\Models\Ledger;
 use App\Models\Settlement;
-use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Ledger\Actions\ConfirmSettlementAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,7 +84,11 @@ class ConfirmSettlementActionTest extends TestCase
             'settlement_cutoff_time' => '23:59:00',
         ], $ledgerOverrides));
         $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
         $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
 
         $adminAccount = Account::query()->findOrFail(
             DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $admin->id)->value('main_personal_account_id'),
@@ -97,7 +99,7 @@ class ConfirmSettlementActionTest extends TestCase
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::External->value,
+            'type' => AccountType::SpaceExpense->value,
         ]);
 
         FinancialProfile::factory()->create([
@@ -115,17 +117,17 @@ class ConfirmSettlementActionTest extends TestCase
             'deductions' => [],
         ]);
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $adminAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $adminAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10000,
-            'type' => TransactionType::Manual->value,
-            'split_rule' => TransactionSplitRule::Equal->value,
+            'type' => 'manual',
+            'split_rule' => 'equal',
             'participants' => [],
             'description' => 'Shared expense',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         return [$ledger, $admin, $adminAccount, $memberAccount, $externalAccount];
     }

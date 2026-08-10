@@ -38,6 +38,8 @@ class DevSeeder extends Seeder
             return;
         }
 
+        $this->call(PermissionsSeeder::class);
+
         $bob = User::query()->updateOrCreate(
             ['email' => 'bob@example.com'],
             [
@@ -66,10 +68,14 @@ class DevSeeder extends Seeder
                 'settlement_auto_execute_enabled' => false,
             ]);
             $ledger->users()->attach($bob->id, ['role' => 'admin']);
+            setPermissionsTeamId($ledger->id);
+            $bob->assignRole('Admin');
         }
 
         if (!$ledger->users()->whereKey($clara->id)->exists()) {
             $ledger->users()->attach($clara->id, ['role' => 'member']);
+            setPermissionsTeamId($ledger->id);
+            $clara->assignRole('Member');
         }
 
         $housePool = Account::query()->firstOrCreate(
@@ -79,9 +85,21 @@ class DevSeeder extends Seeder
             ],
             [
                 'owner_id' => null,
-                'type' => AccountType::Pool,
+                'type' => AccountType::PoolAsset,
                 'name' => 'House Joint Account',
                 'base_budget' => 200000,
+            ],
+        );
+
+        $splitClearing = Account::query()->firstOrCreate(
+            [
+                'ledger_id' => $ledger->id,
+                'code' => 'DEV-SPLIT-CLEARING',
+            ],
+            [
+                'owner_id' => null,
+                'type' => AccountType::SplitClearing,
+                'name' => 'Split Clearing Account',
             ],
         );
 
@@ -98,10 +116,18 @@ class DevSeeder extends Seeder
             ],
             [
                 'owner_id' => null,
-                'type' => AccountType::External,
+                'type' => AccountType::SpaceExpense,
                 'name' => 'General Expenses Account',
             ],
         );
+
+        DB::table('ledger_user')
+            ->where('ledger_id', $ledger->id)
+            ->whereIn('user_id', [$bob->id, $clara->id])
+            ->update([
+                'default_payment_account_id' => DB::raw('main_personal_account_id'),
+                'default_expense_account_id' => $generalExpenses->id,
+            ]);
 
         $holidayExpenses = Account::query()->firstOrCreate(
             [
@@ -110,7 +136,7 @@ class DevSeeder extends Seeder
             ],
             [
                 'owner_id' => null,
-                'type' => AccountType::External,
+                'type' => AccountType::SpaceExpense,
                 'name' => 'Holiday Expenses Account',
             ],
         );
@@ -122,7 +148,7 @@ class DevSeeder extends Seeder
             ],
             [
                 'owner_id' => null,
-                'type' => AccountType::External,
+                'type' => AccountType::SpaceExpense,
                 'name' => 'Internet Provider',
             ],
         );
@@ -133,8 +159,8 @@ class DevSeeder extends Seeder
         if (!RecurringTransaction::query()->where('ledger_id', $ledger->id)->where('description', 'Monthly Rent')->exists()) {
             RecurringTransaction::query()->create([
                 'ledger_id' => $ledger->id,
-                'credit_account_id' => $housePool->id,
-                'debit_account_id' => $generalExpenses->id,
+                'payer_account_id' => $housePool->id,
+                'destination_account_id' => $generalExpenses->id,
                 'amount' => 100000,
                 'description' => 'Monthly Rent',
                 'split_rule' => TransactionSplitRule::Proportional->value,
@@ -148,8 +174,8 @@ class DevSeeder extends Seeder
         if (!RecurringTransaction::query()->where('ledger_id', $ledger->id)->where('description', 'Internet')->exists()) {
             RecurringTransaction::query()->create([
                 'ledger_id' => $ledger->id,
-                'credit_account_id' => $bobWallet->id,
-                'debit_account_id' => $internetProvider->id,
+                'payer_account_id' => $bobWallet->id,
+                'destination_account_id' => $generalExpenses->id,
                 'amount' => 5000,
                 'description' => 'Internet',
                 'split_rule' => TransactionSplitRule::Equal->value,
@@ -201,8 +227,8 @@ class DevSeeder extends Seeder
 
             $postAction->execute(PostManualTransactionData::fromArray([
                 'ledger_id' => $ledger->id,
-                'credit_account_id' => $housePool->id,
-                'debit_account_id' => $generalExpenses->id,
+                'payer_account_id' => $housePool->id,
+                'destination_account_id' => $generalExpenses->id,
                 'amount' => 100000,
                 'split_rule' => TransactionSplitRule::Proportional->value,
                 'participants' => $participants,
@@ -213,8 +239,8 @@ class DevSeeder extends Seeder
 
             $postAction->execute(PostManualTransactionData::fromArray([
                 'ledger_id' => $ledger->id,
-                'credit_account_id' => $housePool->id,
-                'debit_account_id' => $holidayExpenses->id,
+                'payer_account_id' => $housePool->id,
+                'destination_account_id' => $holidayExpenses->id,
                 'amount' => 10000,
                 'split_rule' => TransactionSplitRule::Proportional->value,
                 'participants' => $participants,
@@ -225,8 +251,8 @@ class DevSeeder extends Seeder
 
             $postAction->execute(PostManualTransactionData::fromArray([
                 'ledger_id' => $ledger->id,
-                'credit_account_id' => $bobWallet->id,
-                'debit_account_id' => $generalExpenses->id,
+                'payer_account_id' => $bobWallet->id,
+                'destination_account_id' => $generalExpenses->id,
                 'amount' => 20000,
                 'split_rule' => TransactionSplitRule::Proportional->value,
                 'participants' => $participants,
@@ -237,8 +263,8 @@ class DevSeeder extends Seeder
 
             $postAction->execute(PostManualTransactionData::fromArray([
                 'ledger_id' => $ledger->id,
-                'credit_account_id' => $bobWallet->id,
-                'debit_account_id' => $generalExpenses->id,
+                'payer_account_id' => $bobWallet->id,
+                'destination_account_id' => $generalExpenses->id,
                 'amount' => 10000,
                 'split_rule' => TransactionSplitRule::Equal->value,
                 'participants' => $participants,

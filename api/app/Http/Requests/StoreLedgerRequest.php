@@ -23,6 +23,8 @@ class StoreLedgerRequest extends FormRequest
             'currency' => ['nullable', 'string', Rule::in(array_keys(config('currencies.available', [])))],
             'settlement_mode' => ['nullable', 'string', Rule::enum(SettlementMode::class)],
             'settlement_cutoff_day' => ['nullable', 'integer', 'between:1,31'],
+            'settlement_timezone' => ['nullable', 'string', 'timezone'],
+            'settlement_auto_execute_enabled' => ['nullable', 'boolean'],
         ];
     }
 

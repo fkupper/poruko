@@ -24,6 +24,8 @@ class FinancialProfileApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         Sanctum::actingAs($user);
 
@@ -55,6 +57,8 @@ class FinancialProfileApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
@@ -84,6 +88,8 @@ class FinancialProfileApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
@@ -106,6 +112,8 @@ class FinancialProfileApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         Sanctum::actingAs($user);
 
@@ -119,6 +127,8 @@ class FinancialProfileApiTest extends TestCase
         $target = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($target->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $target->assignRole('Member');
 
         Sanctum::actingAs($user);
 
@@ -136,6 +146,8 @@ class FinancialProfileApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $this->putJson(
             "/api/ledgers/{$ledger->id}/users/{$user->id}/financial-profile/active",
@@ -155,7 +167,11 @@ class FinancialProfileApiTest extends TestCase
         $memberB = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($memberA->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $memberA->assignRole('Member');
         $ledger->users()->attach($memberB->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $memberB->assignRole('Member');
 
         Sanctum::actingAs($memberA);
 
@@ -174,6 +190,8 @@ class FinancialProfileApiTest extends TestCase
         $member = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
 
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
@@ -197,6 +215,8 @@ class FinancialProfileApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         Sanctum::actingAs($user);
 
@@ -252,7 +272,11 @@ class FinancialProfileApiTest extends TestCase
         $memberB = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($memberA->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $memberA->assignRole('Member');
         $ledger->users()->attach($memberB->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $memberB->assignRole('Member');
 
         FinancialProfile::factory()->create([
             'ledger_id' => $ledger->id,
