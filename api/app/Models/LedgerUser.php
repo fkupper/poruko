@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -11,10 +12,12 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property int $user_id
  * @property string $role
  * @property int $main_personal_account_id
+ * @property int|null $default_payment_account_id
+ * @property int|null $default_expense_account_id
  */
 class LedgerUser extends Pivot
 {
-    use \Illuminate\Database\Eloquent\SoftDeletes;
+    use SoftDeletes;
 
     public $incrementing = true;
 
@@ -26,6 +29,8 @@ class LedgerUser extends Pivot
         'user_id',
         'role',
         'main_personal_account_id',
+        'default_payment_account_id',
+        'default_expense_account_id',
     ];
 
     /**
@@ -35,6 +40,8 @@ class LedgerUser extends Pivot
     {
         return [
             'main_personal_account_id' => 'integer',
+            'default_payment_account_id' => 'integer',
+            'default_expense_account_id' => 'integer',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Http\Controllers\Api\LedgerUserController;
 use App\Models\FinancialProfile;
 use App\Models\Ledger;
+use App\Models\LedgerUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -20,6 +21,7 @@ class LedgerUserApiTest extends TestCase
 
     public function testMemberCanListLedgerUsersWithShareableIncome(): void
     {
+        // Arrange
         $alice = User::factory()->create(['name' => 'Alice']);
         $bob = User::factory()->create(['name' => 'Bob']);
         $ledger = Ledger::factory()->create();
@@ -41,8 +43,10 @@ class LedgerUserApiTest extends TestCase
 
         Sanctum::actingAs($alice);
 
+        // Act
         $response = $this->getJson("/api/ledgers/{$ledger->id}/users");
 
+        // Assert
         $response->assertOk()
             ->assertJsonCount(2, 'data');
 
@@ -56,6 +60,7 @@ class LedgerUserApiTest extends TestCase
 
     public function testListRespectsDateParameter(): void
     {
+        // Arrange
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
@@ -73,9 +78,120 @@ class LedgerUserApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
+        // Act
         $response = $this->getJson("/api/ledgers/{$ledger->id}/users?date=2026-01-15");
 
+        // Assert
         $response->assertOk()
             ->assertJsonPath('data.0.shareable_income', 100000);
+    }
+
+    public function testAdminCanDeactivateMemberAndRemoveSpatieRole(): void
+    {
+        // Arrange
+        [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
+
+        Sanctum::actingAs($admin);
+
+        // Act
+        $response = $this->deleteJson(route('ledgers.users.destroy', [
+            'ledger' => $ledger->id,
+            'user' => $member->id,
+        ]));
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('message', 'User has been deactivated.');
+
+        $this->assertFalse($member->fresh()->ledgers()->where('ledgers.id', $ledger->id)->exists());
+        $this->assertTrue(
+            LedgerUser::onlyTrashed()
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $member->id)
+                ->exists()
+        );
+
+        setPermissionsTeamId($ledger->id);
+        $this->assertFalse($member->fresh()->hasRole('Member'));
+    }
+
+    public function testAdminCanRestoreDeactivatedMemberAndReassignSpatieRole(): void
+    {
+        // Arrange
+        [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $member->id)
+            ->firstOrFail()
+            ->delete();
+
+        setPermissionsTeamId($ledger->id);
+        $member->removeRole('Member');
+
+        Sanctum::actingAs($admin);
+
+        // Act
+        $response = $this->postJson(route('ledgers.users.restore', [
+            'ledger' => $ledger->id,
+            'user' => $member->id,
+        ]));
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('message', 'User has been restored.');
+
+        $this->assertTrue($member->fresh()->ledgers()->where('ledgers.id', $ledger->id)->exists());
+        $this->assertFalse(
+            LedgerUser::onlyTrashed()
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $member->id)
+                ->exists()
+        );
+
+        setPermissionsTeamId($ledger->id);
+        $this->assertTrue($member->fresh()->hasRole('Member'));
+    }
+
+    public function testAdminCannotDeactivateSelf(): void
+    {
+        // Arrange
+        [$ledger, $admin] = $this->seedLedgerWithAdminAndMember();
+
+        Sanctum::actingAs($admin);
+
+        // Act
+        $response = $this->deleteJson(route('ledgers.users.destroy', [
+            'ledger' => $ledger->id,
+            'user' => $admin->id,
+        ]));
+
+        // Assert
+        $response->assertStatus(422);
+        $this->assertTrue($admin->fresh()->ledgers()->where('ledgers.id', $ledger->id)->exists());
+    }
+
+    /*
+     * Seeders.
+     */
+
+    /**
+     * @return array{0: Ledger, 1: User, 2: User}
+     */
+    private function seedLedgerWithAdminAndMember(): array
+    {
+        $admin = User::factory()->create(['name' => 'Admin']);
+        $member = User::factory()->create(['name' => 'Member']);
+        $ledger = Ledger::factory()->create();
+
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+
+        $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
+
+        return [$ledger, $admin, $member];
     }
 }

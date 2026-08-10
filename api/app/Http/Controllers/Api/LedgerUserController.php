@@ -5,7 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LedgerMemberResource;
 use App\Models\Ledger;
+use App\Models\User;
+use App\Modules\Ledger\Actions\DeactivateLedgerUserAction;
+use App\Modules\Ledger\Actions\DisableUserTwoFactorAction;
+use App\Modules\Ledger\Actions\RestoreLedgerUserAction;
 use App\Modules\Ledger\Queries\LedgerMembersIndexQuery;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
@@ -34,7 +39,7 @@ class LedgerUserController extends Controller
         return LedgerMemberResource::collection($members);
     }
 
-    public function resetTwoFactor(Request $request, Ledger $ledger, \App\Models\User $user, \App\Modules\Ledger\Actions\DisableUserTwoFactorAction $action): \Illuminate\Http\JsonResponse
+    public function resetTwoFactor(Request $request, Ledger $ledger, User $user, DisableUserTwoFactorAction $action): JsonResponse
     {
         Gate::authorize('users');
 
@@ -47,12 +52,21 @@ class LedgerUserController extends Controller
         return response()->json(['message' => 'Two-factor authentication has been disabled for this user.']);
     }
 
-    public function destroy(Request $request, Ledger $ledger, \App\Models\User $user, \App\Modules\Ledger\Actions\DeactivateLedgerUserAction $action): \Illuminate\Http\JsonResponse
+    public function destroy(Request $request, Ledger $ledger, User $user, DeactivateLedgerUserAction $action): JsonResponse
     {
         Gate::authorize('users');
 
         $action->execute($ledger, $user, $request->user());
 
         return response()->json(['message' => 'User has been deactivated.']);
+    }
+
+    public function restore(Request $request, Ledger $ledger, User $user, RestoreLedgerUserAction $action): JsonResponse
+    {
+        Gate::authorize('users');
+
+        $action->execute($ledger, $user);
+
+        return response()->json(['message' => 'User has been restored.']);
     }
 }

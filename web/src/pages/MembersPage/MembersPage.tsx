@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-qr-code';
-import { fetchLedgerMembers, createInvitation, resetTwoFactor, deactivateMember } from '@/api/members';
+import { fetchLedgerMembers, createInvitation, resetTwoFactor, deactivateMember, restoreMember } from '@/api/members';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -15,11 +15,12 @@ import {
     CheckIcon,
     Loader2Icon,
     HelpCircleIcon,
+    UserRoundCheckIcon,
+    UserXIcon,
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { UserXIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { fetchLedgerRoles } from '@/api/roles';
@@ -33,6 +34,7 @@ export default function MembersPage() {
     const [isRolesDialogOpen, setIsRolesDialogOpen] = React.useState(false);
     const [inviteToken, setInviteToken] = React.useState<string | null>(null);
     const [deactivateMemberId, setDeactivateMemberId] = React.useState<number | null>(null);
+    const [restoreMemberId, setRestoreMemberId] = React.useState<number | null>(null);
     const [copied, setCopied] = React.useState(false);
     const [feedback, setFeedback] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -85,6 +87,17 @@ export default function MembersPage() {
         }
     });
 
+    const restoreMutation = useMutation({
+        mutationFn: (userId: number) => restoreMember(activeLedgerId!, userId),
+        onSuccess: () => {
+            showFeedback('success', 'User has been restored.');
+            setRestoreMemberId(null);
+            queryClient.invalidateQueries({ queryKey: ['members', activeLedgerId] });
+        },
+        onError: () => {
+            showFeedback('error', 'Failed to restore user.');
+        }
+    });
 
     const handleInviteClick = () => {
         setInviteToken(null);
@@ -203,15 +216,24 @@ export default function MembersPage() {
                     <CardContent className="p-0">
                         <div className="divide-y divide-border">
                             {deactivatedMembers.map(member => (
-                                <div key={member.id} className="px-6 py-4 flex items-center justify-between">
-                                    <div className="opacity-70">
-                                        <p className="font-medium text-foreground">{member.name}</p>
-                                        <p className="text-sm text-muted-foreground">{member.email}</p>
+                                <div key={member.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                                    <div className="opacity-70 min-w-0">
+                                        <p className="font-medium text-foreground truncate">{member.name}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{member.email}</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 shrink-0">
                                         <span className="text-xs font-semibold px-2 py-1 rounded-full capitalize bg-muted text-muted-foreground">
                                             Deactivated
                                         </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={() => setRestoreMemberId(member.id)}
+                                        >
+                                            <UserRoundCheckIcon className="size-4" />
+                                            Restore
+                                        </Button>
                                     </div>
                                 </div>
                             ))}
@@ -240,6 +262,30 @@ export default function MembersPage() {
                             disabled={deactivateMutation.isPending}
                         >
                             {deactivateMutation.isPending ? 'Deactivating...' : 'Deactivate Member'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={restoreMemberId !== null} onOpenChange={(open) => !open && setRestoreMemberId(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Restore Member</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to restore {members.find(m => m.id === restoreMemberId)?.name}? They will regain access to this space.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4 gap-2 sm:justify-end">
+                        <Button variant="ghost" onClick={() => setRestoreMemberId(null)} disabled={restoreMutation.isPending}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (restoreMemberId) restoreMutation.mutate(restoreMemberId);
+                            }}
+                            disabled={restoreMutation.isPending}
+                        >
+                            {restoreMutation.isPending ? 'Restoring...' : 'Restore Member'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

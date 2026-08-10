@@ -15,6 +15,7 @@ final readonly class CreateInvitationAction
             'ledger_id' => $data->ledgerId,
             'created_by' => $actor->id,
             'token' => Str::random(32),
+            'email' => $data->email,
             'expires_at' => now()->addDays($data->expiresInDays),
         ]);
     }

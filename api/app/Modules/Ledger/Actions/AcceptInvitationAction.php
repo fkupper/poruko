@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Ledger\Data\AcceptInvitationData;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final readonly class AcceptInvitationAction
@@ -20,6 +21,7 @@ final readonly class AcceptInvitationAction
     {
         $invitation = Invitation::query()
             ->where('token', $data->token)
+            ->whereNull('accepted_at')
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -30,18 +32,21 @@ final readonly class AcceptInvitationAction
             throw new NotFoundHttpException('Invalid or expired invitation token.');
         }
 
+        if ($invitation->email !== null && strcasecmp($invitation->email, $data->email) !== 0) {
+            throw ValidationException::withMessages([
+                'email' => ['This invitation is bound to a different email address.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($data, $invitation): User {
-            // Create the user
             $user = User::create([
                 'name' => $data->name,
                 'email' => $data->email,
                 'password' => Hash::make($data->password),
             ]);
 
-            // Attach user to the ledger
             $invitation->ledger->users()->attach($user->id, ['role' => 'member']);
 
-            // Assign Spatie role (using Spatie teams feature mapped to ledger_id)
             setPermissionsTeamId($invitation->ledger_id);
             $user->assignRole('Member');
 
@@ -50,8 +55,9 @@ final readonly class AcceptInvitationAction
                 ->where('user_id', $user->id)
                 ->firstOrFail();
 
-            // Setup their personal accounts
             $this->ensureAccountAction->execute($ledgerUser);
+
+            $invitation->update(['accepted_at' => now()]);
 
             return $user;
         });

@@ -19,3 +19,7 @@ export async function resetTwoFactor(ledgerId: number, userId: number): Promise<
 export const deactivateMember = async (ledgerId: number, userId: number): Promise<void> => {
     await client.delete(`/ledgers/${ledgerId}/users/${userId}`);
 };
+
+export async function restoreMember(ledgerId: number, userId: number): Promise<void> {
+    await client.post(`/ledgers/${ledgerId}/users/${userId}/restore`);
+}

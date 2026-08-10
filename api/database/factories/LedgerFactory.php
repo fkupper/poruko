@@ -19,6 +19,7 @@ class LedgerFactory extends Factory
     {
         return [
             'name' => fake()->words(2, true),
+            'currency' => 'USD',
             'settlement_mode' => fake()->randomElement(SettlementMode::cases())->value,
             'settlement_timezone' => fake()->timezone(),
             'settlement_cutoff_day' => fake()->numberBetween(1, 28),

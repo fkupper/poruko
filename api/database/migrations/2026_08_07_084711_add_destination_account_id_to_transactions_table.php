@@ -8,7 +8,7 @@ return new class() extends Migration {
     public function up(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('destination_account_id')->nullable()->constrained('accounts')->cascadeOnDelete();
+            $table->foreignId('destination_account_id')->nullable()->constrained('accounts')->nullOnDelete();
         });
     }
 

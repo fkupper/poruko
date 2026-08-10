@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountType;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
@@ -24,6 +25,10 @@ class TransactionFactory extends Factory
             'ledger_id' => Ledger::factory(),
             'payer_account_id' => fn (array $attributes) => Account::factory()->create([
                 'ledger_id' => $attributes['ledger_id'],
+            ])->id,
+            'destination_account_id' => fn (array $attributes) => Account::factory()->create([
+                'ledger_id' => $attributes['ledger_id'],
+                'type' => AccountType::SpaceExpense,
             ])->id,
             'amount' => fake()->numberBetween(100, 100_000),
             'type' => TransactionType::Manual->value,

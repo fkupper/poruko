@@ -9,7 +9,9 @@ use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\FinancialProfile;
+use App\Models\Invitation;
 use App\Models\Ledger;
+use App\Models\LedgerUser;
 use App\Models\RecurringTransaction;
 use App\Models\Settlement;
 use App\Models\User;
@@ -19,6 +21,7 @@ use App\Modules\Ledger\Data\PostManualTransactionData;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Joint Clearinghouse scenario: Bob and Clara share expenses. The settlement
@@ -76,6 +79,58 @@ class DevSeeder extends Seeder
             $ledger->users()->attach($clara->id, ['role' => 'member']);
             setPermissionsTeamId($ledger->id);
             $clara->assignRole('Member');
+        }
+
+        $dave = User::query()->updateOrCreate(
+            ['email' => 'dave@example.com'],
+            [
+                'name' => 'Dave',
+                'password' => 'password',
+            ],
+        );
+
+        $daveMembership = LedgerUser::withTrashed()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $dave->id)
+            ->first();
+
+        if ($daveMembership === null) {
+            $ledger->users()->attach($dave->id, ['role' => 'member']);
+            setPermissionsTeamId($ledger->id);
+            $dave->assignRole('Member');
+
+            $daveMembership = LedgerUser::query()
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $dave->id)
+                ->firstOrFail();
+        }
+
+        if ($daveMembership->trashed() === false) {
+            $daveMembership->delete();
+            setPermissionsTeamId($ledger->id);
+            if ($dave->hasRole('Member')) {
+                $dave->removeRole('Member');
+            }
+        }
+
+        if (!Invitation::query()->where('ledger_id', $ledger->id)->whereNull('email')->whereNull('accepted_at')->exists()) {
+            Invitation::query()->create([
+                'ledger_id' => $ledger->id,
+                'created_by' => $bob->id,
+                'token' => Str::random(32),
+                'email' => null,
+                'expires_at' => now()->addDays(7),
+            ]);
+        }
+
+        if (!Invitation::query()->where('ledger_id', $ledger->id)->where('email', 'invitee@example.com')->whereNull('accepted_at')->exists()) {
+            Invitation::query()->create([
+                'ledger_id' => $ledger->id,
+                'created_by' => $bob->id,
+                'token' => Str::random(32),
+                'email' => 'invitee@example.com',
+                'expires_at' => now()->addDays(7),
+            ]);
         }
 
         $housePool = Account::query()->firstOrCreate(

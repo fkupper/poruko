@@ -47,6 +47,9 @@ Route::middleware(['auth:sanctum', App\Http\Middleware\EnforceTwoFactor::class])
             Route::get('/users', [LedgerUserController::class, 'index'])->name('users.index');
             Route::get('/roles', [App\Http\Controllers\Api\RoleController::class, 'index'])->name('roles.index');
             Route::delete('/users/{user}', [LedgerUserController::class, 'destroy'])->name('users.destroy');
+            Route::post('/users/{user}/restore', [LedgerUserController::class, 'restore'])
+                ->withoutScopedBindings()
+                ->name('users.restore');
             Route::delete('/users/{user}/two-factor', [LedgerUserController::class, 'resetTwoFactor'])->name('users.two-factor.destroy');
             Route::post('/invitations', [App\Http\Controllers\Api\InvitationController::class, 'store'])->name('invitations.store');
 

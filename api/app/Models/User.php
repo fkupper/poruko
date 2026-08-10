@@ -62,7 +62,17 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<Ledger, $this, LedgerUser> */
+    public function allLedgers(): BelongsToMany
+    {
+        return $this->belongsToMany(Ledger::class)
+            ->using(LedgerUser::class)
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
             ->withTimestamps();
     }
 
