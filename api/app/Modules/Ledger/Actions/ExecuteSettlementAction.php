@@ -46,7 +46,7 @@ readonly class ExecuteSettlementAction
             $nextPending = $this->settlementCycleService->resolveNextPendingPeriod($ledger);
 
             if ($nextPending['period_end'] !== $period['period_end']) {
-                throw new CannotSettlePeriodWithEarlierOpenPeriodsException;
+                throw new CannotSettlePeriodWithEarlierOpenPeriodsException();
             }
         }
 

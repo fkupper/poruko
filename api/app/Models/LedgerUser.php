@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $ledger_id
  * @property int $user_id
  * @property string $role
- * @property int $main_personal_account_id
+ * @property int|null $main_personal_account_id
  * @property int|null $default_payment_account_id
  * @property int|null $default_expense_account_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 class LedgerUser extends Pivot
 {

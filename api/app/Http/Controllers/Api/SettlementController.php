@@ -13,6 +13,7 @@ use App\Modules\Ledger\Actions\ConfirmSettlementAction;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
 use App\Modules\Ledger\Exceptions\CannotSettlePeriodWithEarlierOpenPeriodsException;
 use App\Modules\Ledger\Queries\SettlementIndexQuery;
+use App\Modules\Ledger\Services\SettlementCycleService;
 use App\Modules\Ledger\Services\SettlementSafetyGateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -24,7 +25,7 @@ class SettlementController extends Controller
         private readonly SettlementSafetyGateService $settlementSafetyGateService,
     ) {}
 
-    public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action, \App\Modules\Ledger\Services\SettlementCycleService $cycleService): Response
+    public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action, SettlementCycleService $cycleService): Response
     {
         $date = $request->validated()['date'] ?? null;
 
@@ -48,7 +49,7 @@ class SettlementController extends Controller
         ]);
     }
 
-    public function periods(Ledger $ledger, \App\Modules\Ledger\Services\SettlementCycleService $cycleService): \Illuminate\Http\JsonResponse
+    public function periods(Ledger $ledger, SettlementCycleService $cycleService): JsonResponse
     {
         return response()->json([
             'data' => $cycleService->getAvailablePeriods($ledger),

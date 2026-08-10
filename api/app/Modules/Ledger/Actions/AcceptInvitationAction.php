@@ -40,7 +40,7 @@ final readonly class AcceptInvitationAction
 
         return DB::transaction(function () use ($data, $invitation): User {
             $existing = User::query()
-                ->whereRaw('LOWER(email) = ?', [strtolower($data->email)])
+                ->whereRaw('LOWER(email) = ?', [mb_strtolower($data->email)])
                 ->first();
 
             if ($existing !== null) {
@@ -83,6 +83,7 @@ final readonly class AcceptInvitationAction
             $trashedMembership->restore();
 
             setPermissionsTeamId($invitation->ledger_id);
+
             if (!$user->hasRole('Member')) {
                 $user->assignRole('Member');
             }

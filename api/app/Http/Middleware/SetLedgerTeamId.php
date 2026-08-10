@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Ledger;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,7 +17,9 @@ class SetLedgerTeamId
     public function handle(Request $request, Closure $next): Response
     {
         if ($ledger = $request->route('ledger')) {
-            $ledgerId = $ledger instanceof \App\Models\Ledger ? $ledger->id : $ledger;
+            $ledgerId = $ledger instanceof Ledger
+                ? $ledger->id
+                : (int) $ledger;
             setPermissionsTeamId($ledgerId);
         }
 

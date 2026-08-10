@@ -6,18 +6,21 @@ use App\Enums\AccountType;
 use App\Enums\PostingDirection;
 use App\Enums\TransactionSplitRule;
 use App\Models\Account;
+use App\Models\Ledger;
 use App\Models\Posting;
 use App\Models\Transaction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
+use App\Modules\Ledger\Services\FinancialProfileService;
+use App\Modules\Ledger\Services\TransactionSplitService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final readonly class PostManualTransactionAction
 {
     public function __construct(
-        private readonly \App\Modules\Ledger\Services\TransactionSplitService $splitService,
-        private readonly \App\Modules\Ledger\Services\FinancialProfileService $financialProfileService,
+        private readonly TransactionSplitService $splitService,
+        private readonly FinancialProfileService $financialProfileService,
     ) {}
 
     public function execute(PostManualTransactionData $payload): Transaction
@@ -42,9 +45,12 @@ final readonly class PostManualTransactionAction
             throw new InvalidLedgerPostingException('Split Clearing account missing for ledger.');
         }
 
-        $userIds = $ledgerAccounts->pluck('owner_id')->filter()->unique()->values()->all();
+        $userIds = array_values(array_unique(array_map(
+            static fn (mixed $id): int => (int) $id,
+            $ledgerAccounts->pluck('owner_id')->filter()->all(),
+        )));
         $shareableByUser = $this->financialProfileService->shareableIncomeForUsers(
-            \App\Models\Ledger::find($payload->ledgerId),
+            Ledger::query()->findOrFail($payload->ledgerId),
             $userIds,
             $payload->date,
         );

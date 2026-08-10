@@ -32,6 +32,7 @@ class RestoreLedgerUserAction
 
         setPermissionsTeamId($ledger->id);
         $spatieRole = $this->mapPivotRoleToSpatieRole($ledgerUser->role);
+
         if ($spatieRole !== null && !$userToRestore->hasRole($spatieRole)) {
             $userToRestore->assignRole($spatieRole);
         }

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Ledger\Queries;
 
+use App\Enums\AccountType;
 use App\Models\Account;
 use App\Models\Ledger;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -15,7 +16,7 @@ class LedgerAccountIndexQuery
     public function get(Ledger $ledger): EloquentCollection
     {
         return $ledger->accounts()
-            ->whereNotIn('type', \App\Enums\AccountType::internalTypes())
+            ->whereNotIn('type', AccountType::internalTypes())
             ->withSum(['postings as total_credits' => function ($q) {
                 $q->where('direction', 'credit');
             },

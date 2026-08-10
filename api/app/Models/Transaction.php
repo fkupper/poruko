@@ -10,6 +10,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $ledger_id
+ * @property int|null $source_recurring_transaction_id
+ * @property int|null $settlement_id
+ * @property int $payer_account_id
+ * @property int|null $destination_account_id
+ * @property int $amount
+ * @property TransactionType $type
+ * @property TransactionSplitRule $split_rule
+ * @property array<int, array{user_id: int, share?: int|float}> $participants
+ * @property string|null $description
+ * @property \Illuminate\Support\Carbon $date
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Account|null $payerAccount
+ * @property-read Account|null $destinationAccount
+ */
 class Transaction extends Model
 {
     /** @use HasFactory<\Database\Factories\TransactionFactory> */
@@ -68,6 +86,7 @@ class Transaction extends Model
         return $this->belongsTo(Account::class, 'destination_account_id');
     }
 
+    /** @return BelongsTo<Account, $this> */
     public function payerAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'payer_account_id');

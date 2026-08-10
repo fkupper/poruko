@@ -19,7 +19,6 @@ final readonly class RegisterUserAction
         $user = User::query()->create($data);
         $token = $user->createToken('api-token', ['*'])->plainTextToken;
 
-
         return [
             'user' => $user,
             'token' => $token,

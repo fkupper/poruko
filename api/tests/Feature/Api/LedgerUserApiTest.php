@@ -108,7 +108,7 @@ class LedgerUserApiTest extends TestCase
             LedgerUser::onlyTrashed()
                 ->where('ledger_id', $ledger->id)
                 ->where('user_id', $member->id)
-                ->exists()
+                ->exists(),
         );
 
         setPermissionsTeamId($ledger->id);
@@ -146,7 +146,7 @@ class LedgerUserApiTest extends TestCase
             LedgerUser::onlyTrashed()
                 ->where('ledger_id', $ledger->id)
                 ->where('user_id', $member->id)
-                ->exists()
+                ->exists(),
         );
 
         setPermissionsTeamId($ledger->id);

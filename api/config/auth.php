@@ -159,4 +159,3 @@ return [
     'lock_registration_after_first_user' => (bool) env('LOCK_REGISTRATION_AFTER_FIRST_USER', true),
 
 ];
-

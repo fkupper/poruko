@@ -2,6 +2,7 @@
 
 namespace App\Modules\Ledger\Actions;
 
+use App\Enums\AccountType;
 use App\Models\Account;
 use App\Modules\Ledger\Data\UpdateAccountData;
 
@@ -19,8 +20,8 @@ final readonly class UpdateAccountAction
 
             if ($credits > 0 || $debits > 0) {
                 $currentBalance += match ($account->type) {
-                    \App\Enums\AccountType::SplitClearing,
-                    \App\Enums\AccountType::UserFunding => $credits - $debits,
+                    AccountType::SplitClearing,
+                    AccountType::UserFunding => $credits - $debits,
                     default => $debits - $credits,
                 };
             }

@@ -2,7 +2,10 @@
 
 namespace App\Modules\Ledger\Services;
 
+use App\Enums\TransactionType;
 use App\Models\Ledger;
+use App\Models\Settlement;
+use App\Models\Transaction;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
@@ -31,9 +34,9 @@ class SettlementCycleService
      */
     public function resolveNextPendingPeriod(Ledger $ledger): array
     {
-        $oldestUnsettled = \App\Models\Transaction::query()
+        $oldestUnsettled = Transaction::query()
             ->where('ledger_id', $ledger->id)
-            ->where('type', '!=', \App\Enums\TransactionType::Settlement->value)
+            ->where('type', '!=', TransactionType::Settlement->value)
             ->whereNull('settlement_id')
             ->orderBy('date', 'asc')
             ->first();
@@ -52,7 +55,7 @@ class SettlementCycleService
      */
     public function getAvailablePeriods(Ledger $ledger): array
     {
-        $earliestTx = \App\Models\Transaction::query()
+        $earliestTx = Transaction::query()
             ->where('ledger_id', $ledger->id)
             ->orderBy('date', 'asc')
             ->first();
@@ -63,7 +66,7 @@ class SettlementCycleService
         $current = CarbonImmutable::parse($startDateStr, $timezone)->startOfMonth();
         $end = CarbonImmutable::now($timezone)->endOfMonth();
 
-        $settlements = \App\Models\Settlement::query()
+        $settlements = Settlement::query()
             ->where('ledger_id', $ledger->id)
             ->get()
             ->keyBy(fn ($s) => is_string($s->period_end) ? mb_substr($s->period_end, 0, 10) : $s->period_end->toDateString());

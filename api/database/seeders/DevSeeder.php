@@ -108,6 +108,7 @@ class DevSeeder extends Seeder
         if ($daveMembership->trashed() === false) {
             $daveMembership->delete();
             setPermissionsTeamId($ledger->id);
+
             if ($dave->hasRole('Member')) {
                 $dave->removeRole('Member');
             }

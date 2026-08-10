@@ -9,7 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property int $id
+ * @property string $name
+ * @property string $currency
  * @property SettlementMode $settlement_mode
+ * @property string|null $settlement_timezone
+ * @property int|null $settlement_cutoff_day
+ * @property string|null $settlement_cutoff_time
+ * @property bool $settlement_auto_execute_enabled
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read LedgerUser|null $pivot
  */
 class Ledger extends Model
 {

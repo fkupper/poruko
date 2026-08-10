@@ -288,7 +288,7 @@ class TwoFactorAuthApiTest extends TestCase
         // Must not be blocked by EnforceTwoFactor (Fortify may still 401/404/422/302/403 for its own reasons)
         $this->assertNotSame(
             'Two-factor authentication must be enabled.',
-            $enableResponse->json('message')
+            $enableResponse->json('message'),
         );
     }
 

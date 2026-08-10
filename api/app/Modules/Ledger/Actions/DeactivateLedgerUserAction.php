@@ -27,6 +27,7 @@ class DeactivateLedgerUserAction
 
         setPermissionsTeamId($ledger->id);
         $spatieRole = $this->mapPivotRoleToSpatieRole($pivotRole);
+
         if ($spatieRole !== null && $userToDeactivate->hasRole($spatieRole)) {
             $userToDeactivate->removeRole($spatieRole);
         }

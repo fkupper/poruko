@@ -49,9 +49,12 @@ final readonly class UpdateTransactionAction
             throw new InvalidLedgerPostingException('Split Clearing account missing for ledger.');
         }
 
-        $userIds = $ledgerAccounts->pluck('owner_id')->filter()->unique()->values()->all();
+        $userIds = array_values(array_unique(array_map(
+            static fn (mixed $id): int => (int) $id,
+            $ledgerAccounts->pluck('owner_id')->filter()->all(),
+        )));
         $shareableByUser = $this->financialProfileService->shareableIncomeForUsers(
-            Ledger::find($payload->ledgerId),
+            Ledger::query()->findOrFail($payload->ledgerId),
             $userIds,
             $payload->date,
         );

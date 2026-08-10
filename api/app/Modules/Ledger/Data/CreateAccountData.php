@@ -28,9 +28,9 @@ final readonly class CreateAccountData
         return new self(
             name: (string) $validated['name'],
             type: $type,
-            ownerId: isset($validated['owner_id']) && $validated['owner_id'] !== null ? (int) $validated['owner_id'] : null,
+            ownerId: isset($validated['owner_id']) ? (int) $validated['owner_id'] : null,
             baseBudget: $baseBudgetRaw !== null ? (int) $baseBudgetRaw : null,
-            code: isset($validated['code']) && $validated['code'] !== null ? (string) $validated['code'] : null,
+            code: isset($validated['code']) ? (string) $validated['code'] : null,
         );
     }
 

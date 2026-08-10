@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\AccountType;
 use App\Models\Account;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,8 +26,8 @@ class AccountResource extends JsonResource
 
         if ($credits > 0 || $debits > 0) {
             $calculatedBalance += match ($this->type) {
-                \App\Enums\AccountType::SplitClearing,
-                \App\Enums\AccountType::UserFunding => $credits - $debits,
+                AccountType::SplitClearing,
+                AccountType::UserFunding => $credits - $debits,
                 default => $debits - $credits,
             };
         }

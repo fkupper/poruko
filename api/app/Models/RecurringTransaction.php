@@ -13,12 +13,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property int $id
+ * @property int $ledger_id
  * @property string $series_id
+ * @property int $payer_account_id
+ * @property int|null $destination_account_id
+ * @property int $amount
+ * @property string|null $description
  * @property TransactionSplitRule $split_rule
+ * @property array<int, array{user_id: int, share?: int|float}> $participants
  * @property RecurringFrequency $frequency
  * @property CarbonInterface $valid_from
  * @property CarbonInterface|null $valid_to
- * @property array<int, array{user_id: int, share?: int|float}> $participants
+ * @property-read string $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Account|null $payerAccount
+ * @property-read Account|null $destinationAccount
  */
 class RecurringTransaction extends Model
 {
@@ -75,6 +87,7 @@ class RecurringTransaction extends Model
         return $this->belongsTo(Account::class, 'destination_account_id');
     }
 
+    /** @return BelongsTo<Account, $this> */
     public function payerAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'payer_account_id');

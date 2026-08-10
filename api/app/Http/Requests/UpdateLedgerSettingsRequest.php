@@ -14,8 +14,9 @@ class UpdateLedgerSettingsRequest extends FormRequest
     public function authorize(): bool
     {
         $ledger = $this->route('ledger');
+        $user = $this->user();
 
-        if (! $ledger instanceof Ledger || $this->user()?->can('update', $ledger) !== true) {
+        if (!$ledger instanceof Ledger || $user === null || $user->can('update', $ledger) !== true) {
             return false;
         }
 
@@ -27,7 +28,7 @@ class UpdateLedgerSettingsRequest extends FormRequest
         ];
 
         if ($this->hasAny($settlementFields)) {
-            return $this->user()?->can('manageSettlements', $ledger) === true;
+            return $user->can('manageSettlements', $ledger) === true;
         }
 
         return true;

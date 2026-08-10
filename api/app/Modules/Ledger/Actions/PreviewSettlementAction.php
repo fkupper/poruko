@@ -3,9 +3,12 @@
 namespace App\Modules\Ledger\Actions;
 
 use App\Enums\AccountType;
+use App\Enums\PostingDirection;
 use App\Enums\SettlementMode;
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Models\Posting;
+use App\Models\Settlement;
 use App\Models\Transaction;
 use App\Modules\Ledger\Queries\LedgerMemberMainAccountsQuery;
 use App\Modules\Ledger\Services\FinancialProfileService;
@@ -132,7 +135,7 @@ readonly class PreviewSettlementAction
         $outOfPocketByUser = array_fill_keys($userIds, 0);
 
         // Fetch all postings up to periodEnd for all ledger accounts
-        $postings = \App\Models\Posting::query()
+        $postings = Posting::query()
             ->with('transaction')
             ->whereIn('account_id', $allAccounts->keys())
             ->whereHas('transaction', function ($q) use ($periodEnd) {
@@ -153,14 +156,14 @@ readonly class PreviewSettlementAction
             if ($txDate >= $periodStart) {
                 if ($type === AccountType::UserLiability->value && $account->owner_id !== null) {
                     // Liability: Debits increase it, Credits decrease it
-                    if ($posting->direction->value === \App\Enums\PostingDirection::Debit->value) {
+                    if ($posting->direction->value === PostingDirection::Debit->value) {
                         $liabilityByUser[$account->owner_id] += $amount;
                     } else {
                         $liabilityByUser[$account->owner_id] -= $amount;
                     }
                 } elseif ($type === AccountType::UserFunding->value && $account->owner_id !== null) {
                     // Funding (Equity): Credits increase it (user paid), Debits decrease it (user was reimbursed)
-                    if ($posting->direction->value === \App\Enums\PostingDirection::Credit->value) {
+                    if ($posting->direction->value === PostingDirection::Credit->value) {
                         $outOfPocketByUser[$account->owner_id] += $amount;
                     } else {
                         $outOfPocketByUser[$account->owner_id] -= $amount;
@@ -185,7 +188,7 @@ readonly class PreviewSettlementAction
             $type = $account->type instanceof BackedEnum ? $account->type->value : (string) $account->type;
 
             if ($type === AccountType::PoolAsset->value) {
-                if ($posting->direction->value === \App\Enums\PostingDirection::Debit->value) {
+                if ($posting->direction->value === PostingDirection::Debit->value) {
                     $poolCurrentBalance += (int) $posting->amount;
                 } else {
                     $poolCurrentBalance -= (int) $posting->amount;
@@ -199,7 +202,7 @@ readonly class PreviewSettlementAction
                     : $posting->transaction->date->toDateString();
 
                 if ($txDate >= $periodStart) {
-                    if ($posting->direction->value === \App\Enums\PostingDirection::Debit->value) {
+                    if ($posting->direction->value === PostingDirection::Debit->value) {
                         $totalSharedSpend += (int) $posting->amount;
                     } else {
                         $totalSharedSpend -= (int) $posting->amount;
@@ -229,16 +232,14 @@ readonly class PreviewSettlementAction
             ];
         }
 
-        /** @var Collection<int, array{user_id:int, name:string, net_balance:int}> $userBreakdownsCollection */
-        $userBreakdownsCollection = collect($userBreakdowns);
         $requiredTransfers = $this->buildTransfers(
             $ledger,
-            $userBreakdownsCollection,
+            collect($userBreakdowns),
             $mainAccountByUser,
             $allAccounts,
         );
 
-        $settlementModel = \App\Models\Settlement::query()
+        $settlementModel = Settlement::query()
             ->where('ledger_id', $ledger->id)
             ->where('period_end', $periodEnd)
             ->first();
@@ -263,6 +264,9 @@ readonly class PreviewSettlementAction
      * @param  Collection<int, array{
      *   user_id:int,
      *   name:string,
+     *   active_ratio:float,
+     *   target_liability:int,
+     *   paid_out_of_pocket:int,
      *   net_balance:int
      * }>  $userBreakdowns
      * @param array<int, Account> $mainAccountByUser

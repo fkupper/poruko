@@ -14,7 +14,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateEqualSplitsEvenly(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(
@@ -33,7 +33,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateEqualGivesRemainderToLastParticipant(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(
@@ -52,7 +52,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateProportionalUsesShareableIncome(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(
@@ -71,7 +71,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateProportionalWithZeroIncomeFallsBackToEqual(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(
@@ -90,7 +90,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateManualGivesRemainderToLastParticipant(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(
@@ -112,7 +112,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateManualWithEmptyParticipantsReturnsEmpty(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(
@@ -130,7 +130,7 @@ class TransactionSplitServiceTest extends TestCase
     public function testAllocateIndividualAssignsFullAmountToSingleParticipant(): void
     {
         // Arrange
-        $service = new TransactionSplitService;
+        $service = new TransactionSplitService();
 
         // Act
         $allocations = $service->allocateByRule(

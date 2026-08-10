@@ -8,10 +8,6 @@ use Illuminate\Database\Eloquent\Collection;
 
 class UserLedgersIndexQuery
 {
-    public function __construct(
-        private readonly Ledger $ledgers,
-    ) {}
-
     /**
      * @return Collection<int, Ledger>
      */

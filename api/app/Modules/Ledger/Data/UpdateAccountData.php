@@ -33,9 +33,9 @@ final readonly class UpdateAccountData
         return new self(
             name: isset($validated['name']) ? (string) $validated['name'] : null,
             type: $type,
-            ownerId: isset($validated['owner_id']) && $validated['owner_id'] !== null ? (int) $validated['owner_id'] : null,
+            ownerId: isset($validated['owner_id']) ? (int) $validated['owner_id'] : null,
             baseBudget: $baseBudgetRaw !== null ? (int) $baseBudgetRaw : null,
-            code: isset($validated['code']) && $validated['code'] !== null ? (string) $validated['code'] : null,
+            code: isset($validated['code']) ? (string) $validated['code'] : null,
             currentFunds: isset($validated['current_funds']) ? (int) $validated['current_funds'] : null,
         );
     }

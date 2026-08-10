@@ -7,6 +7,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\TwoFactorChallengeRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Modules\Auth\Actions\LoginUserAction;
 use App\Modules\Auth\Actions\RegisterUserAction;
 use Illuminate\Http\JsonResponse;
@@ -49,7 +50,7 @@ class AuthController extends Controller
 
     public function challenge(TwoFactorChallengeRequest $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $valid = false;
@@ -63,6 +64,7 @@ class AuthController extends Controller
             $recoveryCodes = json_decode(decrypt($user->two_factor_recovery_codes), true) ?? [];
 
             $matchedIndex = null;
+
             foreach ($recoveryCodes as $index => $storedCode) {
                 if (hash_equals((string) $storedCode, (string) $recoveryCode)) {
                     $matchedIndex = $index;

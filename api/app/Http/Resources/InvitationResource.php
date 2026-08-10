@@ -23,10 +23,10 @@ class InvitationResource extends JsonResource
             'ledger_id' => $this->ledger_id,
             'email' => $this->email,
             'token' => $this->token,
-            'expires_at' => $this->expires_at?->toISOString(),
-            'accepted_at' => $this->accepted_at?->toISOString(),
+            'expires_at' => $this->expires_at?->toIso8601String(),
+            'accepted_at' => $this->accepted_at?->toIso8601String(),
             'created_by' => $this->created_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }
