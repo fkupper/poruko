@@ -45,7 +45,9 @@ class StoreAccountRequest extends FormRequest
                 'nullable',
                 'integer',
                 'exists:users,id',
-                Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId),
+                Rule::exists('ledger_user', 'user_id')
+                    ->where('ledger_id', $ledgerId)
+                    ->whereNull('deleted_at'),
             ],
             'base_budget' => ['nullable', 'integer', 'min:0'],
             'balance' => ['nullable', 'integer', 'min:0'],

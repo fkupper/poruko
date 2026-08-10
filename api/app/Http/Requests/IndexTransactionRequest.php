@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TransactionSplitRule;
 use App\Models\Ledger;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -42,7 +43,7 @@ class IndexTransactionRequest extends FormRequest
             'creator_user_ids' => ['nullable', 'array'],
             'creator_user_ids.*' => ['integer'],
             'split_rules' => ['nullable', 'array'],
-            'split_rules.*' => ['string', Rule::in(['proportional', 'equal', 'individual'])],
+            'split_rules.*' => ['string', Rule::enum(TransactionSplitRule::class)],
             'types' => ['nullable', 'array'],
             'types.*' => ['string', Rule::in(['manual', 'recurring', 'settlement', 'reversal'])],
             'settlement_id' => ['nullable', 'integer'],

@@ -66,7 +66,10 @@ class LedgerTransactionApiTest extends TestCase
 
         $this->getJson("/api/ledgers/{$ledger->id}/transactions/{$inLedger->id}")
             ->assertOk()
-            ->assertJsonPath('data.id', $inLedger->id);
+            ->assertJsonPath('data.id', $inLedger->id)
+            ->assertJsonPath('data.payer_account_name', $credit->name)
+            ->assertJsonPath('data.destination_account_name', $inLedger->fresh()->destinationAccount?->name)
+            ->assertJsonStructure(['data' => ['postings']]);
     }
 
     public function testMemberCanCreateManualTransactionAndPostings(): void
@@ -304,6 +307,44 @@ class LedgerTransactionApiTest extends TestCase
 
         $this->postJson("/api/ledgers/{$ledger->id}/transactions", $fullPayload)
             ->assertStatus(422);
+    }
+
+    public function testStoreRejectsZeroAmountWithFriendlyMessage(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::UserFunding->value,
+            'owner_id' => $user->id,
+        ]);
+        $spaceExpenseAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', \App\Enums\AccountType::SpaceExpense->value)
+            ->firstOrFail();
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act
+        $response = $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 0,
+            'description' => 'Invalid',
+            'date' => '2026-03-10',
+            'split_rule' => 'equal',
+            'participants' => [],
+        ]);
+
+        // Assert
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['amount'])
+            ->assertJsonPath('errors.amount.0', 'The amount must be greater than zero.');
     }
 
     public static function storeValidationDataProvider(): array

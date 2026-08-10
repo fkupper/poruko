@@ -72,3 +72,4 @@ poruko/
 * [ ] **Invitations — bind email in UI:** when creating an invite, optionally set an invitee email so acceptance must use that address (API already supports optional `email`).
 * [ ] **Invitations — pending list on Members page:** show outstanding (unaccepted, unexpired) invitations for the space — token/link, optional bound email, expiry — with revoke/copy actions as needed.
 * [ ] **Hide unauthorized UI actions:** users must not see controls they cannot execute (backend already rejects). Example: on Members, users with the Member role still see Deactivate/Reset 2FA/Invite — gate those on Spatie permissions (e.g. `users`) or role so only admins see them.
+* [ ] **Fix/rework individual & manual split transactions:** clarify UX and API contract for `individual` vs `manual` (participant selection, share entry, remainder handling), and align Add Expense / recurring flows with backend rules (e.g. individual = exactly one participant).

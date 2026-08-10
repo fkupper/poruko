@@ -179,6 +179,43 @@ class RecurringTransactionApiTest extends TestCase
         ]);
     }
 
+    public function testCannotUpdateClosedRecurringTransaction(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+
+        $blueprint = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'amount' => 100000,
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-02-01',
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act
+        $response = $this->patchJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}", [
+            'amount' => 110000,
+        ]);
+
+        // Assert
+        $response->assertUnprocessable()
+            ->assertJsonPath('message', 'Cannot update a closed recurring transaction. Create a new one instead.');
+
+        $this->assertDatabaseHas('recurring_transactions', [
+            'id' => $blueprint->id,
+            'amount' => 100000,
+            'valid_to' => '2026-02-01',
+        ]);
+    }
+
     public function testMemberCanSoftDeleteRecurringTransaction(): void
     {
         $user = User::factory()->create();

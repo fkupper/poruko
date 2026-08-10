@@ -251,7 +251,20 @@ class InvitationApiTest extends TestCase
 
         // Assert
         $response->assertCreated()
-            ->assertJsonPath('invitation.email', 'invitee@example.com');
+            ->assertJsonPath('invitation.email', 'invitee@example.com')
+            ->assertJsonStructure([
+                'message',
+                'invitation' => [
+                    'id',
+                    'ledger_id',
+                    'email',
+                    'token',
+                    'expires_at',
+                    'accepted_at',
+                    'created_by',
+                    'created_at',
+                ],
+            ]);
 
         $this->assertDatabaseHas('invitations', [
             'ledger_id' => $ledger->id,

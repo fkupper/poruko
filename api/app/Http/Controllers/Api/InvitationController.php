@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AcceptInvitationRequest;
 use App\Http\Requests\StoreInvitationRequest;
+use App\Http\Resources\InvitationResource;
 use App\Http\Resources\UserResource;
 use App\Models\Ledger;
 use App\Modules\Ledger\Actions\AcceptInvitationAction;
@@ -27,7 +28,7 @@ class InvitationController extends Controller
 
         return response()->json([
             'message' => 'Invitation created successfully.',
-            'invitation' => $invitation,
+            'invitation' => InvitationResource::make($invitation)->resolve(),
         ], 201);
     }
 

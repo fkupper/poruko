@@ -64,7 +64,7 @@ class LedgerTransactionController extends Controller
         $this->authorize('view', $transaction);
 
         return TransactionResource::make(
-            $transaction->load(['payerAccount', 'postings']),
+            $transaction->load(['payerAccount', 'destinationAccount', 'postings']),
         );
     }
 

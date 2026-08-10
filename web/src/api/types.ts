@@ -34,12 +34,12 @@ export interface Ledger {
     };
 }
 
-export type SplitRule = 'proportional' | 'equal' | 'individual';
+export type SplitRule = 'proportional' | 'equal' | 'individual' | 'manual';
 export type TransactionType = 'manual' | 'recurring' | 'settlement' | 'reversal';
 
 export interface ParticipantShare {
     user_id: number;
-    share_amount?: number;
+    share?: number;
     share_ratio?: number;
 }
 
@@ -78,7 +78,7 @@ export interface LedgerMember {
     email?: string;
     role?: string;
     shareable_income: number;
-    is_active?: boolean;
+    is_active: boolean;
 }
 
 export interface IncomeOrDeductionItem {

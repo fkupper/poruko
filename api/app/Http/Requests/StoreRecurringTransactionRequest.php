@@ -85,7 +85,7 @@ class StoreRecurringTransactionRequest extends FormRequest
             'destination_account_id.required' => 'The destination account is required.',
             'destination_account_id.exists' => 'The selected destination account must be a Space Expense account in this ledger.',
             'amount.required' => 'The amount is required.',
-            'amount.min' => 'The amount must be at least 1.',
+            'amount.min' => 'The amount must be greater than zero.',
             'start_date.required' => 'The start date is required.',
             'split_rule.required' => 'The split rule is required.',
             'participants.required' => 'Participants are required for the selected split rule.',

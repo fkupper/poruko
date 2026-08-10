@@ -80,6 +80,7 @@ class UpdateRecurringTransactionRequest extends FormRequest
         return [
             'payer_account_id.exists' => 'The selected payer account does not exist in this ledger.',
             'destination_account_id.exists' => 'The selected destination account must be a Space Expense account in this ledger.',
+            'amount.min' => 'The amount must be greater than zero.',
             'participants.required' => 'Participants are required for the selected split rule.',
             'participants.min' => 'Manual split requires at least one participant.',
             'participants.size' => 'Individual split requires exactly one participant.',

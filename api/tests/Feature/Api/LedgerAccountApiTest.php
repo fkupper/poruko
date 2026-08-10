@@ -310,4 +310,35 @@ class LedgerAccountApiTest extends TestCase
         $this->deleteJson("/api/ledgers/{$ledgerA->id}/accounts/{$accountInLedgerB->id}")
             ->assertNotFound();
     }
+
+    public function testCannotAssignSoftDeletedMemberAsAccountOwner(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        \App\Models\LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->postJson("/api/ledgers/{$ledger->id}/accounts", [
+            'name' => 'Orphan Personal',
+            'type' => AccountType::UserFunding->value,
+            'owner_id' => $removedMember->id,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['owner_id']);
+    }
 }

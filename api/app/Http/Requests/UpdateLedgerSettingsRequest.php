@@ -15,8 +15,22 @@ class UpdateLedgerSettingsRequest extends FormRequest
     {
         $ledger = $this->route('ledger');
 
-        return $ledger instanceof Ledger
-            && $this->user()?->can('update', $ledger) === true;
+        if (! $ledger instanceof Ledger || $this->user()?->can('update', $ledger) !== true) {
+            return false;
+        }
+
+        $settlementFields = [
+            'settlement_cutoff_day',
+            'settlement_timezone',
+            'settlement_cutoff_time',
+            'settlement_auto_execute_enabled',
+        ];
+
+        if ($this->hasAny($settlementFields)) {
+            return $this->user()?->can('manageSettlements', $ledger) === true;
+        }
+
+        return true;
     }
 
     /**

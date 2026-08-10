@@ -144,6 +144,40 @@ class LedgerApiTest extends TestCase
         ]);
     }
 
+    public function testUserWithSettingsButWithoutSettlementsCannotUpdateSettlementFields(): void
+    {
+        // Arrange
+        $user = User::factory()->create(['name' => 'Settings Only']);
+        $ledger = Ledger::factory()->create([
+            'name' => 'Shared Ledger',
+            'settlement_cutoff_day' => 1,
+        ]);
+
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->givePermissionTo('settings');
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act & Assert — name-only update is allowed
+        $this->putJson(route('ledgers.settings.update', $ledger), [
+            'name' => 'Renamed By Settings',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Renamed By Settings');
+
+        // Act & Assert — settlement fields require manageSettlements
+        $this->putJson(route('ledgers.settings.update', $ledger), [
+            'settlement_cutoff_day' => 15,
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('ledgers', [
+            'id' => $ledger->id,
+            'name' => 'Renamed By Settings',
+            'settlement_cutoff_day' => 1,
+        ]);
+    }
+
     public function testMemberWithoutSettingsPermissionCannotUpdateLedgerSettings(): void
     {
         // Arrange

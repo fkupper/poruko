@@ -21,23 +21,6 @@ class StoreTransactionRequest extends FormRequest
             && $this->user()?->can('create', [Transaction::class, $ledger]) === true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('participants') && is_array($this->input('participants'))) {
-            $participants = array_map(function (array $item): array {
-                if (!isset($item['share']) && isset($item['share_amount'])) {
-                    $item['share'] = (int) $item['share_amount'];
-                }
-
-                return $item;
-            }, $this->input('participants'));
-
-            $this->merge([
-                'participants' => $participants,
-            ]);
-        }
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -105,7 +88,7 @@ class StoreTransactionRequest extends FormRequest
             'destination_account_id.required' => 'The destination account is required.',
             'destination_account_id.exists' => 'The selected destination account must be a Space Expense account in this ledger.',
             'amount.required' => 'The amount is required.',
-            'amount.min' => 'The amount must be at least 1.',
+            'amount.min' => 'The amount must be greater than zero.',
             'date.required' => 'The transaction date is required.',
             'split_rule.required' => 'The split rule is required.',
             'participants.required' => 'Participants are required for the selected split rule.',

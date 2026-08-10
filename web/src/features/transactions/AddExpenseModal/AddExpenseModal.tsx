@@ -58,9 +58,8 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                 
                 const mShares: Record<number, number> = {};
                 if (transaction.participants) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    transaction.participants.forEach((p: any) => {
-                        mShares[p.user_id] = p.share || p.share_amount || 0;
+                    transaction.participants.forEach((p) => {
+                        mShares[p.user_id] = p.share ?? 0;
                     });
                 }
                  
@@ -116,39 +115,44 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
         enabled: !!activeLedgerId && open,
     });
 
+    const activeMembers = React.useMemo(
+        () => members.filter((m) => m.is_active !== false),
+        [members],
+    );
+
     // Calculate total shareable income
     const totalShareableIncome = React.useMemo(() => {
-        return members.reduce((sum, m) => sum + (m.shareable_income || 0), 0);
-    }, [members]);
+        return activeMembers.reduce((sum, m) => sum + (m.shareable_income || 0), 0);
+    }, [activeMembers]);
 
     // Calculate splits per member
     const calculatedParticipants = React.useMemo<ParticipantShare[]>(() => {
         const amt = amountCents || 0;
-        if (!members.length || amt <= 0) return [];
+        if (!activeMembers.length || amt <= 0) return [];
 
         if (splitRule === 'equal') {
-            const perPerson = Math.floor(amt / members.length);
-            const remainder = amt - perPerson * members.length;
-            return members.map((m, idx) => ({
+            const perPerson = Math.floor(amt / activeMembers.length);
+            const remainder = amt - perPerson * activeMembers.length;
+            return activeMembers.map((m, idx) => ({
                 user_id: m.id,
-                share_amount: perPerson + (idx === 0 ? remainder : 0),
+                share: perPerson + (idx === 0 ? remainder : 0),
             }));
         }
 
         if (splitRule === 'proportional') {
             if (totalShareableIncome <= 0) {
                 // Fallback to equal split if no shareable income set
-                const perPerson = Math.floor(amt / members.length);
-                const remainder = amt - perPerson * members.length;
-                return members.map((m, idx) => ({
+                const perPerson = Math.floor(amt / activeMembers.length);
+                const remainder = amt - perPerson * activeMembers.length;
+                return activeMembers.map((m, idx) => ({
                     user_id: m.id,
-                    share_amount: perPerson + (idx === 0 ? remainder : 0),
+                    share: perPerson + (idx === 0 ? remainder : 0),
                 }));
             }
 
             let sumShares = 0;
-            const shares = members.map((m, idx) => {
-                if (idx === members.length - 1) {
+            const shares = activeMembers.map((m, idx) => {
+                if (idx === activeMembers.length - 1) {
                     return amt - sumShares;
                 }
                 const ratio = m.shareable_income / totalShareableIncome;
@@ -157,18 +161,18 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                 return share;
             });
 
-            return members.map((m, idx) => ({
+            return activeMembers.map((m, idx) => ({
                 user_id: m.id,
-                share_amount: shares[idx],
+                share: shares[idx],
             }));
         }
 
-        // Manual split rule
-        return members.map((m) => ({
+        // Manual / individual split rule
+        return activeMembers.map((m) => ({
             user_id: m.id,
-            share_amount: manualShares[m.id] ?? 0,
+            share: manualShares[m.id] ?? 0,
         }));
-    }, [members, amountCents, splitRule, totalShareableIncome, manualShares]);
+    }, [activeMembers, amountCents, splitRule, totalShareableIncome, manualShares]);
 
     const mutation = useMutation({
         mutationFn: async () => {
@@ -320,15 +324,15 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                         <div className="flex items-center justify-center p-4">
                             <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
                         </div>
-                    ) : members.length === 0 ? (
+                    ) : activeMembers.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-2">
                             No members found in this Space.
                         </p>
                     ) : (
                         <div className="space-y-2 text-xs">
-                            {members.map((member) => {
+                            {activeMembers.map((member) => {
                                 const participant = calculatedParticipants.find((p) => p.user_id === member.id);
-                                const shareAmt = participant?.share_amount || 0;
+                                const shareAmt = participant?.share || 0;
                                 const ratio = participant?.share_ratio || 0;
 
                                 return (
