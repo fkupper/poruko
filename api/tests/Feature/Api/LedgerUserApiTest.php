@@ -207,6 +207,58 @@ class LedgerUserApiTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function testMemberWithoutUsersPermissionCannotDeactivateUser(): void
+    {
+        // Arrange
+        [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
+
+        Sanctum::actingAs($member, ['*']);
+
+        // Act & Assert
+        $this->deleteJson(route('ledgers.users.destroy', [
+            'ledger' => $ledger->id,
+            'user' => $admin->id,
+        ]))->assertForbidden();
+    }
+
+    public function testMemberWithoutUsersPermissionCannotRestoreUser(): void
+    {
+        // Arrange
+        [$ledger, , $member] = $this->seedLedgerWithAdminAndMember();
+        $deactivated = User::factory()->create(['name' => 'Deactivated']);
+        $ledger->users()->attach($deactivated->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $deactivated->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $deactivated->id)
+            ->firstOrFail()
+            ->delete();
+
+        Sanctum::actingAs($member, ['*']);
+
+        // Act & Assert
+        $this->postJson(route('ledgers.users.restore', [
+            'ledger' => $ledger->id,
+            'user' => $deactivated->id,
+        ]))->assertForbidden();
+    }
+
+    public function testMemberWithoutUsersPermissionCannotResetTwoFactor(): void
+    {
+        // Arrange
+        [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
+
+        Sanctum::actingAs($member, ['*']);
+
+        // Act & Assert
+        $this->deleteJson(route('ledgers.users.two-factor.destroy', [
+            'ledger' => $ledger->id,
+            'user' => $admin->id,
+        ]))->assertForbidden();
+    }
+
     /*
      * Seeders.
      */

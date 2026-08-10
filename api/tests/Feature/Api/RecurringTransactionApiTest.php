@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Http\Controllers\Api\RecurringTransactionController;
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Models\LedgerUser;
 use App\Models\RecurringTransaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -271,5 +272,47 @@ class RecurringTransactionApiTest extends TestCase
             'split_rule' => 'equal',
             'participants' => [],
         ])->assertForbidden();
+    }
+
+    public function testCannotUseSoftDeletedMemberAsParticipantOnStore(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $destination->id,
+            'amount' => 120000,
+            'description' => 'Monthly Rent',
+            'split_rule' => 'equal',
+            'participants' => [['user_id' => $removedMember->id]],
+            'start_date' => '2026-04-01',
+            'frequency' => 'monthly',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['participants.0.user_id']);
     }
 }

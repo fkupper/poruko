@@ -130,7 +130,7 @@ class SettlementApiTest extends TestCase
             ->assertJsonPath('data.0.transactions.0.payer_account_name', $payerAccount->name);
     }
 
-    public function testMemberCanConfirmCycleWhenSafetyGateBlocksAutoExecution(): void
+    public function testAdminCanConfirmCycleWhenSafetyGateBlocksAutoExecution(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_auto_execute_enabled' => false,
@@ -212,6 +212,28 @@ class SettlementApiTest extends TestCase
 
         $this->assertNotNull($transaction);
         $this->assertNotNull($transaction?->settlement_id);
+    }
+
+    public function testMemberCannotConfirmSettlementCycle(): void
+    {
+        // Arrange
+        [$ledger] = $this->createLedgerWithAdmin([
+            'settlement_auto_execute_enabled' => false,
+            'settlement_timezone' => 'UTC',
+            'settlement_cutoff_day' => 31,
+            'settlement_cutoff_time' => '23:59:00',
+        ]);
+        $member = User::factory()->create(['name' => 'Member B']);
+        $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
+
+        Sanctum::actingAs($member, ['*']);
+
+        // Act & Assert
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/confirm", [
+            'period_end' => '2026-03-31',
+        ])->assertForbidden();
     }
 
     public function testConfirmReturnsValidationErrorWhenCycleDoesNotRequireManualConfirmation(): void

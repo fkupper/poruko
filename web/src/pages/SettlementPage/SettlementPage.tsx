@@ -10,6 +10,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
     Dialog,
@@ -21,6 +37,7 @@ import {
 import {
     AlertTriangleIcon,
     ArrowRightIcon,
+    CheckCircle2Icon,
     ChevronDownIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
@@ -55,7 +72,8 @@ export default function SettlementPage() {
 
     const currentIndex = periods.findIndex((p) => p.period_end === settlement?.period_end);
     const prevPeriod = currentIndex > 0 ? periods[currentIndex - 1] : null;
-    const nextPeriod = currentIndex >= 0 && currentIndex < periods.length - 1 ? periods[currentIndex + 1] : null;
+    const nextPeriod =
+        currentIndex >= 0 && currentIndex < periods.length - 1 ? periods[currentIndex + 1] : null;
 
     const mutation = useMutation({
         mutationFn: async () => {
@@ -73,82 +91,93 @@ export default function SettlementPage() {
     });
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        <HandCoinsIcon className="size-6 text-emerald-500" />
+                    <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+                        <HandCoinsIcon className="size-6 text-inflow" />
                         End-of-Month Settlement Engine
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Calculate true-up contributions, review math breakdowns, and lock period boundaries.
                     </p>
                 </div>
-                {settlement && (
-                    settlement.is_settled ? (
+                {settlement &&
+                    (settlement.is_settled ? (
                         <Button variant="outline" disabled className="gap-2 shrink-0">
-                            <LockIcon className="size-4 text-muted-foreground" />
+                            <LockIcon data-icon="inline-start" className="text-muted-foreground" />
                             Month Locked & Settled
                         </Button>
                     ) : (
                         <Button
                             onClick={() => setIsConfirmOpen(true)}
-                            className="gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                            className="gap-2 shrink-0 shadow-xs"
+                            variant="default"
                         >
-                            <LockIcon className="size-4" />
+                            <LockIcon data-icon="inline-start" />
                             Execute & Lock Month
                         </Button>
-                    )
-                )}
+                    ))}
             </div>
 
-            {/* Period Navigation Header */}
             {periods.length > 0 && (
-                <div className="rounded-xl border bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-                    <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Button
                             variant="outline"
                             size="icon"
                             disabled={!prevPeriod}
+                            aria-label="Previous settlement period"
                             onClick={() => prevPeriod && setSearchParams({ date: prevPeriod.period_end })}
                         >
-                            <ChevronLeftIcon className="size-4" />
+                            <ChevronLeftIcon />
                         </Button>
 
-                        <span className="font-semibold text-sm font-mono px-2 min-w-[110px] text-center">
-                            {periods.find((p) => p.period_end === settlement?.period_end)?.label || settlement?.period_end}
+                        <span className="min-w-[110px] px-2 text-center font-mono text-sm font-semibold">
+                            {periods.find((p) => p.period_end === settlement?.period_end)?.label ||
+                                settlement?.period_end}
                         </span>
 
                         <Button
                             variant="outline"
                             size="icon"
                             disabled={!nextPeriod}
+                            aria-label="Next settlement period"
                             onClick={() => nextPeriod && setSearchParams({ date: nextPeriod.period_end })}
                         >
-                            <ChevronRightIcon className="size-4" />
+                            <ChevronRightIcon />
                         </Button>
 
-                        <select
-                            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:outline-hidden"
+                        <Select
                             value={settlement?.period_end || ''}
-                            onChange={(e) => setSearchParams({ date: e.target.value })}
+                            onValueChange={(value) => setSearchParams({ date: value })}
                         >
-                            {periods.map((p) => (
-                                <option key={p.period_end} value={p.period_end}>
-                                    {p.label} ({p.status.toUpperCase()})
-                                </option>
-                            ))}
-                        </select>
+                            <SelectTrigger aria-label="Settlement period" className="h-9 min-w-[180px]">
+                                <SelectValue placeholder="Select period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {periods.map((p) => (
+                                        <SelectItem key={p.period_end} value={p.period_end}>
+                                            {p.label} ({p.status.toUpperCase()})
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {settlement?.is_settled ? (
-                        <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                        <Badge variant="success" className="gap-1.5 px-3 py-1 text-xs">
                             <LockIcon className="size-3.5" />
-                            SETTLED {settlement.executed_at ? `(${new Date(settlement.executed_at).toLocaleDateString()})` : ''}
+                            SETTLED{' '}
+                            {settlement.executed_at
+                                ? `(${new Date(settlement.executed_at).toLocaleDateString()})`
+                                : ''}
                         </Badge>
                     ) : (
-                        <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                            <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                        <Badge variant="warning" className="gap-1.5 px-3 py-1 text-xs">
+                            <span className="size-2 animate-pulse rounded-full bg-amber-500" />
                             OPEN CYCLE
                         </Badge>
                     )}
@@ -156,26 +185,33 @@ export default function SettlementPage() {
             )}
 
             {isPending ? (
-                <div className="h-64 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
-                    Calculating settlement preview...
+                <div className="flex flex-col gap-3 rounded-xl border p-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-32 w-full" />
                 </div>
             ) : isError || !settlement ? (
-                <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-center space-y-3">
-                    <AlertTriangleIcon className="size-8 text-destructive mx-auto" />
-                    <p className="text-sm font-medium text-destructive">Failed to calculate settlement preview.</p>
-                    <Button variant="outline" size="sm" onClick={() => void refetch()}>
-                        Retry Calculation
-                    </Button>
-                </div>
+                <Empty className="border border-destructive/20 bg-destructive/10">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <AlertTriangleIcon className="text-destructive" />
+                        </EmptyMedia>
+                        <EmptyTitle className="text-destructive">Failed to calculate settlement preview.</EmptyTitle>
+                        <EmptyDescription>
+                            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                                Retry Calculation
+                            </Button>
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             ) : (
                 <>
-                    {/* Period Banner */}
-                    <div className="rounded-xl border bg-muted/30 p-4 flex flex-wrap items-center justify-between gap-4 text-xs font-medium">
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-muted/30 p-4 text-xs font-medium">
                         <div className="flex items-center gap-3">
                             <Badge variant="secondary">
                                 Period: {settlement.period_start} to {settlement.period_end}
                             </Badge>
-                            <span className="text-muted-foreground capitalize">
+                            <span className="capitalize text-muted-foreground">
                                 Mode: {settlement.settlement_mode.replace('_', ' ')}
                             </span>
                         </div>
@@ -195,22 +231,27 @@ export default function SettlementPage() {
                         </div>
                     </div>
 
-                    {/* Plain Language Action Cards */}
-                    <div className="space-y-3">
-                        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex flex-col gap-3">
+                        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                             Required Transfer Actions
                         </h2>
                         {settlement.required_transfers.length === 0 ? (
-                            <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
-                                All members are completely balanced. No transfer instructions needed!
-                            </div>
+                            <Empty className="border bg-card">
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <CheckCircle2Icon className="text-inflow" />
+                                    </EmptyMedia>
+                                    <EmptyTitle>All members are completely balanced</EmptyTitle>
+                                    <EmptyDescription>No transfer instructions needed.</EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
                         ) : (
                             <div className="grid gap-3">
                                 {settlement.required_transfers.map((tx, idx) => (
-                                    <Card key={idx} className="border-l-4 border-l-emerald-500">
-                                        <CardContent className="pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <Card key={idx} className="border-l-4 border-l-inflow">
+                                        <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex size-10 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                                                <div className="flex size-10 items-center justify-center rounded-full bg-inflow/15 text-inflow">
                                                     <ArrowRightIcon className="size-5" />
                                                 </div>
                                                 <div>
@@ -218,11 +259,12 @@ export default function SettlementPage() {
                                                         {tx.instruction}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
-                                                        From Account #{tx.from_account_id} to Joint Account #{tx.to_account_id}
+                                                        From Account #{tx.from_account_id} to Joint Account #
+                                                        {tx.to_account_id}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                            <div className="font-mono text-xl font-bold text-inflow">
                                                 {centsToCurrency(tx.amount, currencySymbol)}
                                             </div>
                                         </CardContent>
@@ -232,28 +274,29 @@ export default function SettlementPage() {
                         )}
                     </div>
 
-                    {/* Expandable Math Breakdown */}
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-base font-semibold text-foreground">
-                                Detailed Member Math Breakdown
-                            </CardTitle>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowMathBreakdown(!showMathBreakdown)}
-                                className="gap-1 text-xs"
-                            >
-                                {showMathBreakdown ? (
-                                    <>
-                                        Hide Breakdown <ChevronUpIcon className="size-4" />
-                                    </>
-                                ) : (
-                                    <>
-                                        Show Breakdown <ChevronDownIcon className="size-4" />
-                                    </>
-                                )}
-                            </Button>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base font-semibold text-foreground">
+                                    Detailed Member Math Breakdown
+                                </CardTitle>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowMathBreakdown(!showMathBreakdown)}
+                                    className="gap-1 text-xs"
+                                >
+                                    {showMathBreakdown ? (
+                                        <>
+                                            Hide Breakdown <ChevronUpIcon data-icon="inline-end" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            Show Breakdown <ChevronDownIcon data-icon="inline-end" />
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
                         </CardHeader>
                         {showMathBreakdown && (
                             <CardContent>
@@ -282,9 +325,7 @@ export default function SettlementPage() {
                                                 </TableCell>
                                                 <TableCell
                                                     className={`text-right font-mono font-bold ${
-                                                        user.net_balance < 0
-                                                            ? 'text-orange-600 dark:text-orange-400'
-                                                            : 'text-emerald-600 dark:text-emerald-400'
+                                                        user.net_balance < 0 ? 'text-outflow' : 'text-inflow'
                                                     }`}
                                                 >
                                                     {centsToCurrency(user.net_balance, currencySymbol)}
@@ -297,7 +338,6 @@ export default function SettlementPage() {
                         )}
                     </Card>
 
-                    {/* Cycle Transactions */}
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base font-semibold text-foreground">
@@ -317,7 +357,6 @@ export default function SettlementPage() {
                 </>
             )}
 
-            {/* High-Friction Confirmation Modal */}
             <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -327,46 +366,46 @@ export default function SettlementPage() {
                         </DialogTitle>
                     </DialogHeader>
 
-                <div className="space-y-4 text-sm text-muted-foreground">
-                    <p>
-                        Executing settlement for period ending{' '}
-                        <strong className="text-foreground">{settlement?.period_end}</strong> will:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1 text-xs">
-                        <li>Generate immutable double-entry transfer postings into the ledger.</li>
-                        <li>Set temporal boundaries on active member financial profiles.</li>
-                        <li>Lock past transactions from retroactive edits.</li>
-                    </ul>
+                    <div className="flex flex-col gap-4 text-sm text-muted-foreground">
+                        <p>
+                            Executing settlement for period ending{' '}
+                            <strong className="text-foreground">{settlement?.period_end}</strong> will:
+                        </p>
+                        <ul className="list-disc space-y-1 pl-5 text-xs">
+                            <li>Generate immutable double-entry transfer postings into the ledger.</li>
+                            <li>Set temporal boundaries on active member financial profiles.</li>
+                            <li>Lock past transactions from retroactive edits.</li>
+                        </ul>
 
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-                        Type <strong>CONFIRM</strong> below to authorize locking this period.
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+                            Type <strong>CONFIRM</strong> below to authorize locking this period.
+                        </div>
+
+                        <Input
+                            type="text"
+                            placeholder="Type CONFIRM"
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            className="h-10 font-mono uppercase"
+                        />
                     </div>
 
-                    <Input
-                        type="text"
-                        placeholder="Type CONFIRM"
-                        value={confirmText}
-                        onChange={(e) => setConfirmText(e.target.value)}
-                        className="h-10 uppercase font-mono"
-                    />
-                </div>
+                    {mutation.isError && (
+                        <p className="mt-2 text-xs text-destructive">
+                            {(mutation.error as Error)?.message || 'Failed to execute settlement.'}
+                        </p>
+                    )}
 
-                {mutation.isError && (
-                    <p className="text-xs text-destructive mt-2">
-                        {(mutation.error as Error)?.message || 'Failed to execute settlement.'}
-                    </p>
-                )}
-
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsConfirmOpen(false)}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        disabled={confirmText.trim() !== 'CONFIRM' || mutation.isPending}
-                        onClick={() => mutation.mutate()}
-                    >
-                        Execute Settlement & Lock
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsConfirmOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            disabled={confirmText.trim() !== 'CONFIRM' || mutation.isPending}
+                            onClick={() => mutation.mutate()}
+                        >
+                            Execute Settlement & Lock
                         </Button>
                     </DialogFooter>
                 </DialogContent>

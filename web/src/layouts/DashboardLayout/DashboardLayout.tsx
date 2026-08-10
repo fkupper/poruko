@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -6,12 +6,30 @@ import {
     BreadcrumbItem,
     BreadcrumbList,
     BreadcrumbPage,
-    BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
+const ROUTE_LABELS: Record<string, string> = {
+    '/': 'Overview',
+    '/transactions': 'Transactions',
+    '/settlement': 'Settlement',
+    '/accounts': 'Accounts',
+    '/recurring': 'Recurring',
+    '/my-finance': 'My Finance',
+    '/account': 'Account',
+    '/settings': 'Settings',
+    '/members': 'Members',
+};
+
+function breadcrumbLabel(pathname: string): string {
+    return ROUTE_LABELS[pathname] ?? 'Overview';
+}
+
 export default function DashboardLayout() {
+    const { pathname } = useLocation();
+    const label = breadcrumbLabel(pathname);
+
     return (
         <SidebarProvider>
             <AppSidebar />
@@ -26,9 +44,8 @@ export default function DashboardLayout() {
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage>Overview</BreadcrumbPage>
+                                    <BreadcrumbPage>{label}</BreadcrumbPage>
                                 </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>

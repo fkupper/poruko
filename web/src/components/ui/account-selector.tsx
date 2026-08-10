@@ -2,7 +2,15 @@ import * as React from 'react';
 import type { Account } from '@/api/types';
 import { centsToCurrency } from '@/lib/currency';
 import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Field, FieldLabel } from '@/components/ui/field';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface AccountSelectorProps {
     accounts: Account[] | undefined;
@@ -10,10 +18,12 @@ interface AccountSelectorProps {
     onChange: (id: number) => void;
     label: string;
     usage: 'payer' | 'destination';
+    id?: string;
 }
 
-export function AccountSelector({ accounts, value, onChange, label, usage }: AccountSelectorProps) {
+export function AccountSelector({ accounts, value, onChange, label, usage, id }: AccountSelectorProps) {
     const currencySymbol = useLedgerCurrencySymbol();
+    const fieldId = id ?? `account-${usage}`;
 
     const filteredAccounts = React.useMemo(() => {
         if (!accounts) return [];
@@ -34,29 +44,29 @@ export function AccountSelector({ accounts, value, onChange, label, usage }: Acc
     }, [filteredAccounts, value, onChange]);
 
     return (
-        <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                {label}
-            </label>
+        <Field>
+            <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
             {filteredAccounts.length > 0 ? (
                 <Select value={String(value ?? '')} onValueChange={(val) => onChange(Number(val))}>
-                    <SelectTrigger className="h-10 w-full bg-background">
+                    <SelectTrigger id={fieldId} className="w-full">
                         <SelectValue placeholder="Select account" />
                     </SelectTrigger>
                     <SelectContent>
-                        {filteredAccounts.map((acc) => (
-                            <SelectItem key={acc.id} value={String(acc.id)}>
-                                {acc.name}{' '}
-                                {usage === 'payer' ? `(${centsToCurrency(acc.balance, currencySymbol)})` : ''}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            {filteredAccounts.map((acc) => (
+                                <SelectItem key={acc.id} value={String(acc.id)}>
+                                    {acc.name}{' '}
+                                    {usage === 'payer' ? `(${centsToCurrency(acc.balance, currencySymbol)})` : ''}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
             ) : (
-                <p className="text-xs text-muted-foreground rounded-lg border border-dashed border-border px-3 py-2.5">
+                <p className="rounded-lg border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground">
                     No accounts available
                 </p>
             )}
-        </div>
+        </Field>
     );
 }

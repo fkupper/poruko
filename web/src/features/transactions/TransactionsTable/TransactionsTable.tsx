@@ -15,7 +15,15 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { FacetedFilter } from '@/components/ui/faceted-filter';
-import { SearchIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, LockIcon, ArrowRightIcon, XIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { SearchIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, LockIcon, ArrowRightIcon, XIcon, ReceiptIcon } from 'lucide-react';
 
 interface TransactionsTableProps {
     fixedFilters?: FetchTransactionsFilters;
@@ -273,13 +281,21 @@ export function TransactionsTable({
 
             {/* Transactions Data Table */}
             {isPending ? (
-                <div className="h-48 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
-                    Loading ledger transactions...
+                <div className="flex flex-col gap-2 rounded-xl border p-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-3/4" />
                 </div>
             ) : filteredTransactions.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground text-sm">
-                    No matching transactions found.
-                </div>
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <ReceiptIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>No matching transactions found</EmptyTitle>
+                        <EmptyDescription>Try adjusting filters or log a new expense.</EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             ) : (
                 <Table>
                     <TableHeader>
@@ -335,8 +351,12 @@ export function TransactionsTable({
                                     <TableCell>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <MoreHorizontalIcon className="size-4" />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={`Actions for transaction ${tx.description}`}
+                                                >
+                                                    <MoreHorizontalIcon />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">

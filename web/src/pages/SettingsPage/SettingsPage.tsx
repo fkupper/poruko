@@ -166,7 +166,7 @@ export default function SettingsPage() {
             <Card className="bg-surface border-border">
                 <CardHeader className="pb-3 border-b border-border mb-4">
                     <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
-                        <GlobeIcon className="size-5 text-info" />
+                        <GlobeIcon className="size-5 text-muted-foreground" />
                         General Settings
                     </CardTitle>
                 </CardHeader>
@@ -233,7 +233,7 @@ export default function SettingsPage() {
             <Card className="bg-surface border-border">
                 <CardHeader className="pb-3 border-b border-border mb-4">
                     <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
-                        <UserCircleIcon className="size-5 text-info" />
+                        <UserCircleIcon className="size-5 text-muted-foreground" />
                         My Default Accounts
                     </CardTitle>
                 </CardHeader>
@@ -318,7 +318,7 @@ export default function SettingsPage() {
             <Card className="bg-surface border-border">
                 <CardHeader className="pb-3 border-b border-border mb-4">
                     <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
-                        <SettingsIcon className="size-5 text-info" />
+                        <SettingsIcon className="size-5 text-muted-foreground" />
                         Settlement Automation Settings
                     </CardTitle>
                 </CardHeader>

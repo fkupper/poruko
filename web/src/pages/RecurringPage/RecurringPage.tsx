@@ -18,7 +18,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AccountSelector } from '@/components/ui/account-selector';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -33,6 +33,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { PlusIcon, RepeatIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, ChevronDownIcon, HistoryIcon } from 'lucide-react';
 import type { SplitRule, RecurringBlueprint } from '@/api/types';
 
@@ -225,15 +233,29 @@ export default function RecurringPage() {
             </div>
 
             {isPending ? (
-                <div className="h-48 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
-                    Loading recurring blueprints...
+                <div className="flex flex-col gap-2 rounded-xl border p-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-3/4" />
                 </div>
             ) : displayedBlueprints.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground text-sm">
-                    {filterStatus === 'active'
-                        ? 'No recurring blueprints active. Add rent or utilities to auto-materialize every month.'
-                        : 'No deleted recurring blueprints.'}
-                </div>
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <RepeatIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>
+                            {filterStatus === 'active'
+                                ? 'No recurring blueprints active'
+                                : 'No deleted recurring blueprints'}
+                        </EmptyTitle>
+                        <EmptyDescription>
+                            {filterStatus === 'active'
+                                ? 'Add rent or utilities to auto-materialize every month.'
+                                : 'Deleted blueprints will appear here.'}
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             ) : (
                 <Table>
                     <TableHeader>
@@ -262,12 +284,12 @@ export default function RecurringPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="size-6 p-0 hover:bg-muted"
+                                                    aria-label={isOpen ? 'Collapse previous versions' : 'Expand previous versions'}
                                                     onClick={() => toggleRow(bp.id)}
                                                     title={`${pvs.length} previous version(s)`}
                                                 >
                                                     <ChevronDownIcon
-                                                        className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                                                        className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                                                     />
                                                 </Button>
                                             )}
@@ -300,8 +322,12 @@ export default function RecurringPage() {
                                             {bp.status === 'active' && (
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                            <MoreHorizontalIcon className="size-4" />
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            aria-label={`Actions for ${bp.description}`}
+                                                        >
+                                                            <MoreHorizontalIcon />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
@@ -419,9 +445,11 @@ export default function RecurringPage() {
                                     <SelectValue placeholder="Select frequency" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                    <SelectItem value="annual">Annual</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                        <SelectItem value="annual">Annual</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -432,9 +460,11 @@ export default function RecurringPage() {
                                     <SelectValue placeholder="Select split rule" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="proportional">Proportional</SelectItem>
-                                    <SelectItem value="equal">Equal</SelectItem>
-                                    <SelectItem value="individual">Individual</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="proportional">Proportional</SelectItem>
+                                        <SelectItem value="equal">Equal</SelectItem>
+                                        <SelectItem value="individual">Individual</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>

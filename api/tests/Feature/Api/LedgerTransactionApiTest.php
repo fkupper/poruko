@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Models\LedgerUser;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -403,6 +404,102 @@ class LedgerTransactionApiTest extends TestCase
                 [0, 1],
             ],
         ];
+    }
+
+    public function testCannotUseSoftDeletedMemberAsParticipantOnStore(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $admin->id]);
+        $spaceExpenseAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense->value,
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 1000,
+            'description' => 'Pizza',
+            'date' => '2026-03-10',
+            'type' => 'manual',
+            'split_rule' => 'equal',
+            'participants' => [
+                ['user_id' => $removedMember->id],
+            ],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['participants.0.user_id']);
+    }
+
+    public function testCannotUseSoftDeletedMemberAsParticipantOnUpdate(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $admin->id]);
+        $spaceExpenseAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense->value,
+        ]);
+
+        $transaction = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 1000,
+            'description' => 'Original',
+            'date' => '2026-03-10',
+            'split_rule' => 'equal',
+            'participants' => [],
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->patchJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 2000,
+            'description' => 'Updated Pizza',
+            'date' => '2026-03-11',
+            'split_rule' => 'equal',
+            'participants' => [['user_id' => $removedMember->id]],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['participants.0.user_id']);
     }
 
     public function testMemberCanUpdateTransaction(): void

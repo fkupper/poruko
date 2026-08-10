@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { currencyToCents } from '@/lib/currency';
-import { Input } from '@/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group';
 
 export interface CurrencyInputProps extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> {
     value?: number | null; // Integer cents
@@ -49,20 +49,20 @@ export function CurrencyInput({
     };
 
     return (
-        <div className="relative flex items-center w-full">
-            <span className="absolute left-3 text-muted-foreground font-mono text-sm pointer-events-none">
-                {currencySymbol}
-            </span>
-            <Input
+        <InputGroup data-disabled={disabled || undefined} className={cn(className)}>
+            <InputGroupAddon align="inline-start">
+                <InputGroupText className="font-mono">{currencySymbol}</InputGroupText>
+            </InputGroupAddon>
+            <InputGroupInput
                 type="text"
                 inputMode="decimal"
                 value={displayVal}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 disabled={disabled}
-                className={cn('h-10 w-full pl-8 font-mono', className)}
+                className="font-mono"
                 {...props}
             />
-        </div>
+        </InputGroup>
     );
 }

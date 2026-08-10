@@ -10,7 +10,9 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusIcon, Trash2Icon, UserIcon, SaveIcon, Loader2Icon, CheckCircle2Icon } from 'lucide-react';
+import { PlusIcon, Trash2Icon, UserIcon, SaveIcon, CheckCircle2Icon } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MyFinancePage() {
     const queryClient = useQueryClient();
@@ -104,8 +106,14 @@ export default function MyFinancePage() {
 
     if (isPending) {
         return (
-            <div className="h-64 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
-                Loading financial profile...
+            <div className="flex flex-col gap-4">
+                <Skeleton className="h-10 w-64" />
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Skeleton className="h-24 rounded-xl" />
+                    <Skeleton className="h-24 rounded-xl" />
+                    <Skeleton className="h-24 rounded-xl" />
+                </div>
+                <Skeleton className="h-48 rounded-xl" />
             </div>
         );
     }
@@ -124,11 +132,11 @@ export default function MyFinancePage() {
                 </div>
                 <Button onClick={handleSubmit} disabled={mutation.isPending} className="gap-2 shrink-0">
                     {mutation.isPending ? (
-                        <Loader2Icon className="size-4 animate-spin" />
+                        <Spinner data-icon="inline-start" />
                     ) : saveSuccess ? (
-                        <CheckCircle2Icon className="size-4 text-emerald-400" />
+                        <CheckCircle2Icon data-icon="inline-start" className="text-inflow" />
                     ) : (
-                        <SaveIcon className="size-4" />
+                        <SaveIcon data-icon="inline-start" />
                     )}
                     {saveSuccess ? 'Saved!' : 'Save Profile'}
                 </Button>
@@ -143,7 +151,7 @@ export default function MyFinancePage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        <div className="text-2xl font-bold font-mono text-inflow">
                             {centsToCurrency(totalIncome, currencySymbol)}
                         </div>
                     </CardContent>
@@ -156,7 +164,7 @@ export default function MyFinancePage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold font-mono text-orange-600 dark:text-orange-400">
+                        <div className="text-2xl font-bold font-mono text-outflow">
                             {centsToCurrency(totalDeductions, currencySymbol)}
                         </div>
                     </CardContent>
@@ -182,14 +190,16 @@ export default function MyFinancePage() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Incomes Array */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-3">
-                        <CardTitle className="text-base font-semibold text-foreground">
-                            Income Sources
-                        </CardTitle>
-                        <Button type="button" variant="outline" size="sm" onClick={addIncome} className="gap-1 text-xs">
-                            <PlusIcon className="size-3.5" />
-                            Add Income
-                        </Button>
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold text-foreground">
+                                Income Sources
+                            </CardTitle>
+                            <Button type="button" variant="outline" size="sm" onClick={addIncome} className="gap-1 text-xs">
+                                <PlusIcon data-icon="inline-start" />
+                                Add Income
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {incomes.map((item, idx) => (
@@ -211,12 +221,13 @@ export default function MyFinancePage() {
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={() => removeIncome(idx)}
                                     disabled={incomes.length <= 1}
+                                    aria-label={`Remove income ${item.description || idx + 1}`}
                                     className="text-muted-foreground hover:text-destructive shrink-0"
                                 >
-                                    <Trash2Icon className="size-4" />
+                                    <Trash2Icon />
                                 </Button>
                             </div>
                         ))}
@@ -225,14 +236,16 @@ export default function MyFinancePage() {
 
                 {/* Deductions Array */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-3">
-                        <CardTitle className="text-base font-semibold text-foreground">
-                            Fixed Deductions & Commitments
-                        </CardTitle>
-                        <Button type="button" variant="outline" size="sm" onClick={addDeduction} className="gap-1 text-xs">
-                            <PlusIcon className="size-3.5" />
-                            Add Deduction
-                        </Button>
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold text-foreground">
+                                Fixed Deductions & Commitments
+                            </CardTitle>
+                            <Button type="button" variant="outline" size="sm" onClick={addDeduction} className="gap-1 text-xs">
+                                <PlusIcon data-icon="inline-start" />
+                                Add Deduction
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {deductions.map((item, idx) => (
@@ -254,11 +267,12 @@ export default function MyFinancePage() {
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={() => removeDeduction(idx)}
+                                    aria-label={`Remove deduction ${item.description || idx + 1}`}
                                     className="text-muted-foreground hover:text-destructive shrink-0"
                                 >
-                                    <Trash2Icon className="size-4" />
+                                    <Trash2Icon />
                                 </Button>
                             </div>
                         ))}

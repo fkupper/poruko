@@ -13,18 +13,36 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { PlusIcon, WalletIcon, LandmarkIcon, CreditCardIcon, BanknoteIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, UserXIcon, ArrowLeftRightIcon } from 'lucide-react';
 import type { Account } from '@/api/types';
 
 const ACCOUNT_TYPE_ICONS: Record<Account['type'], React.ReactNode> = {
-    pool_asset: <LandmarkIcon className="size-5 text-emerald-500" />,
-    space_expense: <WalletIcon className="size-5 text-purple-500" />,
-    split_clearing: <LandmarkIcon className="size-5 text-slate-500" />,
-    user_funding: <CreditCardIcon className="size-5 text-blue-500" />,
+    pool_asset: <LandmarkIcon className="size-5 text-inflow" />,
+    space_expense: <WalletIcon className="size-5 text-muted-foreground" />,
+    split_clearing: <LandmarkIcon className="size-5 text-muted-foreground" />,
+    user_funding: <CreditCardIcon className="size-5 text-info" />,
     user_liability: <BanknoteIcon className="size-5 text-amber-500" />,
 };
 
@@ -37,6 +55,7 @@ export default function AccountsPage() {
 
     const [isAddOpen, setIsAddOpen] = React.useState(false);
     const [editingId, setEditingId] = React.useState<number | null>(null);
+    const [deletingId, setDeletingId] = React.useState<number | null>(null);
     const [name, setName] = React.useState('');
     const [type, setType] = React.useState<Account['type']>('user_funding');
     const [initialBalance, setInitialBalance] = React.useState(0);
@@ -94,6 +113,7 @@ export default function AccountsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
+            setDeletingId(null);
         },
     });
 
@@ -135,55 +155,53 @@ export default function AccountsPage() {
 
         return (
             <Card key={acc.id} className="relative overflow-hidden">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                        {ACCOUNT_TYPE_ICONS[acc.type] || ACCOUNT_TYPE_ICONS.user_funding}
-                        <span className="truncate pr-2">{acc.name}</span>
-                    </CardTitle>
-                    <div className="flex items-center gap-2 shrink-0">
-                        {acc.owner_is_active === false && (
-                            <Badge variant="secondary" className="text-[10px] text-muted-foreground gap-1">
-                                <UserXIcon className="size-3" /> Deactivated Member
+                <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                            {ACCOUNT_TYPE_ICONS[acc.type] || ACCOUNT_TYPE_ICONS.user_funding}
+                            <span className="truncate pr-2">{acc.name}</span>
+                        </CardTitle>
+                        <div className="flex shrink-0 items-center gap-2">
+                            {acc.owner_is_active === false && (
+                                <Badge variant="secondary" className="gap-1 text-[10px] text-muted-foreground">
+                                    <UserXIcon className="size-3" /> Deactivated Member
+                                </Badge>
+                            )}
+                            {isDefaultPayment && <Badge variant="secondary" className="text-[10px]">Default Payment</Badge>}
+                            {isDefaultExpense && <Badge variant="secondary" className="text-[10px]">Default Expense</Badge>}
+                            {isAiTarget && <Badge variant="warning" className="text-[10px]">AI Target</Badge>}
+                            <Badge variant="outline" className="capitalize text-[10px]">
+                                {acc.type.replace('_', ' ')}
                             </Badge>
-                        )}
-                        {isDefaultPayment && <Badge variant="secondary" className="text-[10px]">Default Payment</Badge>}
-                        {isDefaultExpense && <Badge variant="secondary" className="text-[10px]">Default Expense</Badge>}
-                        {isAiTarget && <Badge variant="default" className="text-[10px] bg-amber-500 hover:bg-amber-600 text-white">AI Target</Badge>}
-                        <Badge variant="outline" className="capitalize text-[10px]">
-                            {acc.type.replace('_', ' ')}
-                        </Badge>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2">
-                                    <MoreHorizontalIcon className="size-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => navigate(`/transactions?account=${acc.id}`)}>
-                                    <ArrowLeftRightIcon className="mr-2 size-4" />
-                                    View Transactions
-                                </DropdownMenuItem>
-                                {canEdit && (
-                                    <>
-                                        <DropdownMenuItem onClick={() => handleEdit(acc)}>
-                                            <PencilIcon className="mr-2 size-4" />
-                                            Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
-                                            onClick={() => {
-                                                if (confirm('Are you sure you want to delete this account?')) {
-                                                    deleteMutation.mutate(acc.id);
-                                                }
-                                            }}
-                                        >
-                                            <TrashIcon className="mr-2 size-4" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    </>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" aria-label={`Account actions for ${acc.name}`}>
+                                        <MoreHorizontalIcon />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => navigate(`/transactions?account=${acc.id}`)}>
+                                        <ArrowLeftRightIcon className="mr-2 size-4" />
+                                        View Transactions
+                                    </DropdownMenuItem>
+                                    {canEdit && (
+                                        <>
+                                            <DropdownMenuItem onClick={() => handleEdit(acc)}>
+                                                <PencilIcon className="mr-2 size-4" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                                                onClick={() => setDeletingId(acc.id)}
+                                            >
+                                                <TrashIcon className="mr-2 size-4" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </CardHeader>
             <CardContent className="pt-4">
@@ -218,13 +236,23 @@ export default function AccountsPage() {
             </div>
 
             {isPending ? (
-                <div className="h-48 rounded-xl border bg-muted/20 animate-pulse flex items-center justify-center text-sm text-muted-foreground">
-                    Loading space accounts...
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <Skeleton className="h-36 rounded-xl" />
+                    <Skeleton className="h-36 rounded-xl" />
+                    <Skeleton className="h-36 rounded-xl" />
                 </div>
             ) : accounts.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground text-sm">
-                    No accounts registered yet. Click "Add Account" to register a payment source.
-                </div>
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <WalletIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>No accounts registered yet</EmptyTitle>
+                        <EmptyDescription>
+                            Click &quot;Add Account&quot; to register a payment source.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             ) : (
                 <div className="space-y-8">
                     {myAccounts.length > 0 && (
@@ -322,9 +350,11 @@ export default function AccountsPage() {
                                 <SelectValue placeholder="Select account type" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="user_funding">Personal / Funding Account</SelectItem>
-                                <SelectItem value="pool_asset">Joint Pool</SelectItem>
-                                <SelectItem value="space_expense">Space Category (Expense)</SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="user_funding">Personal / Funding Account</SelectItem>
+                                    <SelectItem value="pool_asset">Joint Pool</SelectItem>
+                                    <SelectItem value="space_expense">Space Category (Expense)</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
@@ -357,6 +387,31 @@ export default function AccountsPage() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete account?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete{' '}
+                            {accounts.find((a) => a.id === deletingId)?.name ?? 'this account'}? This action cannot be
+                            undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            disabled={deleteMutation.isPending || deletingId === null}
+                            onClick={() => {
+                                if (deletingId !== null) deleteMutation.mutate(deletingId);
+                            }}
+                        >
+                            {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
