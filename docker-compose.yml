@@ -1,67 +1,109 @@
+# Poruko release / self-host stack.
+# Single image: ghcr.io/fkupper/poruko (API, queue, scheduler, and web roles).
+# Optional bundled Postgres + Redis: set COMPOSE_PROFILES=bundle
+# Dev: npm run up  →  scripts/dev.sh sets COMPOSE_PROFILES=bundle + docker-compose.dev.yml
+
+x-poruko-image: &poruko-image
+  image: ghcr.io/fkupper/poruko:${PORUKO_VERSION:-latest}
+  build:
+    context: .
+    dockerfile: Dockerfile
+
 services:
   api:
-    build:
-      context: ./api
+    <<: *poruko-image
     container_name: poruko-api
     restart: unless-stopped
     env_file:
-      - ./api/.env
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./api:/var/www/html
+      - path: .env
+        required: false
+    environment:
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "php",
+          "-r",
+          "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - poruko-net
 
   queue:
-    build:
-      context: ./api
+    <<: *poruko-image
     container_name: poruko-queue
     restart: unless-stopped
     env_file:
-      - ./api/.env
-    depends_on:
-      - api
-      - redis
+      - path: .env
+        required: false
+    environment:
+      RUN_MIGRATIONS: "false"
     command: php artisan queue:work --verbose --tries=3 --timeout=90
-    volumes:
-      - ./api:/var/www/html
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - poruko-net
+
+  scheduler:
+    <<: *poruko-image
+    container_name: poruko-scheduler
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      RUN_MIGRATIONS: "false"
+    command: php artisan schedule:work
+    depends_on:
+      api:
+        condition: service_healthy
     networks:
       - poruko-net
 
   web:
-    image: nginx:alpine
+    <<: *poruko-image
     container_name: poruko-web
     restart: unless-stopped
+    environment:
+      PORUKO_ROLE: web
+    command: ["nginx", "-g", "daemon off;"]
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "3000:80"
-    volumes:
-      - ./web/dist:/usr/share/nginx/html:ro
-      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - "${PORUKO_HTTP_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - poruko-net
 
   db:
+    profiles: ["bundle"]
     image: postgres:16
     container_name: poruko-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: poruko
-      POSTGRES_USER: poruko
-      POSTGRES_PASSWORD: poruko
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_DATABASE:-poruko}
+      POSTGRES_USER: ${DB_USERNAME:-poruko}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-poruko}
     volumes:
       - poruko-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U poruko -d poruko"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,6 +111,7 @@ services:
       - poruko-net
 
   redis:
+    profiles: ["bundle"]
     image: redis:7-alpine
     container_name: poruko-redis
     restart: unless-stopped
@@ -76,10 +119,13 @@ services:
       redis-server
       --appendonly yes
       --appendfsync everysec
-    ports:
-      - "6379:6379"
     volumes:
       - poruko-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - poruko-net
 

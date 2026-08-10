@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "up": "bash scripts/dev.sh up",
+    "up:prod": "docker compose --env-file .env up -d",
     "down": "bash scripts/dev.sh down",
     "logs": "bash scripts/dev.sh logs",
     "restart": "bash scripts/dev.sh restart",

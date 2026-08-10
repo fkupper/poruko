@@ -15,6 +15,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $trusted = config('app.trusted_proxies');
+
+        if ($trusted === '*' || $trusted === true) {
+            $middleware->trustProxies(at: '*');
+        } elseif (is_string($trusted) && $trusted !== '') {
+            $proxies = array_values(array_filter(array_map(
+                static fn (string $proxy): string => trim($proxy),
+                explode(',', $trusted),
+            )));
+
+            if ($proxies !== []) {
+                $middleware->trustProxies(at: $proxies);
+            }
+        }
+
         $middleware->alias([
             'abilities' => Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
             'ability' => Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,

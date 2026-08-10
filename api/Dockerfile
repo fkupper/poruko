@@ -34,13 +34,20 @@ RUN composer install \
     --prefer-dist \
     --no-interaction \
     --optimize-autoloader \
-    --no-scripts
+    --no-scripts \
+ && php artisan package:discover --ansi || true \
+ && mkdir -p \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+ && chmod -R ug+rwx storage bootstrap/cache
 
-RUN php artisan config:cache || true \
- && php artisan route:cache || true \
- && php artisan view:cache || true
+COPY docker/entrypoint.sh /usr/local/bin/poruko-entrypoint
+RUN chmod +x /usr/local/bin/poruko-entrypoint
 
 EXPOSE 8000
 
+ENTRYPOINT ["poruko-entrypoint"]
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
-
