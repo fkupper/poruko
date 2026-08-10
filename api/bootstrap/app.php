@@ -15,7 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $trusted = config('app.trusted_proxies');
+        // Prefer env() here: config() is unavailable during early artisan bootstrap (e.g. package:discover / PHPStan).
+        $trusted = env('TRUSTED_PROXIES', '*');
 
         if ($trusted === '*' || $trusted === true) {
             $middleware->trustProxies(at: '*');

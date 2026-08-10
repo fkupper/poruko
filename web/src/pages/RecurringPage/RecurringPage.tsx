@@ -77,18 +77,13 @@ export default function RecurringPage() {
 
     const { data: ledgers } = useQuery({ queryKey: ['ledgers'], queryFn: fetchLedgers });
 
-    // Auto-select first account if not set
-    React.useEffect(() => {
-        if (isAddOpen && accounts && accounts.length > 0) {
-            if (payerAccountId === null) {
-                setPayerAccountId(accounts[0].id);
-            }
-            if (destinationAccountId === null) {
-                const spaceExpense = accounts.find(a => a.type === 'space_expense');
-                setDestinationAccountId(spaceExpense?.id ?? accounts[0].id);
-            }
-        }
-    }, [accounts, payerAccountId, destinationAccountId, isAddOpen]);
+    const resolvedPayerAccountId =
+        payerAccountId ?? (isAddOpen && accounts && accounts.length > 0 ? accounts[0].id : null);
+    const resolvedDestinationAccountId =
+        destinationAccountId ??
+        (isAddOpen && accounts && accounts.length > 0
+            ? (accounts.find((a) => a.type === 'space_expense')?.id ?? accounts[0].id)
+            : null);
 
     const activeBlueprints = React.useMemo(
         () => blueprints.filter((bp) => bp.status === 'active'),
@@ -157,8 +152,8 @@ export default function RecurringPage() {
         mutationFn: async () => {
             if (!activeLedgerId) throw new Error('No active space.');
             if (!amountCents || amountCents <= 0) throw new Error('Please enter a valid amount.');
-            if (!payerAccountId) throw new Error('Please select a payer account.');
-            if (!destinationAccountId) throw new Error('Please select a destination account.');
+            if (!resolvedPayerAccountId) throw new Error('Please select a payer account.');
+            if (!resolvedDestinationAccountId) throw new Error('Please select a destination account.');
             if (splitRule !== 'equal' && splitRule !== 'proportional') {
                 throw new Error('Recurring bills only support Equal or Proportional splits.');
             }
@@ -168,8 +163,8 @@ export default function RecurringPage() {
                 frequency,
                 split_rule: splitRule,
                 start_date: startDate,
-                payer_account_id: payerAccountId,
-                destination_account_id: destinationAccountId,
+                payer_account_id: resolvedPayerAccountId,
+                destination_account_id: resolvedDestinationAccountId,
             };
             if (editingId) {
                 return updateRecurringBlueprint(activeLedgerId, editingId, payload);
@@ -495,7 +490,7 @@ export default function RecurringPage() {
                         label="Payer Account"
                         usage="payer"
                         accounts={accounts}
-                        value={payerAccountId}
+                        value={resolvedPayerAccountId}
                         onChange={setPayerAccountId}
                     />
 
@@ -503,7 +498,7 @@ export default function RecurringPage() {
                         label="Category (Destination)"
                         usage="destination"
                         accounts={accounts}
-                        value={destinationAccountId}
+                        value={resolvedDestinationAccountId}
                         onChange={setDestinationAccountId}
                     />
 

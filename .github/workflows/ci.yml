@@ -67,12 +67,13 @@ jobs:
             composer-${{ runner.os }}-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
       - name: Prepare application
         run: |
           cp .env.example .env
           php artisan key:generate --force
+          php artisan package:discover --ansi
           php artisan config:clear
 
       - name: PHPUnit

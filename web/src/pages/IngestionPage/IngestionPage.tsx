@@ -28,10 +28,8 @@ export default function IngestionPage() {
     const currencySymbol = useLedgerCurrencySymbol();
     
     const [apiKey, setApiKey] = React.useState(() => localStorage.getItem('byok_llm_key') || '');
-    const [selectedAccount, setSelectedAccount] = React.useState<number | null>(() => {
-        const saved = localStorage.getItem(`ai_target_account_${activeLedgerId}`);
-        return saved ? Number(saved) : null;
-    });
+    const [accountOverride, setAccountOverride] = React.useState<number | null>(null);
+    const [trackedLedgerId, setTrackedLedgerId] = React.useState(activeLedgerId);
     const [uploading, setUploading] = React.useState(false);
     const [uploadMsg, setUploadMsg] = React.useState<string | null>(null);
 
@@ -49,28 +47,28 @@ export default function IngestionPage() {
         enabled: !!activeLedgerId,
     });
 
-    // Reset selection when switching spaces (avoid cross-ledger account ids)
-    React.useEffect(() => {
-        if (activeLedgerId === null) {
-            setSelectedAccount(null);
-            return;
-        }
-        const saved = localStorage.getItem(`ai_target_account_${activeLedgerId}`);
-        setSelectedAccount(saved ? Number(saved) : null);
-    }, [activeLedgerId]);
+    if (activeLedgerId !== trackedLedgerId) {
+        setTrackedLedgerId(activeLedgerId);
+        setAccountOverride(null);
+    }
 
-    React.useEffect(() => {
-        if (accounts.length > 0 && selectedAccount === null) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setSelectedAccount(accounts[0].id);
-        }
-    }, [accounts, selectedAccount]);
+    const savedAccountId =
+        activeLedgerId === null
+            ? null
+            : (() => {
+                  const saved = localStorage.getItem(`ai_target_account_${activeLedgerId}`);
+                  return saved ? Number(saved) : null;
+              })();
 
-    React.useEffect(() => {
-        if (selectedAccount !== null && activeLedgerId !== null) {
-            localStorage.setItem(`ai_target_account_${activeLedgerId}`, String(selectedAccount));
+    const selectedAccount =
+        accountOverride ?? savedAccountId ?? (accounts.length > 0 ? accounts[0].id : null);
+
+    const setSelectedAccount = (id: number | null) => {
+        setAccountOverride(id);
+        if (id !== null && activeLedgerId !== null) {
+            localStorage.setItem(`ai_target_account_${activeLedgerId}`, String(id));
         }
-    }, [selectedAccount, activeLedgerId]);
+    };
 
     const approveMutation = useMutation({
         mutationFn: async (txs: ApprovePendingItem[]) => {
