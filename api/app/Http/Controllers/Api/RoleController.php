@@ -3,17 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ledger;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
-    public function index(Request $request, \App\Models\Ledger $ledger): \Illuminate\Http\JsonResponse
+    public function index(Request $request, Ledger $ledger): JsonResponse
     {
-        // For now, return global roles and their permissions.
-        // If we add custom roles per space in the future, we would filter by team_id = $ledger->id.
-        $roles = \Spatie\Permission\Models\Role::with('permissions')
-            ->whereNull('team_id')
-            ->orWhere('team_id', $ledger->id)
+        // Global roles (team_id null) plus any roles scoped to this ledger.
+        $roles = Role::with('permissions')
+            ->where(function ($query) use ($ledger): void {
+                $query->whereNull('team_id')
+                    ->orWhere('team_id', $ledger->id);
+            })
             ->get();
 
         return response()->json(

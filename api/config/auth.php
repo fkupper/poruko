@@ -124,4 +124,39 @@ return [
 
     'enforce_2fa' => (bool) env('ENFORCE_2FA', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Enforce Two-Factor Exceptions
+    |--------------------------------------------------------------------------
+    |
+    | Request path patterns exempt from EnforceTwoFactor when enforcement is on
+    | (logout and Fortify 2FA enrollment under api/auth/user/*).
+    |
+    */
+
+    'enforce_2fa_except' => [
+        'api/auth/logout',
+        'auth/logout',
+        'api/auth/user/two-factor-authentication',
+        'api/auth/user/confirmed-two-factor-authentication',
+        'api/auth/user/two-factor-qr-code',
+        'api/auth/user/two-factor-secret-key',
+        'api/auth/user/two-factor-recovery-codes',
+        'api/auth/user/two-factor*',
+        'auth/user/two-factor*',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lock Registration After First User
+    |--------------------------------------------------------------------------
+    |
+    | When true, public registration is disabled once at least one user exists.
+    | Useful for single-tenant / invite-only deployments.
+    |
+    */
+
+    'lock_registration_after_first_user' => (bool) env('LOCK_REGISTRATION_AFTER_FIRST_USER', true),
+
 ];
+

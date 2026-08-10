@@ -29,7 +29,7 @@ class SettlementApiTest extends TestCase
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-03-31")
             ->assertOk()
@@ -53,7 +53,7 @@ class SettlementApiTest extends TestCase
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/settlements/periods")
             ->assertOk()
@@ -72,7 +72,7 @@ class SettlementApiTest extends TestCase
             'settlement_cutoff_time' => '00:00:00',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-04-01")
             ->assertOk()
@@ -84,7 +84,7 @@ class SettlementApiTest extends TestCase
     {
         [$ledger] = $this->createLedgerWithAdmin();
         $nonMember = User::factory()->create();
-        Sanctum::actingAs($nonMember);
+        Sanctum::actingAs($nonMember, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-03-31")
             ->assertForbidden();
@@ -119,7 +119,7 @@ class SettlementApiTest extends TestCase
             'date' => '2026-02-28',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/settlements")
             ->assertOk()
@@ -185,7 +185,7 @@ class SettlementApiTest extends TestCase
             'date' => '2026-03-15',
         ]));
 
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/confirm", [
             'period_end' => '2026-03-31',
@@ -223,7 +223,7 @@ class SettlementApiTest extends TestCase
             'settlement_cutoff_time' => '23:59:00',
         ]);
 
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/confirm")
             ->assertStatus(422);
@@ -237,7 +237,7 @@ class SettlementApiTest extends TestCase
             'settlement_cutoff_time' => '00:00:00',
             'settlement_auto_execute_enabled' => false,
         ]);
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         $this->patchJson("/api/ledgers/{$ledger->id}/cycle-config", [
             'settlement_timezone' => 'Europe/London',
@@ -260,7 +260,7 @@ class SettlementApiTest extends TestCase
     public function testPreviewAllowsMissingDate(): void
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview")
             ->assertStatus(200);
@@ -269,7 +269,7 @@ class SettlementApiTest extends TestCase
     public function testCycleConfigRejectsInvalidTimezone(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin();
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         $this->patchJson("/api/ledgers/{$ledger->id}/cycle-config", [
             'settlement_timezone' => 'Mars/Olympus',
@@ -284,7 +284,7 @@ class SettlementApiTest extends TestCase
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_auto_execute_enabled' => false,
         ]);
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/settlements/not-a-date/confirm")
             ->assertStatus(422);
@@ -297,7 +297,7 @@ class SettlementApiTest extends TestCase
         $ledger->users()->attach($member->id, ['role' => 'member']);
         setPermissionsTeamId($ledger->id);
         $member->assignRole('Member');
-        Sanctum::actingAs($member);
+        Sanctum::actingAs($member, ['*']);
 
         $this->patchJson("/api/ledgers/{$ledger->id}/cycle-config", [
             'settlement_timezone' => 'Europe/London',

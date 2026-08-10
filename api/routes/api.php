@@ -12,14 +12,24 @@ use App\Http\Controllers\Api\SettlementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class)->name('health');
-Route::middleware('throttle:api')->group(function (): void {
-    Route::post('/auth/register', [AuthController::class, 'register'])->name('auth.register');
-    Route::post('/auth/login', [AuthController::class, 'login'])->name('auth.login');
-    Route::post('/auth/two-factor-challenge', [AuthController::class, 'challenge'])->middleware('auth:sanctum')->name('auth.two-factor-challenge');
-    Route::post('/invitations/accept', [App\Http\Controllers\Api\InvitationController::class, 'accept'])->name('invitations.accept');
-});
 
-Route::middleware(['auth:sanctum', App\Http\Middleware\EnforceTwoFactor::class])->group(function (): void {
+Route::post('/auth/register', [AuthController::class, 'register'])
+    ->middleware('throttle:api')
+    ->name('auth.register');
+
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login')
+    ->name('auth.login');
+
+Route::post('/auth/two-factor-challenge', [AuthController::class, 'challenge'])
+    ->middleware(['auth:sanctum', 'ability:issue-2fa', 'throttle:two-factor'])
+    ->name('auth.two-factor-challenge');
+
+Route::post('/invitations/accept', [App\Http\Controllers\Api\InvitationController::class, 'accept'])
+    ->middleware('throttle:api')
+    ->name('invitations.accept');
+
+Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFactor::class])->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
@@ -27,8 +37,6 @@ Route::middleware(['auth:sanctum', App\Http\Middleware\EnforceTwoFactor::class])
 
     Route::get('/ledgers', [LedgerController::class, 'index'])->name('ledgers.index');
     Route::post('/ledgers', [LedgerController::class, 'store'])->name('ledgers.store');
-    Route::put('/ledgers/{ledger}/settings', [LedgerController::class, 'updateSettings'])->name('ledgers.settings.update');
-    Route::put('/ledgers/{ledger}/my-preferences', [App\Http\Controllers\Api\LedgerUserPreferencesController::class, 'update'])->name('ledgers.my-preferences.update');
 
     Route::prefix('/ledgers/{ledger}')
         ->scopeBindings()
@@ -38,6 +46,9 @@ Route::middleware(['auth:sanctum', App\Http\Middleware\EnforceTwoFactor::class])
         ])
         ->name('ledgers.')
         ->group(function (): void {
+            Route::put('/settings', [LedgerController::class, 'updateSettings'])->name('settings.update');
+            Route::put('/my-preferences', [App\Http\Controllers\Api\LedgerUserPreferencesController::class, 'update'])->name('my-preferences.update');
+
             Route::get('/accounts', [LedgerAccountController::class, 'index'])->name('accounts.index');
             Route::post('/accounts', [LedgerAccountController::class, 'store'])->name('accounts.store');
             Route::get('/accounts/{account}', [LedgerAccountController::class, 'show'])->name('accounts.show');

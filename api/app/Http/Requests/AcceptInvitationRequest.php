@@ -19,8 +19,8 @@ class AcceptInvitationRequest extends FormRequest
     {
         return [
             'token' => ['required', 'string'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', Password::defaults()],
         ];
     }
@@ -32,9 +32,7 @@ class AcceptInvitationRequest extends FormRequest
     {
         return [
             'token.required' => 'An invitation token is required.',
-            'name.required' => 'A name is required.',
             'email.required' => 'An email address is required.',
-            'email.unique' => 'This email address is already registered.',
             'password.required' => 'A password is required.',
         ];
     }

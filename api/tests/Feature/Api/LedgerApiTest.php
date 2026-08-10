@@ -37,7 +37,7 @@ class LedgerApiTest extends TestCase
         setPermissionsTeamId($foreignLedger->id);
         $otherUser->assignRole('Admin');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson('/api/ledgers')
             ->assertOk()
@@ -56,7 +56,7 @@ class LedgerApiTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson('/api/ledgers')
             ->assertOk()
@@ -73,7 +73,7 @@ class LedgerApiTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->postJson('/api/ledgers', [
             'name' => 'New Household',
@@ -97,7 +97,7 @@ class LedgerApiTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->postJson('/api/ledgers', [])
             ->assertUnprocessable()
@@ -108,7 +108,7 @@ class LedgerApiTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->postJson('/api/ledgers', [
             'name' => 'Invalid Space',
@@ -116,5 +116,82 @@ class LedgerApiTest extends TestCase
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['currency']);
+    }
+
+    public function testAdminCanUpdateLedgerSettings(): void
+    {
+        // Arrange
+        [$ledger, $admin] = $this->seedLedgerWithAdminAndMember();
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act
+        $response = $this->putJson(route('ledgers.settings.update', $ledger), [
+            'name' => 'Renamed Ledger',
+            'settlement_cutoff_day' => 15,
+        ]);
+
+        // Assert
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Renamed Ledger')
+            ->assertJsonPath('data.settlement_cutoff_day', 15);
+
+        $this->assertDatabaseHas('ledgers', [
+            'id' => $ledger->id,
+            'name' => 'Renamed Ledger',
+            'settlement_cutoff_day' => 15,
+        ]);
+    }
+
+    public function testMemberWithoutSettingsPermissionCannotUpdateLedgerSettings(): void
+    {
+        // Arrange
+        [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
+
+        Sanctum::actingAs($member, ['*']);
+
+        // Act & Assert
+        $this->putJson(route('ledgers.settings.update', $ledger), [
+            'name' => 'Nope',
+        ])->assertForbidden();
+    }
+
+    public function testNonMemberCannotUpdateLedgerSettings(): void
+    {
+        // Arrange
+        [$ledger] = $this->seedLedgerWithAdminAndMember();
+        $outsider = User::factory()->create();
+
+        Sanctum::actingAs($outsider, ['*']);
+
+        // Act & Assert
+        $this->putJson(route('ledgers.settings.update', $ledger), [
+            'name' => 'Nope',
+        ])->assertForbidden();
+    }
+
+    /*
+     * Seeders.
+     */
+
+    /**
+     * @return array{0: Ledger, 1: User, 2: User}
+     */
+    private function seedLedgerWithAdminAndMember(): array
+    {
+        $admin = User::factory()->create(['name' => 'Admin']);
+        $member = User::factory()->create(['name' => 'Member']);
+        $ledger = Ledger::factory()->create(['name' => 'Shared Ledger']);
+
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+
+        $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
+
+        return [$ledger, $admin, $member];
     }
 }

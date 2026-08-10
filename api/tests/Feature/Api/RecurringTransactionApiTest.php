@@ -34,7 +34,7 @@ class RecurringTransactionApiTest extends TestCase
             'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions")
             ->assertOk()
@@ -71,7 +71,7 @@ class RecurringTransactionApiTest extends TestCase
         ]);
         $deletedBp->delete();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Filter active
         $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=active")
@@ -109,7 +109,7 @@ class RecurringTransactionApiTest extends TestCase
             'type' => \App\Enums\AccountType::SpaceExpense,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $response = $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
             'payer_account_id' => $credit->id,
@@ -157,7 +157,7 @@ class RecurringTransactionApiTest extends TestCase
             'valid_to' => null,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $response = $this->patchJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}", [
             'amount' => 110000,
@@ -194,7 +194,7 @@ class RecurringTransactionApiTest extends TestCase
             'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->deleteJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}")
             ->assertNoContent();
@@ -209,7 +209,7 @@ class RecurringTransactionApiTest extends TestCase
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
             'payer_account_id' => $credit->id,

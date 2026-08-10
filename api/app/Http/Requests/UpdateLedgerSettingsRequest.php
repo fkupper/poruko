@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Ledger;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -12,7 +13,10 @@ class UpdateLedgerSettingsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('settings') === true;
+        $ledger = $this->route('ledger');
+
+        return $ledger instanceof Ledger
+            && $this->user()?->can('update', $ledger) === true;
     }
 
     /**

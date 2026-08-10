@@ -56,7 +56,7 @@ class LedgerTransactionApiTest extends TestCase
             'date' => '2026-03-10',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledger->id}/transactions")
@@ -81,7 +81,7 @@ class LedgerTransactionApiTest extends TestCase
         $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
         $spaceExpenseAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'type' => \App\Enums\AccountType::SpaceExpense->value]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act
         $response = $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
@@ -112,7 +112,7 @@ class LedgerTransactionApiTest extends TestCase
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
@@ -137,7 +137,7 @@ class LedgerTransactionApiTest extends TestCase
             'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledger->id}/transactions")->assertForbidden();
@@ -206,7 +206,7 @@ class LedgerTransactionApiTest extends TestCase
             'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledgerA->id}/transactions/{$transactionInLedgerB->id}")
@@ -241,7 +241,7 @@ class LedgerTransactionApiTest extends TestCase
             'date' => '2026-03-09',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledger->id}/transactions?from_date=2026-03-10&to_date=2026-03-10&account_id={$creditA->id}")
@@ -280,7 +280,7 @@ class LedgerTransactionApiTest extends TestCase
             'owner_id' => null,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $fullPayload = array_merge([
             'payer_account_id' => $credit->id,
@@ -387,7 +387,7 @@ class LedgerTransactionApiTest extends TestCase
             'participants' => [],
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act
         $response = $this->patchJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}", [
@@ -420,7 +420,7 @@ class LedgerTransactionApiTest extends TestCase
             'amount' => 1000,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->deleteJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}")
@@ -448,7 +448,7 @@ class LedgerTransactionApiTest extends TestCase
             'amount' => 1000,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert (Update)
         $this->patchJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}", [

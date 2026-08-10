@@ -39,27 +39,102 @@ final readonly class AcceptInvitationAction
         }
 
         return DB::transaction(function () use ($data, $invitation): User {
-            $user = User::create([
-                'name' => $data->name,
-                'email' => $data->email,
-                'password' => Hash::make($data->password),
-            ]);
+            $existing = User::query()
+                ->whereRaw('LOWER(email) = ?', [strtolower($data->email)])
+                ->first();
 
-            $invitation->ledger->users()->attach($user->id, ['role' => 'member']);
-
-            setPermissionsTeamId($invitation->ledger_id);
-            $user->assignRole('Member');
-
-            $ledgerUser = LedgerUser::query()
-                ->where('ledger_id', $invitation->ledger_id)
-                ->where('user_id', $user->id)
-                ->firstOrFail();
-
-            $this->ensureAccountAction->execute($ledgerUser);
+            if ($existing !== null) {
+                $user = $this->acceptAsExistingUser($existing, $invitation, $data);
+            } else {
+                $user = $this->acceptAsNewUser($invitation, $data);
+            }
 
             $invitation->update(['accepted_at' => now()]);
 
             return $user;
         });
+    }
+
+    private function acceptAsExistingUser(User $user, Invitation $invitation, AcceptInvitationData $data): User
+    {
+        if (!Hash::check($data->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['The provided password is incorrect.'],
+            ]);
+        }
+
+        $activeMembership = LedgerUser::query()
+            ->where('ledger_id', $invitation->ledger_id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($activeMembership !== null) {
+            throw ValidationException::withMessages([
+                'email' => ['You are already a member of this ledger.'],
+            ]);
+        }
+
+        $trashedMembership = LedgerUser::onlyTrashed()
+            ->where('ledger_id', $invitation->ledger_id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($trashedMembership !== null) {
+            $trashedMembership->restore();
+
+            setPermissionsTeamId($invitation->ledger_id);
+            if (!$user->hasRole('Member')) {
+                $user->assignRole('Member');
+            }
+
+            $this->ensureAccountAction->execute($trashedMembership->fresh());
+
+            return $user;
+        }
+
+        $invitation->ledger->users()->attach($user->id, ['role' => 'member']);
+
+        setPermissionsTeamId($invitation->ledger_id);
+        $user->assignRole('Member');
+
+        $ledgerUser = LedgerUser::query()
+            ->where('ledger_id', $invitation->ledger_id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $this->ensureAccountAction->execute($ledgerUser);
+
+        return $user;
+    }
+
+    private function acceptAsNewUser(Invitation $invitation, AcceptInvitationData $data): User
+    {
+        $name = trim((string) $data->name);
+
+        if ($name === '') {
+            throw ValidationException::withMessages([
+                'name' => ['A name is required.'],
+            ]);
+        }
+
+        $user = User::create([
+            'name' => $name,
+            'email' => $data->email,
+            'password' => Hash::make($data->password),
+        ]);
+
+        $invitation->ledger->users()->attach($user->id, ['role' => 'member']);
+
+        setPermissionsTeamId($invitation->ledger_id);
+        $user->assignRole('Member');
+
+        $ledgerUser = LedgerUser::query()
+            ->where('ledger_id', $invitation->ledger_id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $this->ensureAccountAction->execute($ledgerUser);
+
+        return $user;
     }
 }

@@ -30,7 +30,7 @@ class LedgerAccountApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $user->assignRole('Admin');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/accounts")
             ->assertOk()
@@ -55,7 +55,7 @@ class LedgerAccountApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/accounts")
             ->assertForbidden();
@@ -75,7 +75,7 @@ class LedgerAccountApiTest extends TestCase
             'name' => 'Old Name',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}")
             ->assertOk()
@@ -103,7 +103,7 @@ class LedgerAccountApiTest extends TestCase
             ->where('user_id', $user->id)
             ->value('main_personal_account_id');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$mainId}")
             ->assertStatus(422)
@@ -127,7 +127,7 @@ class LedgerAccountApiTest extends TestCase
             ->where('user_id', $user->id)
             ->update(['main_personal_account_id' => null]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$onlyPersonalId}")
             ->assertStatus(422)
@@ -147,7 +147,7 @@ class LedgerAccountApiTest extends TestCase
             'type' => AccountType::UserFunding->value,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$extraPersonal->id}")
             ->assertNoContent();
@@ -173,7 +173,7 @@ class LedgerAccountApiTest extends TestCase
             'participants' => [],
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->deleteJson("/api/ledgers/{$ledger->id}/accounts/{$credit->id}")
             ->assertStatus(422)
@@ -186,7 +186,7 @@ class LedgerAccountApiTest extends TestCase
         $ledger = Ledger::factory()->create();
         $account = Account::factory()->create(['ledger_id' => $ledger->id]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}")
             ->assertForbidden();
@@ -235,7 +235,7 @@ class LedgerAccountApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $user->assignRole('Admin');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/accounts", $payload)
             ->assertUnprocessable()
@@ -267,7 +267,7 @@ class LedgerAccountApiTest extends TestCase
             'type' => AccountType::PoolAsset->value,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->patchJson("/api/ledgers/{$ledger->id}/accounts/{$account->id}", $payload)
             ->assertUnprocessable()
@@ -300,7 +300,7 @@ class LedgerAccountApiTest extends TestCase
             'type' => AccountType::PoolAsset->value,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledgerA->id}/accounts/{$accountInLedgerB->id}")
             ->assertNotFound();

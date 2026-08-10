@@ -27,7 +27,7 @@ class FinancialProfileApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $user->assignRole('Admin');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $response = $this->putJson(
             "/api/ledgers/{$ledger->id}/users/{$user->id}/financial-profile/active",
@@ -69,7 +69,7 @@ class FinancialProfileApiTest extends TestCase
             'deductions' => [],
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->putJson(
             "/api/ledgers/{$ledger->id}/users/{$user->id}/financial-profile/active",
@@ -100,7 +100,7 @@ class FinancialProfileApiTest extends TestCase
             'deductions' => [['description' => 'Insurance', 'amount' => 10000]],
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/users/{$user->id}/financial-profile/active")
             ->assertOk()
@@ -115,7 +115,7 @@ class FinancialProfileApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $user->assignRole('Admin');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/users/{$user->id}/financial-profile/active")
             ->assertNotFound();
@@ -130,7 +130,7 @@ class FinancialProfileApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $target->assignRole('Member');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->putJson(
             "/api/ledgers/{$ledger->id}/users/{$target->id}/financial-profile/active",
@@ -173,7 +173,7 @@ class FinancialProfileApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $memberB->assignRole('Member');
 
-        Sanctum::actingAs($memberA);
+        Sanctum::actingAs($memberA, ['*']);
 
         $this->putJson(
             "/api/ledgers/{$ledger->id}/users/{$memberB->id}/financial-profile/active",
@@ -199,7 +199,7 @@ class FinancialProfileApiTest extends TestCase
             'valid_from' => now()->startOfMonth()->format('Y-m-d'),
         ]);
 
-        Sanctum::actingAs($outsider);
+        Sanctum::actingAs($outsider, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/users/{$member->id}/financial-profile/active")
             ->assertForbidden();
@@ -218,7 +218,7 @@ class FinancialProfileApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $user->assignRole('Admin');
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $response = $this->putJson(
             "/api/ledgers/{$ledger->id}/users/{$user->id}/financial-profile/active",
@@ -287,7 +287,7 @@ class FinancialProfileApiTest extends TestCase
             'deductions' => [],
         ]);
 
-        Sanctum::actingAs($memberA);
+        Sanctum::actingAs($memberA, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/users/{$memberB->id}/financial-profile/active")
             ->assertOk()

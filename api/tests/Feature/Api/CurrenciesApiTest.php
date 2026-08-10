@@ -19,7 +19,7 @@ class CurrenciesApiTest extends TestCase
     public function testAuthenticatedUserCanFetchCurrencies(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson('/api/currencies')
             ->assertOk()

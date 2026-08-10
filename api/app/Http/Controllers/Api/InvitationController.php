@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AcceptInvitationRequest;
 use App\Http\Requests\StoreInvitationRequest;
+use App\Http\Resources\UserResource;
 use App\Models\Ledger;
 use App\Modules\Ledger\Actions\AcceptInvitationAction;
 use App\Modules\Ledger\Actions\CreateInvitationAction;
@@ -32,20 +33,23 @@ class InvitationController extends Controller
 
     public function accept(AcceptInvitationRequest $request, AcceptInvitationAction $action): JsonResponse
     {
+        /** @var array{token: string, name?: string|null, email: string, password: string} $validated */
+        $validated = $request->validated();
+
         $data = new AcceptInvitationData(
-            token: $request->input('token'),
-            name: $request->input('name'),
-            email: $request->input('email'),
-            password: $request->input('password'),
+            token: $validated['token'],
+            name: $validated['name'] ?? null,
+            email: $validated['email'],
+            password: $validated['password'],
         );
 
         $user = $action->execute($data);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('auth_token', ['*'])->plainTextToken;
 
         return response()->json([
             'message' => 'Invitation accepted successfully.',
-            'user' => $user,
+            'user' => UserResource::make($user),
             'token' => $token,
         ], 201);
     }

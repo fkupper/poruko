@@ -41,7 +41,7 @@ class LedgerUserApiTest extends TestCase
             'deductions' => [],
         ]);
 
-        Sanctum::actingAs($alice);
+        Sanctum::actingAs($alice, ['*']);
 
         // Act
         $response = $this->getJson("/api/ledgers/{$ledger->id}/users");
@@ -76,7 +76,7 @@ class LedgerUserApiTest extends TestCase
             'deductions' => [],
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act
         $response = $this->getJson("/api/ledgers/{$ledger->id}/users?date=2026-01-15");
@@ -91,7 +91,7 @@ class LedgerUserApiTest extends TestCase
         // Arrange
         [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
 
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         // Act
         $response = $this->deleteJson(route('ledgers.users.destroy', [
@@ -129,7 +129,7 @@ class LedgerUserApiTest extends TestCase
         setPermissionsTeamId($ledger->id);
         $member->removeRole('Member');
 
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         // Act
         $response = $this->postJson(route('ledgers.users.restore', [
@@ -158,7 +158,7 @@ class LedgerUserApiTest extends TestCase
         // Arrange
         [$ledger, $admin] = $this->seedLedgerWithAdminAndMember();
 
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         // Act
         $response = $this->deleteJson(route('ledgers.users.destroy', [
@@ -169,6 +169,42 @@ class LedgerUserApiTest extends TestCase
         // Assert
         $response->assertStatus(422);
         $this->assertTrue($admin->fresh()->ledgers()->where('ledgers.id', $ledger->id)->exists());
+    }
+
+    public function testAdminResetTwoFactorRevokesUserTokens(): void
+    {
+        // Arrange
+        [$ledger, $admin, $member] = $this->seedLedgerWithAdminAndMember();
+
+        $member->forceFill([
+            'two_factor_secret' => encrypt('test-secret'),
+            'two_factor_recovery_codes' => encrypt(json_encode(['aaaa-bbbb'])),
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $plainTextToken = $member->createToken('api-token', ['*'])->plainTextToken;
+        $this->assertSame(1, $member->tokens()->count());
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act
+        $response = $this->deleteJson(route('ledgers.users.two-factor.destroy', [
+            'ledger' => $ledger->id,
+            'user' => $member->id,
+        ]));
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('message', 'Two-factor authentication has been disabled for this user.');
+
+        $this->assertSame(0, $member->fresh()->tokens()->count());
+        $this->assertNull($member->fresh()->two_factor_secret);
+
+        app('auth')->forgetGuards();
+
+        $this->withToken($plainTextToken)
+            ->getJson(route('ledgers.index'))
+            ->assertUnauthorized();
     }
 
     /*

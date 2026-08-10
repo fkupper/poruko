@@ -13,6 +13,8 @@ final readonly class DisableUserTwoFactorAction
 
     public function execute(User $user): void
     {
-        $this->disableTwoFactor($user);
+        ($this->disableTwoFactor)($user);
+
+        $user->tokens()->delete();
     }
 }
