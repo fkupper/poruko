@@ -29,7 +29,7 @@ usage() {
 Usage: bash scripts/dev.sh <command> [args]
 
 Docker lifecycle:
-  up                 docker compose up -d --build
+  up                 build, install PHP deps into ./api, then up -d
   down               docker compose down
   logs [service]     follow logs (default service: api)
   restart [service]  restart container (default: api)
@@ -54,9 +54,18 @@ EOF
 cmd="${1:-}"
 shift || true
 
+ensure_api_vendor() {
+  # ./api is bind-mounted, but vendor lives in the poruko-api-vendor volume
+  # (see docker-compose.dev.yml). Populate that volume before api/queue start.
+  echo "Ensuring PHP dependencies are installed..."
+  compose run --rm --no-deps api composer install --prefer-dist --no-interaction
+}
+
 case "$cmd" in
   up)
-    compose up -d --build
+    compose build
+    ensure_api_vendor
+    compose up -d
     ;;
   down)
     compose down
