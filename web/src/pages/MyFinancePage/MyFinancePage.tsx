@@ -20,9 +20,10 @@ export default function MyFinancePage() {
     const currencySymbol = useLedgerCurrencySymbol();
     const currentUser = useAuthStore((s) => s.user);
 
-    const [incomes, setIncomes] = React.useState<IncomeOrDeductionItem[]>([]);
+    const [incomes, setIncomes] = React.useState<IncomeOrDeductionItem[]>([{ description: '', amount: 0 }]);
     const [deductions, setDeductions] = React.useState<IncomeOrDeductionItem[]>([]);
     const [saveSuccess, setSaveSuccess] = React.useState(false);
+    const [profileRevision, setProfileRevision] = React.useState<string | null>(null);
 
     // Fetch user active financial profile dynamically
     const { data: profile, isPending } = useQuery({
@@ -32,16 +33,27 @@ export default function MyFinancePage() {
         retry: false,
     });
 
-    // Populate local form state when fetched profile changes
-    React.useEffect(() => {
+    const nextRevision = profile
+        ? `${activeLedgerId}:${currentUser?.id}:${JSON.stringify(profile.incomes)}:${JSON.stringify(profile.deductions)}`
+        : activeLedgerId
+          ? `${activeLedgerId}:empty`
+          : null;
+
+    // Reset local draft when the server profile (or space) changes — render-time adjust.
+    if (nextRevision !== profileRevision) {
+        setProfileRevision(nextRevision);
         if (profile) {
-            setIncomes(profile.incomes && profile.incomes.length > 0 ? profile.incomes : [{ description: '', amount: 0 }]);
+            setIncomes(
+                profile.incomes && profile.incomes.length > 0
+                    ? profile.incomes
+                    : [{ description: '', amount: 0 }],
+            );
             setDeductions(profile.deductions && profile.deductions.length > 0 ? profile.deductions : []);
         } else {
             setIncomes([{ description: '', amount: 0 }]);
             setDeductions([]);
         }
-    }, [profile]);
+    }
 
     // Compute totals in real-time
     const totalIncome = React.useMemo(

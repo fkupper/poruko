@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: poruko-config
+  namespace: poruko
+data:
+  APP_NAME: Poruko
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: https://poruko.example.com
+  APP_DEFAULT_CURRENCY: EUR
+  APP_LOCALE: en
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: warning
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres.example.svc.cluster.local
+  DB_PORT: "5432"
+  DB_DATABASE: poruko
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis.example.svc.cluster.local
+  REDIS_PORT: "6379"
+  QUEUE_CONNECTION: redis
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  LOCK_REGISTRATION_AFTER_FIRST_USER: "true"
+  ENFORCE_2FA: "false"
+  RUN_MIGRATIONS: "true"
+  TRUSTED_PROXIES: "*"

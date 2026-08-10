@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poruko-web
+  namespace: poruko
+  labels:
+    app.kubernetes.io/name: poruko
+    app.kubernetes.io/component: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: poruko
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: poruko
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/fkupper/poruko:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORUKO_ROLE
+              value: web
+          args: ["nginx", "-g", "daemon off;"]
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: poruko
+  labels:
+    app.kubernetes.io/name: poruko
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    app.kubernetes.io/name: poruko
+    app.kubernetes.io/component: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

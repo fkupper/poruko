@@ -9,6 +9,11 @@ export interface CurrencyInputProps extends Omit<React.ComponentProps<'input'>, 
     currencySymbol?: string;
 }
 
+function formatCents(value: number | null | undefined): string {
+    if (value == null) return '';
+    return (value / 100).toFixed(2);
+}
+
 export function CurrencyInput({
     value,
     onCentsChange,
@@ -17,19 +22,17 @@ export function CurrencyInput({
     disabled,
     ...props
 }: CurrencyInputProps) {
-    // Keep local string for smooth typing experience
-    const [displayVal, setDisplayVal] = React.useState<string>(() => {
-        if (value == null) return '';
-        return (value / 100).toFixed(2);
-    });
+    const [displayVal, setDisplayVal] = React.useState<string>(() => formatCents(value));
+    const [prevValue, setPrevValue] = React.useState(value);
 
-    // Update display when value prop changes externally
-    React.useEffect(() => {
+    // Sync display when the controlled cents value changes from outside (render-time adjust).
+    if (value !== prevValue) {
+        setPrevValue(value);
         const currentCents = displayVal === '' ? null : currencyToCents(displayVal);
         if (currentCents !== value) {
-            setDisplayVal(value == null ? '' : (value / 100).toFixed(2));
+            setDisplayVal(formatCents(value));
         }
-    }, [value, displayVal]);
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -37,8 +40,7 @@ export function CurrencyInput({
         if (val === '') {
             onCentsChange?.(null);
         } else {
-            const cents = currencyToCents(val);
-            onCentsChange?.(cents);
+            onCentsChange?.(currencyToCents(val));
         }
     };
 

@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API (tests + static analysis)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: poruko_test
+          POSTGRES_USER: poruko
+          POSTGRES_PASSWORD: poruko
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U poruko -d poruko_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      # phpunit.xml defaults to host "db" (Compose); override for GHA service
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: poruko_test
+      DB_USERNAME: poruko
+      DB_PASSWORD: poruko
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, redis, intl, pcov, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: api/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('api/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
+
+      - name: Prepare application
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan package:discover --ansi
+          php artisan config:clear
+
+      - name: PHPUnit
+        run: php artisan test --compact
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse -c tools/Phpstan/phpstan.neon --memory-limit=512M --no-progress
+
+      - name: PHP CS Fixer (dry-run)
+        run: vendor/bin/php-cs-fixer fix -v --dry-run --diff --config=tools/PhpCsFixer/.php-cs-fixer.dist.php
+
+  web:
+    name: Web (tests + lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Vitest
+        run: npm test
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Typecheck + production build
+        run: npm run build

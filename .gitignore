@@ -12,6 +12,9 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+# Keep web lockfile for reproducible Docker / CI builds
+!web/package-lock.json
+
 ### Laravel / PHP
 vendor/
 bootstrap/cache/

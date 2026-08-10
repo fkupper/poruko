@@ -19,5 +19,19 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // shadcn co-exports cva() helpers (buttonVariants, etc.) with components
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true, allowExportNames: ['buttonVariants', 'toggleVariants'] },
+      ],
+    },
+  },
+  {
+    // Generated/vendor-style shadcn primitives often export non-component helpers
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])

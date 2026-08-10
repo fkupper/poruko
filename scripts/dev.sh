@@ -6,6 +6,9 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+# Always start bundled db + redis in dev (see profiles on docker-compose.yml).
+export COMPOSE_PROFILES="${COMPOSE_PROFILES:-bundle}"
+
 if docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD=(docker compose)
 elif command -v docker-compose >/dev/null 2>&1; then

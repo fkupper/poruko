@@ -45,6 +45,16 @@ export type SpaceSwitcherItem = {
     settlementMode: SpaceSettlementMode;
 };
 
+function resolveActiveSpace(
+    spaces: SpaceSwitcherItem[],
+    activeLedgerId: number | null,
+): SpaceSwitcherItem | undefined {
+    if (spaces.length === 0) {
+        return undefined;
+    }
+    return spaces.find((s) => s.id === activeLedgerId) ?? spaces[0];
+}
+
 export function SpaceSwitcher({
     spaces,
     isLoading = false,
@@ -60,20 +70,19 @@ export function SpaceSwitcher({
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
     const setActiveLedgerId = useLedgerStore((s) => s.setActiveLedgerId);
 
-    const [activeSpace, setActiveSpace] = React.useState<SpaceSwitcherItem | undefined>(undefined);
+    const displaySpace = resolveActiveSpace(spaces, activeLedgerId);
 
+    // Keep the ledger store aligned with the available spaces (no local mirror state).
     React.useEffect(() => {
         if (spaces.length === 0) {
-            setActiveSpace(undefined);
-            setActiveLedgerId(null);
+            if (activeLedgerId !== null) {
+                setActiveLedgerId(null);
+            }
             return;
         }
-        const existing = spaces.find((s) => s.id === activeLedgerId);
-        if (existing) {
-            setActiveSpace(existing);
-        } else {
-            setActiveSpace(spaces[0]);
-            setActiveLedgerId(spaces[0].id);
+        const resolved = resolveActiveSpace(spaces, activeLedgerId);
+        if (resolved && resolved.id !== activeLedgerId) {
+            setActiveLedgerId(resolved.id);
         }
     }, [spaces, activeLedgerId, setActiveLedgerId]);
 
@@ -114,7 +123,6 @@ export function SpaceSwitcher({
     }
 
     const hasSpaces = spaces.length > 0;
-    const displaySpace = activeSpace;
 
     return (
         <SidebarMenu>
@@ -159,7 +167,6 @@ export function SpaceSwitcher({
                                 <DropdownMenuItem
                                     key={space.id}
                                     onClick={() => {
-                                        setActiveSpace(space);
                                         setActiveLedgerId(space.id);
                                     }}
                                     className="gap-2 p-2"

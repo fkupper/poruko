@@ -1,0 +1,25 @@
+# Example Ingress — adjust host, class, and TLS secret for your cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: poruko
+  namespace: poruko
+  annotations:
+    # kubernetes.io/ingress.class: nginx
+spec:
+  # ingressClassName: nginx
+  rules:
+    - host: poruko.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  name: http
+  # tls:
+  #   - hosts:
+  #       - poruko.example.com
+  #     secretName: poruko-tls
