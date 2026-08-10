@@ -342,7 +342,12 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                             {activeMembers.map((member) => {
                                 const participant = calculatedParticipants.find((p) => p.user_id === member.id);
                                 const shareAmt = participant?.share || 0;
-                                const ratio = participant?.share_ratio || 0;
+                                const ratio =
+                                    totalShareableIncome > 0
+                                        ? member.shareable_income / totalShareableIncome
+                                        : activeMembers.length > 0
+                                          ? 1 / activeMembers.length
+                                          : 0;
 
                                 return (
                                     <div key={member.id} className="flex items-center justify-between py-1 border-b border-border/40 last:border-0">
