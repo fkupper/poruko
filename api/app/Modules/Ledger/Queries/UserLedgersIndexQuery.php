@@ -8,17 +8,12 @@ use Illuminate\Database\Eloquent\Collection;
 
 class UserLedgersIndexQuery
 {
-    public function __construct(
-        private readonly Ledger $ledgers,
-    ) {}
-
     /**
      * @return Collection<int, Ledger>
      */
     public function execute(User $user): Collection
     {
-        return $this->ledgers->newQuery()
-            ->whereHas('users', fn ($query) => $query->whereKey($user->id))
+        return $user->ledgers()
             ->withCount('users')
             ->orderBy('id')
             ->get();

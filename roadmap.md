@@ -65,3 +65,10 @@ poruko/
 
 *   **Backend:** Create migrations for `pending_transactions`. Set up Laravel Horizon or a Redis queue worker to run the **`ProcessBankStatementJob`**, which passes the CSV to OpenAI/Anthropic APIs and prompts for structured JSON. Build APIs for uploading CSVs and managing pending transactions.
 *   **Frontend:** Build a Settings page to save the LLM API Key, a file upload dropzone for the CSV, and a "Pending Review" table where users can approve or override AI-suggested split rules.
+
+---
+
+### Open TODOs
+* [ ] **Hide unauthorized UI actions:** users must not see controls they cannot execute (backend already rejects). Example: on Members, users with the Member role still see Deactivate/Reset 2FA/Invite — gate those on Spatie permissions (e.g. `users`) or role so only admins see them.
+* [x] **Fix/rework individual & manual split transactions:** Add Expense aligns with backend — `individual` = exactly one participant; `manual` = relative weights with live euro preview (not sum-to-amount). Recurring stays Equal/Proportional only (deferred).
+* [ ] **SpaceSwitcher “Add space”:** currently a no-op UI item. Implement create/join flow gated by an env flag for **single-space vs multi-space** mode (default assumption: most users stay on a single space; multi-space is opt-in).

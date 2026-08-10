@@ -8,14 +8,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property string $password
+ * @property string|null $remember_token
+ * @property string|null $two_factor_secret
+ * @property string|null $two_factor_recovery_codes
+ * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read LedgerUser|null $pivot
+ */
 class User extends Authenticatable
 {
     use HasApiTokens;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
+    use HasRoles;
     use Notifiable;
+    use TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -56,7 +76,17 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<Ledger, $this, LedgerUser> */
+    public function allLedgers(): BelongsToMany
+    {
+        return $this->belongsToMany(Ledger::class)
+            ->using(LedgerUser::class)
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
             ->withTimestamps();
     }
 

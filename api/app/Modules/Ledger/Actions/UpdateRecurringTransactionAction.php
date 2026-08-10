@@ -20,6 +20,13 @@ final readonly class UpdateRecurringTransactionAction
         }
 
         $today = CarbonImmutable::now()->toDateString();
+
+        if ($blueprint->valid_from->toDateString() === $today) {
+            $blueprint->update($data->toAttributes());
+
+            return $blueprint;
+        }
+
         $yesterday = CarbonImmutable::yesterday()->toDateString();
 
         return DB::transaction(function () use ($blueprint, $data, $today, $yesterday): RecurringTransaction {
@@ -27,8 +34,9 @@ final readonly class UpdateRecurringTransactionAction
 
             $merged = array_merge($blueprint->only([
                 'ledger_id',
-                'credit_account_id',
-                'debit_account_id',
+                'series_id',
+                'payer_account_id',
+                'destination_account_id',
                 'amount',
                 'description',
                 'split_rule',

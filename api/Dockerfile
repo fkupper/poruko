@@ -19,9 +19,11 @@ RUN apk add --no-cache \
     intl \
     pcntl \
     zip \
+    opcache \
  && apk del $PHPIZE_DEPS
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY docker/php/conf.d/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 WORKDIR /var/www/html
 

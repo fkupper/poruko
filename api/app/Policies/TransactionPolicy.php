@@ -25,11 +25,25 @@ class TransactionPolicy
 
     public function update(User $user, Transaction $transaction): bool
     {
+        if ($user->can('transactions')) {
+            return true;
+        }
+
+        if ($transaction->payerAccount && $transaction->payerAccount->owner_id === $user->id) {
+            return true;
+        }
+
+        foreach ($transaction->participants as $participant) {
+            if (isset($participant['user_id']) && $participant['user_id'] === $user->id) {
+                return true;
+            }
+        }
+
         return false;
     }
 
     public function delete(User $user, Transaction $transaction): bool
     {
-        return false;
+        return $this->update($user, $transaction);
     }
 }

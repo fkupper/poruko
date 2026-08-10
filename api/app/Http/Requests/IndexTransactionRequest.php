@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TransactionSplitRule;
 use App\Models\Ledger;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,6 +35,18 @@ class IndexTransactionRequest extends FormRequest
                 'integer',
                 Rule::exists('accounts', 'id')->where('ledger_id', $ledgerId),
             ],
+            'account_ids' => ['nullable', 'array'],
+            'account_ids.*' => [
+                'integer',
+                Rule::exists('accounts', 'id')->where('ledger_id', $ledgerId),
+            ],
+            'creator_user_ids' => ['nullable', 'array'],
+            'creator_user_ids.*' => ['integer'],
+            'split_rules' => ['nullable', 'array'],
+            'split_rules.*' => ['string', Rule::enum(TransactionSplitRule::class)],
+            'types' => ['nullable', 'array'],
+            'types.*' => ['string', Rule::in(['manual', 'recurring', 'settlement', 'reversal'])],
+            'settlement_id' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];

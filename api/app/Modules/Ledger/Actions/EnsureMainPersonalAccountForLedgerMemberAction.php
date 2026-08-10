@@ -25,15 +25,23 @@ final readonly class EnsureMainPersonalAccountForLedgerMemberAction
             $user = $ledgerUser->user;
             $ledger = $ledgerUser->ledger;
 
-            $account = Account::query()->create([
+            $fundingAccount = Account::query()->create([
                 'ledger_id' => $ledger->id,
                 'owner_id' => $user->id,
-                'type' => AccountType::Personal,
-                'name' => "{$user->name}'s Personal Account",
+                'type' => AccountType::UserFunding,
+                'name' => "{$user->name}'s Funding Account",
                 'base_budget' => 0,
             ]);
 
-            $ledgerUser->main_personal_account_id = $account->id;
+            Account::query()->create([
+                'ledger_id' => $ledger->id,
+                'owner_id' => $user->id,
+                'type' => AccountType::UserLiability,
+                'name' => "{$user->name}'s Liability Account",
+                'base_budget' => 0,
+            ]);
+
+            $ledgerUser->main_personal_account_id = $fundingAccount->id;
             $ledgerUser->save();
         });
     }

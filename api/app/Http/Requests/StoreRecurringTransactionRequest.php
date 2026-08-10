@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AccountType;
 use App\Enums\RecurringFrequency;
 use App\Enums\TransactionSplitRule;
 use App\Models\Ledger;
@@ -27,28 +28,31 @@ class StoreRecurringTransactionRequest extends FormRequest
     {
         $ledger = $this->route('ledger');
         $ledgerId = $ledger instanceof Ledger ? $ledger->id : null;
-        $accountExistsInLedger = Rule::exists('accounts', 'id')->where('ledger_id', $ledgerId);
-        $participantInLedger = Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId);
+        $payerAccountExistsInLedger = Rule::exists('accounts', 'id')
+            ->where('ledger_id', $ledgerId)
+            ->whereIn('type', AccountType::publicTypes());
+        $destinationAccountExistsInLedger = Rule::exists('accounts', 'id')
+            ->where('ledger_id', $ledgerId)
+            ->where('type', AccountType::SpaceExpense->value);
+        $participantInLedger = Rule::exists('ledger_user', 'user_id')
+            ->where('ledger_id', $ledgerId)
+            ->whereNull('deleted_at');
 
         return [
-            'credit_account_id' => ['required', 'integer', $accountExistsInLedger],
-            'debit_account_id' => ['required', 'integer', $accountExistsInLedger, 'different:credit_account_id'],
+            'payer_account_id' => ['required', 'integer', $payerAccountExistsInLedger],
+            'destination_account_id' => ['required', 'integer', $destinationAccountExistsInLedger],
             'amount' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
-            'split_rule' => ['required', new Enum(TransactionSplitRule::class)],
-            'participants' => [
-                Rule::when(
-                    $this->input('split_rule') === TransactionSplitRule::Individual->value,
-                    ['required', 'array', 'size:1'],
-                    ['nullable', 'array'],
-                ),
+            'split_rule' => [
+                'required',
+                Rule::in([
+                    TransactionSplitRule::Equal->value,
+                    TransactionSplitRule::Proportional->value,
+                ]),
             ],
+            'participants' => ['nullable', 'array'],
             'participants.*.user_id' => ['required', 'integer', 'exists:users,id', $participantInLedger],
-            'participants.*.share' => Rule::when(
-                $this->input('split_rule') === TransactionSplitRule::Manual->value,
-                ['required', 'numeric', 'gt:0'],
-                ['nullable', 'numeric', 'min:0'],
-            ),
+            'participants.*.share' => ['nullable', 'numeric', 'min:0'],
             'start_date' => ['required', 'date'],
             'frequency' => ['nullable', new Enum(RecurringFrequency::class)],
         ];
@@ -60,12 +64,16 @@ class StoreRecurringTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'credit_account_id.required' => 'The credit account is required.',
-            'debit_account_id.required' => 'The debit account is required.',
+            'payer_account_id.required' => 'The payer account is required.',
+            'payer_account_id.exists' => 'The selected payer account does not exist in this ledger.',
+            'destination_account_id.required' => 'The destination account is required.',
+            'destination_account_id.exists' => 'The selected destination account must be a Space Expense account in this ledger.',
             'amount.required' => 'The amount is required.',
-            'amount.min' => 'The amount must be at least 1.',
+            'amount.min' => 'The amount must be greater than zero.',
             'start_date.required' => 'The start date is required.',
             'split_rule.required' => 'The split rule is required.',
+            'split_rule.in' => 'Recurring transactions only support equal or proportional split rules.',
+            'participants.*.user_id.exists' => 'One or more selected participants do not exist or are not members of this ledger.',
         ];
     }
 }

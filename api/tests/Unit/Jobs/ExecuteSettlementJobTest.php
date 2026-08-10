@@ -54,6 +54,8 @@ class ExecuteSettlementJobTest extends TestCase
         ]);
         $user = User::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
         $credit = Account::query()->findOrFail(
             DB::table('ledger_user')
                 ->where('ledger_id', $ledger->id)
@@ -62,7 +64,7 @@ class ExecuteSettlementJobTest extends TestCase
         );
         $debit = Account::factory()->create([
             'ledger_id' => $ledger->id,
-            'type' => 'external',
+            'type' => 'space_expense',
             'owner_id' => null,
         ]);
         FinancialProfile::factory()->create([
@@ -74,8 +76,7 @@ class ExecuteSettlementJobTest extends TestCase
         ]);
         Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 10000,
             'type' => 'manual',
             'split_rule' => 'equal',

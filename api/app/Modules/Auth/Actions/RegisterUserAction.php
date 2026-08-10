@@ -12,8 +12,12 @@ final readonly class RegisterUserAction
      */
     public function execute(array $data): array
     {
+        if (config('auth.lock_registration_after_first_user') && User::count() > 0) {
+            abort(403, 'Public registration is currently disabled on this instance.');
+        }
+
         $user = User::query()->create($data);
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ['*'])->plainTextToken;
 
         return [
             'user' => $user,

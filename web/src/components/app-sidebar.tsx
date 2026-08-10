@@ -17,6 +17,7 @@ import {
     RepeatIcon,
     SettingsIcon,
     UserIcon,
+    UsersIcon,
     WalletIcon,
 } from 'lucide-react';
 
@@ -32,12 +33,12 @@ const data = {
     navSecondary: [
         {
             title: 'Help',
-            url: '/',
+            url: 'https://github.com/fkupper/poruko',
             icon: <LifeBuoyIcon />,
         },
         {
             title: 'Report a bug',
-            url: '/',
+            url: 'https://github.com/fkupper/poruko/issues',
             icon: <BugIcon />,
         },
     ],
@@ -74,10 +75,20 @@ const data = {
             url: '/my-finance',
             icon: <UserIcon />,
         },
+        // {
+        //     title: 'AI Ingestion',
+        //     url: '/ingestion',
+        //     icon: <BotIcon />,
+        // },
         {
             title: 'Settings',
             url: '/settings',
             icon: <SettingsIcon />,
+        },
+        {
+            title: 'Members',
+            url: '/members',
+            icon: <UsersIcon />,
         },
     ],
 };

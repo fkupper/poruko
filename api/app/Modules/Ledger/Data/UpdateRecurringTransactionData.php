@@ -8,8 +8,8 @@ final readonly class UpdateRecurringTransactionData
      * @param list<array{user_id:int, share?:int|float}>|null $participants
      */
     public function __construct(
-        public ?int $creditAccountId = null,
-        public ?int $debitAccountId = null,
+        public ?int $payerAccountId = null,
+        public ?int $destinationAccountId = null,
         public ?int $amount = null,
         public ?string $description = null,
         public ?string $splitRule = null,
@@ -24,8 +24,8 @@ final readonly class UpdateRecurringTransactionData
     public static function fromArray(array $validated): self
     {
         return new self(
-            creditAccountId: isset($validated['credit_account_id']) ? (int) $validated['credit_account_id'] : null,
-            debitAccountId: isset($validated['debit_account_id']) ? (int) $validated['debit_account_id'] : null,
+            payerAccountId: isset($validated['payer_account_id']) ? (int) $validated['payer_account_id'] : null,
+            destinationAccountId: isset($validated['destination_account_id']) ? (int) $validated['destination_account_id'] : null,
             amount: isset($validated['amount']) ? (int) $validated['amount'] : null,
             description: array_key_exists('description', $validated) ? ($validated['description'] !== null ? (string) $validated['description'] : null) : null,
             splitRule: isset($validated['split_rule']) ? (string) $validated['split_rule'] : null,
@@ -41,8 +41,8 @@ final readonly class UpdateRecurringTransactionData
     public function toAttributes(): array
     {
         return array_filter([
-            'credit_account_id' => $this->creditAccountId,
-            'debit_account_id' => $this->debitAccountId,
+            'payer_account_id' => $this->payerAccountId,
+            'destination_account_id' => $this->destinationAccountId,
             'amount' => $this->amount,
             'description' => $this->description,
             'split_rule' => $this->splitRule,

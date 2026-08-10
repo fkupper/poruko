@@ -2,15 +2,21 @@
 #   - Adds Postgres init script so poruko_test is created for automated tests.
 #   - Replaces the nginx web container with the Vite dev server (hot reload, API proxy).
 #   - api and queue append ./api/.dev.env (merged after ./api/.env from the base compose file).
+#   - Keeps PHP vendor/ (and web node_modules) on Linux volumes so Docker Desktop
+#     bind mounts on Windows/macOS do not make every request multi-second.
 # Use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 services:
   api:
     env_file:
       - ./api/.dev.env
+    volumes:
+      - poruko-api-vendor:/var/www/html/vendor
 
   queue:
     env_file:
       - ./api/.dev.env
+    volumes:
+      - poruko-api-vendor:/var/www/html/vendor
 
   db:
     volumes:
@@ -30,3 +36,6 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_API_PROXY_TARGET=http://api:8000
+
+volumes:
+  poruko-api-vendor:

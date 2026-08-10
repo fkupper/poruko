@@ -2,26 +2,97 @@
 
 namespace App\Modules\Ledger\Services;
 
+use App\Enums\TransactionType;
 use App\Models\Ledger;
+use App\Models\Settlement;
+use App\Models\Transaction;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
 class SettlementCycleService
 {
     /**
+     * Calendar month of `$date` (preview/lookup). Cutoff-based due settlement uses {@see resolveDuePeriodEnd}.
+     *
      * @return array{period_start:string, period_end:string}
      */
     public function resolvePeriodForDate(Ledger $ledger, string $date): array
     {
         $timezone = $ledger->settlement_timezone ?? 'UTC';
         $reference = CarbonImmutable::parse($date, $timezone)->startOfDay();
-        $periodEnd = $reference->subMonthNoOverflow()->endOfMonth();
+        $periodEnd = $reference->endOfMonth();
         $periodStart = $periodEnd->startOfMonth();
 
         return [
             'period_start' => $periodStart->toDateString(),
             'period_end' => $periodEnd->toDateString(),
         ];
+    }
+
+    /**
+     * @return array{period_start:string, period_end:string}
+     */
+    public function resolveNextPendingPeriod(Ledger $ledger): array
+    {
+        $oldestUnsettled = Transaction::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', '!=', TransactionType::Settlement->value)
+            ->whereNull('settlement_id')
+            ->orderBy('date', 'asc')
+            ->first();
+
+        if ($oldestUnsettled) {
+            $date = is_string($oldestUnsettled->date) ? $oldestUnsettled->date : $oldestUnsettled->date->toDateString();
+
+            return $this->resolvePeriodForDate($ledger, $date);
+        }
+
+        return $this->resolvePeriodForDate($ledger, now()->toDateString());
+    }
+
+    /**
+     * @return list<array{period_start:string, period_end:string, label:string, status:string, executed_at:?string}>
+     */
+    public function getAvailablePeriods(Ledger $ledger): array
+    {
+        $earliestTx = Transaction::query()
+            ->where('ledger_id', $ledger->id)
+            ->orderBy('date', 'asc')
+            ->first();
+
+        $timezone = $ledger->settlement_timezone ?? 'UTC';
+        $startDateStr = $earliestTx ? (is_string($earliestTx->date) ? $earliestTx->date : $earliestTx->date->toDateString()) : $ledger->created_at->toDateString();
+
+        $current = CarbonImmutable::parse($startDateStr, $timezone)->startOfMonth();
+        $end = CarbonImmutable::now($timezone)->endOfMonth();
+
+        $settlements = Settlement::query()
+            ->where('ledger_id', $ledger->id)
+            ->get()
+            ->keyBy(fn ($s) => is_string($s->period_end) ? mb_substr($s->period_end, 0, 10) : $s->period_end->toDateString());
+
+        $periods = [];
+
+        while ($current <= $end) {
+            $pStart = $current->startOfMonth()->toDateString();
+            $pEnd = $current->endOfMonth()->toDateString();
+            $settlement = $settlements[$pEnd] ?? null;
+
+            $isSettled = $settlement && $settlement->executed_at !== null;
+            $status = $isSettled ? 'settled' : ($current->isFuture() ? 'future' : 'open');
+
+            $periods[] = [
+                'period_start' => $pStart,
+                'period_end' => $pEnd,
+                'label' => $current->format('F Y'),
+                'status' => $status,
+                'executed_at' => $settlement?->executed_at?->toIso8601String(),
+            ];
+
+            $current = $current->addMonth();
+        }
+
+        return $periods;
     }
 
     /**

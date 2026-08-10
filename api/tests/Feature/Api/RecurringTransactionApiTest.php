@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Http\Controllers\Api\RecurringTransactionController;
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Models\LedgerUser;
 use App\Models\RecurringTransaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,23 +25,75 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions")
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $blueprint->id)
-            ->assertJsonPath('data.0.amount', $blueprint->amount);
+            ->assertJsonPath('data.0.amount', $blueprint->amount)
+            ->assertJsonPath('data.0.status', 'active');
+    }
+
+    public function testMemberCanFilterRecurringTransactionsByStatus(): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+
+        $activeBp = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'valid_to' => null,
+        ]);
+
+        $previousBp = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'valid_to' => '2026-01-01',
+        ]);
+
+        $deletedBp = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+        ]);
+        $deletedBp->delete();
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Filter active
+        $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=active")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $activeBp->id)
+            ->assertJsonPath('data.0.status', 'active');
+
+        // Filter previous_version
+        $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=previous_version")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $previousBp->id)
+            ->assertJsonPath('data.0.status', 'previous_version');
+
+        // Filter deleted
+        $this->getJson("/api/ledgers/{$ledger->id}/recurring-transactions?status=deleted")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $deletedBp->id)
+            ->assertJsonPath('data.0.status', 'deleted');
     }
 
     public function testMemberCanCreateRecurringTransaction(): void
@@ -48,15 +101,20 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $response = $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $destination->id,
             'amount' => 120000,
             'description' => 'Monthly Rent',
             'split_rule' => 'proportional',
@@ -70,12 +128,20 @@ class RecurringTransactionApiTest extends TestCase
             ->assertJsonPath('data.description', 'Monthly Rent')
             ->assertJsonPath('data.valid_from', '2026-04-01')
             ->assertJsonPath('data.frequency', 'monthly')
-            ->assertJsonPath('data.is_active', true);
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonPath('data.payer_account_id', $credit->id)
+            ->assertJsonPath('data.destination_account_id', $destination->id);
+
+        $seriesId = $response->json('data.series_id');
+        $this->assertIsString($seriesId);
+        $this->assertNotEmpty($seriesId);
 
         $this->assertDatabaseHas('recurring_transactions', [
             'ledger_id' => $ledger->id,
+            'series_id' => $seriesId,
             'amount' => 120000,
             'description' => 'Monthly Rent',
+            'destination_account_id' => $destination->id,
         ]);
     }
 
@@ -84,38 +150,85 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 100000,
             'valid_from' => '2026-01-01',
             'valid_to' => null,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $response = $this->patchJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}", [
             'amount' => 110000,
         ]);
 
         $response->assertSuccessful()
-            ->assertJsonPath('data.amount', 110000);
+            ->assertJsonPath('data.amount', 110000)
+            ->assertJsonPath('data.series_id', $blueprint->series_id);
 
         $this->assertDatabaseHas('recurring_transactions', [
             'id' => $blueprint->id,
+            'series_id' => $blueprint->series_id,
             'valid_to' => now()->subDay()->format('Y-m-d'),
         ]);
 
         $this->assertDatabaseHas('recurring_transactions', [
             'ledger_id' => $ledger->id,
+            'series_id' => $blueprint->series_id,
             'amount' => 110000,
             'valid_from' => now()->format('Y-m-d'),
             'valid_to' => null,
+        ]);
+
+        $newId = $response->json('data.id');
+        $this->assertNotSame($blueprint->id, $newId);
+        $this->assertDatabaseHas('recurring_transactions', [
+            'id' => $newId,
+            'series_id' => $blueprint->series_id,
+        ]);
+    }
+
+    public function testCannotUpdateClosedRecurringTransaction(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+
+        $blueprint = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'amount' => 100000,
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-02-01',
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act
+        $response = $this->patchJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}", [
+            'amount' => 110000,
+        ]);
+
+        // Assert
+        $response->assertUnprocessable()
+            ->assertJsonPath('message', 'Cannot update a closed recurring transaction. Create a new one instead.');
+
+        $this->assertDatabaseHas('recurring_transactions', [
+            'id' => $blueprint->id,
+            'amount' => 100000,
+            'valid_to' => '2026-02-01',
         ]);
     }
 
@@ -124,17 +237,17 @@ class RecurringTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->deleteJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}")
             ->assertNoContent();
@@ -148,17 +261,123 @@ class RecurringTransactionApiTest extends TestCase
         $ledger = Ledger::factory()->create();
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $credit->id,
             'amount' => 1000,
             'start_date' => '2026-04-01',
             'split_rule' => 'equal',
             'participants' => [],
         ])->assertForbidden();
+    }
+
+    public function testCannotUseSoftDeletedMemberAsParticipantOnStore(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $destination->id,
+            'amount' => 120000,
+            'description' => 'Monthly Rent',
+            'split_rule' => 'equal',
+            'participants' => [['user_id' => $removedMember->id]],
+            'start_date' => '2026-04-01',
+            'frequency' => 'monthly',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['participants.0.user_id']);
+    }
+
+    public function testCreateRejectsIndividualAndManualSplitRules(): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        foreach (['individual', 'manual'] as $splitRule) {
+            $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
+                'payer_account_id' => $credit->id,
+                'destination_account_id' => $destination->id,
+                'amount' => 120000,
+                'description' => 'Unsupported split',
+                'split_rule' => $splitRule,
+                'participants' => [['user_id' => $user->id, 'share' => 1]],
+                'start_date' => '2026-04-01',
+                'frequency' => 'monthly',
+            ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['split_rule']);
+        }
+    }
+
+    public function testUpdateRejectsIndividualAndManualSplitRules(): void
+    {
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
+
+        $blueprint = RecurringTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $destination->id,
+            'split_rule' => 'equal',
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        foreach (['individual', 'manual'] as $splitRule) {
+            $this->patchJson("/api/ledgers/{$ledger->id}/recurring-transactions/{$blueprint->id}", [
+                'split_rule' => $splitRule,
+                'start_date' => '2026-05-01',
+            ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['split_rule']);
+        }
     }
 }

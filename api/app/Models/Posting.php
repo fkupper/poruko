@@ -7,6 +7,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $transaction_id
+ * @property int $account_id
+ * @property int $amount
+ * @property PostingDirection $direction
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Posting extends Model
 {
     /** @use HasFactory<\Database\Factories\PostingFactory> */

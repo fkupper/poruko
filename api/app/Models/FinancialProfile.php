@@ -7,6 +7,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $ledger_id
+ * @property int $user_id
+ * @property \Illuminate\Support\Carbon $valid_from
+ * @property \Illuminate\Support\Carbon|null $valid_to
+ * @property array<int, array{description: string, amount: int}> $incomes
+ * @property array<int, array{description: string, amount: int}> $deductions
+ * @property-read int $total_income
+ * @property-read int $total_deductions
+ * @property-read int $shareable_income
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class FinancialProfile extends Model
 {
     /** @use HasFactory<\Database\Factories\FinancialProfileFactory> */

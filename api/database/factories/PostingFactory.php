@@ -28,26 +28,26 @@ class PostingFactory extends Factory
     }
 
     /**
-     * Create a credit posting for the transaction's credit account.
+     * Create a credit posting for the transaction's payer account.
      */
     public function forCreditAccount(Transaction $transaction): static
     {
         return $this->state(fn () => [
             'transaction_id' => $transaction->id,
-            'account_id' => $transaction->credit_account_id,
+            'account_id' => $transaction->payer_account_id,
             'amount' => $transaction->amount,
             'direction' => PostingDirection::Credit->value,
         ]);
     }
 
     /**
-     * Create a debit posting for the transaction's debit account.
+     * Create a debit posting for the transaction's destination account.
      */
     public function forDebitAccount(Transaction $transaction): static
     {
         return $this->state(fn () => [
             'transaction_id' => $transaction->id,
-            'account_id' => $transaction->debit_account_id,
+            'account_id' => $transaction->destination_account_id,
             'amount' => $transaction->amount,
             'direction' => PostingDirection::Debit->value,
         ]);

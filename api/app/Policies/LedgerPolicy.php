@@ -24,10 +24,14 @@ class LedgerPolicy
 
     public function update(User $user, Ledger $ledger): bool
     {
-        return $ledger->users()
-            ->whereKey($user->id)
-            ->wherePivot('role', 'admin')
-            ->exists();
+        return $ledger->users()->whereKey($user->id)->exists()
+            && $user->can('settings');
+    }
+
+    public function manageSettlements(User $user, Ledger $ledger): bool
+    {
+        return $ledger->users()->whereKey($user->id)->exists()
+            && $user->can('settlements');
     }
 
     public function delete(User $user, Ledger $ledger): bool

@@ -11,8 +11,11 @@ use App\Http\Resources\SettlementResource;
 use App\Models\Ledger;
 use App\Modules\Ledger\Actions\ConfirmSettlementAction;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
+use App\Modules\Ledger\Exceptions\CannotSettlePeriodWithEarlierOpenPeriodsException;
 use App\Modules\Ledger\Queries\SettlementIndexQuery;
+use App\Modules\Ledger\Services\SettlementCycleService;
 use App\Modules\Ledger\Services\SettlementSafetyGateService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,10 +25,17 @@ class SettlementController extends Controller
         private readonly SettlementSafetyGateService $settlementSafetyGateService,
     ) {}
 
-    public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action): Response
+    public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action, SettlementCycleService $cycleService): Response
     {
-        $date = (string) $request->validated()['date'];
-        $preview = $action->execute($ledger, $date);
+        $date = $request->validated()['date'] ?? null;
+
+        if ($date === null) {
+            $period = $cycleService->resolveNextPendingPeriod($ledger);
+        } else {
+            $period = $cycleService->resolvePeriodForDate($ledger, (string) $date);
+        }
+
+        $preview = $action->executeForPeriod($ledger, $period);
         $gate = $this->settlementSafetyGateService->evaluate($ledger, $preview);
 
         return response([
@@ -36,6 +46,13 @@ class SettlementController extends Controller
                     'reason' => $gate['reason'],
                 ],
             ],
+        ]);
+    }
+
+    public function periods(Ledger $ledger, SettlementCycleService $cycleService): JsonResponse
+    {
+        return response()->json([
+            'data' => $cycleService->getAvailablePeriods($ledger),
         ]);
     }
 
@@ -56,10 +73,16 @@ class SettlementController extends Controller
         Ledger $ledger,
         string $cycle,
         ConfirmSettlementAction $action,
-    ): SettlementResource {
+    ): SettlementResource|JsonResponse {
         $data = $request->validated();
         $periodEnd = (string) ($data['period_end'] ?? $cycle);
 
-        return new SettlementResource($action->execute($ledger, $periodEnd));
+        try {
+            return new SettlementResource($action->execute($ledger, $periodEnd));
+        } catch (CannotSettlePeriodWithEarlierOpenPeriodsException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
     }
 }

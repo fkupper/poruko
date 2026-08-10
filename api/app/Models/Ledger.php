@@ -9,7 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property int $id
+ * @property string $name
+ * @property string $currency
  * @property SettlementMode $settlement_mode
+ * @property string|null $settlement_timezone
+ * @property int|null $settlement_cutoff_day
+ * @property string|null $settlement_cutoff_time
+ * @property bool $settlement_auto_execute_enabled
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read LedgerUser|null $pivot
  */
 class Ledger extends Model
 {
@@ -19,6 +29,7 @@ class Ledger extends Model
     /** @var list<string> */
     protected $fillable = [
         'name',
+        'currency',
         'settlement_mode',
         'settlement_timezone',
         'settlement_cutoff_day',
@@ -54,7 +65,17 @@ class Ledger extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<User, $this, LedgerUser> */
+    public function allUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->using(LedgerUser::class)
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
             ->withTimestamps();
     }
 

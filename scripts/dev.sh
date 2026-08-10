@@ -6,8 +6,17 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose)
+else
+  echo "Error: Neither 'docker compose' nor 'docker-compose' was found." >&2
+  exit 1
+fi
+
 compose() {
-  docker compose -f docker-compose.yml -f docker-compose.dev.yml "$@"
+  "${COMPOSE_CMD[@]}" -f docker-compose.yml -f docker-compose.dev.yml "$@"
 }
 
 test_db_setup() {
@@ -20,7 +29,7 @@ usage() {
 Usage: bash scripts/dev.sh <command> [args]
 
 Docker lifecycle:
-  up                 docker compose up -d --build
+  up                 build, install PHP deps into ./api, then up -d
   down               docker compose down
   logs [service]     follow logs (default service: api)
   restart [service]  restart container (default: api)
@@ -45,9 +54,18 @@ EOF
 cmd="${1:-}"
 shift || true
 
+ensure_api_vendor() {
+  # ./api is bind-mounted, but vendor lives in the poruko-api-vendor volume
+  # (see docker-compose.dev.yml). Populate that volume before api/queue start.
+  echo "Ensuring PHP dependencies are installed..."
+  compose run --rm --no-deps api composer install --prefer-dist --no-interaction
+}
+
 case "$cmd" in
   up)
-    compose up -d --build
+    compose build
+    ensure_api_vendor
+    compose up -d
     ;;
   down)
     compose down

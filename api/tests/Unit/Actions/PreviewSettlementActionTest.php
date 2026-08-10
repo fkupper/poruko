@@ -5,11 +5,9 @@ namespace Tests\Unit\Actions;
 use App\Enums\AccountType;
 use App\Enums\SettlementMode;
 use App\Enums\TransactionSplitRule;
-use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\FinancialProfile;
 use App\Models\Ledger;
-use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,29 +30,29 @@ class PreviewSettlementActionTest extends TestCase
             incomeB: 100_000,
         );
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
             'participants' => [],
-            'description' => 'Equal expense',
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $bAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $bAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 9_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Proportional->value,
             'participants' => [],
-            'description' => 'Proportional expense',
+            'description' => 'Test',
             'date' => '2026-03-20',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -79,29 +77,29 @@ class PreviewSettlementActionTest extends TestCase
             incomeB: 100_000,
         );
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 8_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
             'participants' => [],
-            'description' => 'Equal split expense',
+            'description' => 'Test',
             'date' => '2026-03-10',
-        ]);
+        ]));
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $bAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $bAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Proportional->value,
             'participants' => [],
-            'description' => 'Proportional expense',
+            'description' => 'Test',
             'date' => '2026-03-12',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -121,20 +119,20 @@ class PreviewSettlementActionTest extends TestCase
         // Arrange
         [$ledger, $userA, $userB, $aAccount, $bAccount, $externalAccount] = $this->seedTwoUserLedger();
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Manual->value,
             'participants' => [
                 ['user_id' => $userA->id, 'share' => 3],
                 ['user_id' => $userB->id, 'share' => 7],
             ],
-            'description' => 'Manual 30/70 split',
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -152,19 +150,19 @@ class PreviewSettlementActionTest extends TestCase
         // Arrange
         [$ledger, $userA, $userB, $aAccount, $bAccount, $externalAccount] = $this->seedTwoUserLedger();
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 5_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Individual->value,
             'participants' => [
                 ['user_id' => $userB->id],
             ],
-            'description' => 'Individual expense for B',
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -193,8 +191,14 @@ class PreviewSettlementActionTest extends TestCase
         $userB = User::factory()->create(['name' => 'Bob']);
         $userC = User::factory()->create(['name' => 'Carol']);
         $ledger->users()->attach($userA->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $userA->assignRole('Admin');
         $ledger->users()->attach($userB->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $userB->assignRole('Member');
         $ledger->users()->attach($userC->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $userC->assignRole('Member');
 
         $aAccount = $this->seedPersonalAccount($ledger, $userA);
         $bAccount = $this->seedPersonalAccount($ledger, $userB);
@@ -202,27 +206,27 @@ class PreviewSettlementActionTest extends TestCase
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::External->value,
+            'type' => AccountType::SpaceExpense->value,
         ]);
 
         $this->seedFinancialProfile($ledger, $userA, 200_000);
         $this->seedFinancialProfile($ledger, $userB, 100_000);
         $this->seedFinancialProfile($ledger, $userC, 300_000);
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 9_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Proportional->value,
             'participants' => [
                 ['user_id' => $userA->id],
                 ['user_id' => $userB->id],
             ],
-            'description' => 'Only A and B participate',
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -246,34 +250,34 @@ class PreviewSettlementActionTest extends TestCase
         $poolAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::Pool->value,
+            'type' => AccountType::PoolAsset->value,
         ]);
 
         // A pays from personal account
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 6_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
             'participants' => [],
-            'description' => 'Personal payment by A',
+            'description' => 'Test',
             'date' => '2026-03-10',
-        ]);
+        ]));
 
         // Pool pays (should NOT count as out-of-pocket for anyone)
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $poolAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $poolAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 4_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
             'participants' => [],
-            'description' => 'Pool payment',
+            'description' => 'Test',
             'date' => '2026-03-12',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -298,25 +302,30 @@ class PreviewSettlementActionTest extends TestCase
         [$ledger, $userA, $userB, $aAccount, $bAccount, $externalAccount] = $this->seedTwoUserLedger();
 
         // A pays everything, equal split → B owes A
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
             'participants' => [],
-            'description' => 'A pays for both',
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
 
+        $bLiabilityAccount = Account::query()->where('ledger_id', $ledger->id)
+            ->where('owner_id', $userB->id)
+            ->where('type', AccountType::UserLiability->value)
+            ->firstOrFail();
+
         // Assert — P2P transfer from B's account to A's account
         $this->assertCount(1, $result['required_transfers']);
         $transfer = $result['required_transfers'][0];
-        $this->assertSame($bAccount->id, $transfer['from_account_id']);
+        $this->assertSame($bLiabilityAccount->id, $transfer['from_account_id']);
         $this->assertSame($aAccount->id, $transfer['to_account_id']);
         $this->assertSame(5_000, $transfer['amount']);
     }
@@ -334,35 +343,39 @@ class PreviewSettlementActionTest extends TestCase
         $userA = User::factory()->create(['name' => 'Alice']);
         $userB = User::factory()->create(['name' => 'Bob']);
         $ledger->users()->attach($userA->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $userA->assignRole('Admin');
         $ledger->users()->attach($userB->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $userB->assignRole('Member');
 
         $aAccount = $this->seedPersonalAccount($ledger, $userA);
         $bAccount = $this->seedPersonalAccount($ledger, $userB);
         $poolAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::Pool->value,
+            'type' => AccountType::PoolAsset->value,
         ]);
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::External->value,
+            'type' => AccountType::SpaceExpense->value,
         ]);
 
         $this->seedFinancialProfile($ledger, $userA, 100_000);
         $this->seedFinancialProfile($ledger, $userB, 100_000);
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10_000,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
             'participants' => [],
-            'description' => 'A pays for both',
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
@@ -371,8 +384,13 @@ class PreviewSettlementActionTest extends TestCase
         $transfers = $result['required_transfers'];
         $this->assertCount(2, $transfers, 'Joint clearinghouse should have debtor→pool and pool→creditor transfers');
 
+        $bLiabilityAccount = Account::query()->where('ledger_id', $ledger->id)
+            ->where('owner_id', $userB->id)
+            ->where('type', AccountType::UserLiability->value)
+            ->firstOrFail();
+
         $debtorToPool = collect($transfers)->first(
-            fn (array $t) => $t['from_account_id'] === $bAccount->id && $t['to_account_id'] === $poolAccount->id,
+            fn (array $t) => $t['from_account_id'] === $bLiabilityAccount->id && $t['to_account_id'] === $poolAccount->id,
         );
         $poolToCreditor = collect($transfers)->first(
             fn (array $t) => $t['from_account_id'] === $poolAccount->id && $t['to_account_id'] === $aAccount->id,
@@ -390,25 +408,30 @@ class PreviewSettlementActionTest extends TestCase
         // Arrange — 10001 cents between 2 users → 5001 + 5000
         [$ledger, $userA, $userB, $aAccount, $bAccount, $externalAccount] = $this->seedTwoUserLedger();
 
-        Transaction::query()->create([
+        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $aAccount->id,
-            'debit_account_id' => $externalAccount->id,
+            'payer_account_id' => $aAccount->id,
+            'destination_account_id' => $externalAccount->id,
             'amount' => 10_001,
-            'type' => TransactionType::Manual->value,
+            'type' => 'manual',
             'split_rule' => TransactionSplitRule::Equal->value,
-            'participants' => [],
-            'description' => 'Odd cent expense',
+            'participants' => [
+                ['user_id' => $userA->id],
+                ['user_id' => $userB->id],
+            ],
+            'description' => 'Test',
             'date' => '2026-03-15',
-        ]);
+        ]));
 
         // Act
         $result = $this->runPreview($ledger, '2026-03-31');
 
-        // Assert — first participant gets the extra cent
+        // Assert — last participant gets the leftover cent (A first, B last)
         $breakdownA = $this->breakdownFor($result, $userA->id);
         $breakdownB = $this->breakdownFor($result, $userB->id);
 
+        $this->assertSame(5_000, $breakdownA['target_liability']);
+        $this->assertSame(5_001, $breakdownB['target_liability']);
         $this->assertSame(10_001, $breakdownA['target_liability'] + $breakdownB['target_liability']);
     }
 
@@ -460,14 +483,18 @@ class PreviewSettlementActionTest extends TestCase
         $userA = User::factory()->create(['name' => 'Alice']);
         $userB = User::factory()->create(['name' => 'Bob']);
         $ledger->users()->attach($userA->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $userA->assignRole('Admin');
         $ledger->users()->attach($userB->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $userB->assignRole('Member');
 
         $aAccount = $this->seedPersonalAccount($ledger, $userA);
         $bAccount = $this->seedPersonalAccount($ledger, $userB);
         $externalAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'owner_id' => null,
-            'type' => AccountType::External->value,
+            'type' => AccountType::SpaceExpense->value,
         ]);
 
         $this->seedFinancialProfile($ledger, $userA, $incomeA);

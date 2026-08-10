@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react';
+import { ChevronsUpDownIcon, LogOutIcon, BadgeCheckIcon } from 'lucide-react';
 
 import { logout as logoutApi } from '@/api/auth';
 import { useAuthStore } from '@/stores/authStore';
@@ -11,6 +11,7 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -75,6 +76,16 @@ export function NavUser() {
                                 </div>
                             </div>
                         </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem asChild>
+                                <Link to="/account" className="flex items-center w-full">
+                                    <BadgeCheckIcon />
+                                    Account Settings
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
                         <DropdownMenuGroup>
                             <DropdownMenuItem
                                 onClick={() => mutation.mutate()}

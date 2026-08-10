@@ -83,7 +83,7 @@ class ShowSettlementBreakdownCommand extends Command
     private function renderSourceTransactions(int $ledgerId, string $periodStart, string $periodEnd): void
     {
         $transactions = Transaction::query()
-            ->with(['creditAccount', 'debitAccount'])
+            ->with(['payerAccount'])
             ->where('ledger_id', $ledgerId)
             ->where('type', '!=', 'settlement')
             ->betweenDates($periodStart, $periodEnd)
@@ -108,15 +108,15 @@ class ShowSettlementBreakdownCommand extends Command
             $rows[] = [
                 Carbon::parse($tx->date)->format('Y-m-d'),
                 $tx->description ?? '-',
-                $tx->creditAccount->name ?? 'Account #' . $tx->credit_account_id,
-                $tx->debitAccount->name ?? 'Account #' . $tx->debit_account_id,
+                $tx->payerAccount->name ?? 'Account #' . $tx->payer_account_id,
+                'Multiple Accounts',
                 $this->formatCents((int) $tx->amount),
                 $splitRule,
             ];
         }
 
         $this->table(
-            ['Date', 'Description', 'Credit', 'Debit', 'Amount', 'Split rule'],
+            ['Date', 'Description', 'Payer Account', 'Postings', 'Amount', 'Split rule'],
             $rows,
         );
         $this->newLine();

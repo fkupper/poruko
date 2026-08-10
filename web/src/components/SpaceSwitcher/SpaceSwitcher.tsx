@@ -8,6 +8,7 @@ import {
     PlusIcon,
 } from 'lucide-react';
 
+import { useLedgerStore } from '@/stores/ledgerStore';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -56,20 +57,25 @@ export function SpaceSwitcher({
     onRetry?: () => void;
 }) {
     const { isMobile } = useSidebar();
+    const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const setActiveLedgerId = useLedgerStore((s) => s.setActiveLedgerId);
+
     const [activeSpace, setActiveSpace] = React.useState<SpaceSwitcherItem | undefined>(undefined);
 
     React.useEffect(() => {
         if (spaces.length === 0) {
             setActiveSpace(undefined);
+            setActiveLedgerId(null);
             return;
         }
-        setActiveSpace((prev) => {
-            if (prev && spaces.some((s) => s.id === prev.id)) {
-                return prev;
-            }
-            return spaces[0];
-        });
-    }, [spaces]);
+        const existing = spaces.find((s) => s.id === activeLedgerId);
+        if (existing) {
+            setActiveSpace(existing);
+        } else {
+            setActiveSpace(spaces[0]);
+            setActiveLedgerId(spaces[0].id);
+        }
+    }, [spaces, activeLedgerId, setActiveLedgerId]);
 
     if (isLoading) {
         return (
@@ -152,7 +158,10 @@ export function SpaceSwitcher({
                             return (
                                 <DropdownMenuItem
                                     key={space.id}
-                                    onClick={() => setActiveSpace(space)}
+                                    onClick={() => {
+                                        setActiveSpace(space);
+                                        setActiveLedgerId(space.id);
+                                    }}
                                     className="gap-2 p-2"
                                 >
                                     <div className="flex size-6 items-center justify-center rounded-md border">

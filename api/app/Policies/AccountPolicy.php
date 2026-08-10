@@ -25,11 +25,27 @@ class AccountPolicy
 
     public function update(User $user, Account $account): bool
     {
+        if ($user->can('accounts')) {
+            return true;
+        }
+
+        if ($account->owner_id === null || $account->owner_id !== $user->id) {
+            return false;
+        }
+
         return $this->view($user, $account);
     }
 
     public function delete(User $user, Account $account): bool
     {
+        if ($user->can('accounts')) {
+            return true;
+        }
+
+        if ($account->owner_id === null || $account->owner_id !== $user->id) {
+            return false;
+        }
+
         return $this->view($user, $account);
     }
 }

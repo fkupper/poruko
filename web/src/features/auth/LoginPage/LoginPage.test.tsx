@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,9 +11,12 @@ import { useAuthStore } from '@/stores/authStore';
 import LoginPage from './LoginPage';
 
 const loginMock = vi.fn();
+const challengeTwoFactorMock = vi.fn();
 
 vi.mock('@/api/auth', () => ({
     login: (payload: { email: string; password: string }) => loginMock(payload),
+    challengeTwoFactor: (payload: { code?: string; recovery_code?: string }) =>
+        challengeTwoFactorMock(payload),
 }));
 
 function createTestQueryClient() {
@@ -47,14 +50,17 @@ const successResponse: AuthResponse = {
 describe('LoginPage', () => {
     beforeEach(() => {
         loginMock.mockReset();
-        localStorage.removeItem('poruko-auth');
-        useAuthStore.setState({ user: null, token: null });
+        challengeTwoFactorMock.mockReset();
+        localStorage.clear();
+        useAuthStore.setState({ user: null, token: null, pendingTwoFactorToken: null, authStatus: 'anonymous' });
     });
 
     afterEach(() => {
+        cleanup();
         loginMock.mockReset();
-        localStorage.removeItem('poruko-auth');
-        useAuthStore.setState({ user: null, token: null });
+        challengeTwoFactorMock.mockReset();
+        localStorage.clear();
+        useAuthStore.setState({ user: null, token: null, pendingTwoFactorToken: null, authStatus: 'anonymous' });
     });
 
     it('renders sign-in copy and register link', () => {
@@ -168,5 +174,62 @@ describe('LoginPage', () => {
         await waitFor(() => {
             expect(screen.getByText('Logged-in home')).toBeInTheDocument();
         });
+    });
+
+    it('keeps user on login and stores pending 2FA token when two_factor is required', async () => {
+        const user = userEvent.setup();
+        loginMock.mockResolvedValueOnce({
+            user: successResponse.user,
+            token: 'issue-2fa-token',
+            two_factor: true,
+        });
+
+        renderLoginPage();
+
+        await user.type(screen.getByLabelText(/^email$/i), 'hello@example.com');
+        await user.type(screen.getByLabelText(/^password$/i), 'password123');
+        await user.click(screen.getByRole('button', { name: /sign in$/i }));
+
+        expect(await screen.findByText('Two-Factor Authentication')).toBeInTheDocument();
+        expect(screen.queryByText('Logged-in home')).not.toBeInTheDocument();
+        expect(useAuthStore.getState().token).toBeNull();
+        expect(useAuthStore.getState().pendingTwoFactorToken).toBe('issue-2fa-token');
+        expect(useAuthStore.getState().user).toBeNull();
+    });
+
+    it('calls setAuth with full token after a successful 2FA challenge', async () => {
+        const user = userEvent.setup();
+        loginMock.mockResolvedValueOnce({
+            user: successResponse.user,
+            token: 'issue-2fa-token',
+            two_factor: true,
+        });
+        challengeTwoFactorMock.mockResolvedValueOnce({
+            user: successResponse.user,
+            token: 'full-session-token',
+        });
+
+        renderLoginPage();
+
+        await user.type(screen.getByLabelText(/^email$/i), 'hello@example.com');
+        await user.type(screen.getByLabelText(/^password$/i), 'password123');
+        await user.click(screen.getByRole('button', { name: /sign in$/i }));
+
+        expect(await screen.findByText('Two-Factor Authentication')).toBeInTheDocument();
+
+        await user.type(screen.getByLabelText(/authentication code/i), '123456');
+        await user.click(screen.getByRole('button', { name: /^verify$/i }));
+
+        await waitFor(() => {
+            expect(challengeTwoFactorMock).toHaveBeenCalledWith({ code: '123456' });
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText('Logged-in home')).toBeInTheDocument();
+        });
+
+        expect(useAuthStore.getState().token).toBe('full-session-token');
+        expect(useAuthStore.getState().user).toEqual(successResponse.user);
+        expect(useAuthStore.getState().pendingTwoFactorToken).toBeNull();
     });
 });

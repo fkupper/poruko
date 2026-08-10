@@ -9,6 +9,7 @@ use App\Models\Ledger;
 use App\Models\Posting;
 use App\Models\Settlement;
 use App\Models\Transaction;
+use App\Modules\Ledger\Exceptions\CannotSettlePeriodWithEarlierOpenPeriodsException;
 use App\Modules\Ledger\Services\SettlementCycleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,32 @@ readonly class ExecuteSettlementAction
     public function execute(Ledger $ledger, string $periodEnd): Settlement
     {
         $period = $this->settlementCycleService->resolvePeriodForPeriodEnd($ledger, $periodEnd);
+
+        $existingExecuted = Settlement::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('period_start', $period['period_start'])
+            ->where('period_end', $period['period_end'])
+            ->whereNotNull('executed_at')
+            ->first();
+
+        if ($existingExecuted !== null) {
+            return $existingExecuted;
+        }
+
+        $hasUnsettled = Transaction::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', '!=', TransactionType::Settlement->value)
+            ->whereNull('settlement_id')
+            ->exists();
+
+        if ($hasUnsettled) {
+            $nextPending = $this->settlementCycleService->resolveNextPendingPeriod($ledger);
+
+            if ($nextPending['period_end'] !== $period['period_end']) {
+                throw new CannotSettlePeriodWithEarlierOpenPeriodsException();
+            }
+        }
+
         $preview = $this->previewSettlementAction->executeForPeriodEnd($ledger, $periodEnd);
         $transferInstructions = $preview['required_transfers'];
 
@@ -55,8 +82,7 @@ readonly class ExecuteSettlementAction
                 $transaction = Transaction::query()->create([
                     'ledger_id' => $ledger->id,
                     'settlement_id' => $settlement->id,
-                    'credit_account_id' => $fromAccountId,
-                    'debit_account_id' => $toAccountId,
+                    'payer_account_id' => $fromAccountId,
                     'amount' => $amount,
                     'type' => TransactionType::Settlement->value,
                     'split_rule' => TransactionSplitRule::Individual->value,
@@ -84,6 +110,14 @@ readonly class ExecuteSettlementAction
                     ],
                 ]);
             }
+
+            Transaction::query()
+                ->where('ledger_id', $ledger->id)
+                ->where('type', '!=', TransactionType::Settlement->value)
+                ->whereNull('settlement_id')
+                ->where('date', '>=', $period['period_start'])
+                ->where('date', '<=', $period['period_end'])
+                ->update(['settlement_id' => $settlement->id]);
 
             $settlement->update([
                 'executed_at' => CarbonImmutable::now(),

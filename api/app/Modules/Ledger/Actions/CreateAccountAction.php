@@ -4,14 +4,12 @@ namespace App\Modules\Ledger\Actions;
 
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Modules\Ledger\Data\CreateAccountData;
 
 final readonly class CreateAccountAction
 {
-    /**
-     * @param array<string, mixed> $data
-     */
-    public function execute(Ledger $ledger, array $data): Account
+    public function execute(Ledger $ledger, CreateAccountData $data): Account
     {
-        return $ledger->accounts()->create($data);
+        return $ledger->accounts()->create($data->toArray());
     }
 }

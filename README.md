@@ -10,7 +10,7 @@
 npm run up
 ```
 
-The first run may take a while while the `web` service installs frontend dependencies inside the container.
+The first run may take a while while PHP dependencies are installed into the `poruko-api-vendor` Docker volume and the `web` service installs frontend dependencies inside the container.
 
 **URLs**
 

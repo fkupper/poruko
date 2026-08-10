@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use App\Models\Account;
 use App\Models\Ledger;
+use App\Models\LedgerUser;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,17 +29,19 @@ class LedgerTransactionApiTest extends TestCase
         $ledger = Ledger::factory()->create();
         $otherLedger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
         $otherLedger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($otherLedger->id);
+        $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
         $otherCredit = Account::factory()->create(['ledger_id' => $otherLedger->id]);
         $otherDebit = Account::factory()->create(['ledger_id' => $otherLedger->id]);
 
         $inLedger = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 1000,
             'split_rule' => 'equal',
             'participants' => [],
@@ -47,15 +50,14 @@ class LedgerTransactionApiTest extends TestCase
 
         Transaction::factory()->create([
             'ledger_id' => $otherLedger->id,
-            'credit_account_id' => $otherCredit->id,
-            'debit_account_id' => $otherDebit->id,
+            'payer_account_id' => $otherCredit->id,
             'amount' => 2000,
             'split_rule' => 'equal',
             'participants' => [],
             'date' => '2026-03-10',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledger->id}/transactions")
@@ -65,7 +67,10 @@ class LedgerTransactionApiTest extends TestCase
 
         $this->getJson("/api/ledgers/{$ledger->id}/transactions/{$inLedger->id}")
             ->assertOk()
-            ->assertJsonPath('data.id', $inLedger->id);
+            ->assertJsonPath('data.id', $inLedger->id)
+            ->assertJsonPath('data.payer_account_name', $credit->name)
+            ->assertJsonPath('data.destination_account_name', $inLedger->fresh()->destinationAccount?->name)
+            ->assertJsonStructure(['data' => ['postings']]);
     }
 
     public function testMemberCanCreateManualTransactionAndPostings(): void
@@ -74,16 +79,18 @@ class LedgerTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
-        $creditAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
-        $debitAccount = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'type' => \App\Enums\AccountType::SpaceExpense->value]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act
         $response = $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
-            'credit_account_id' => $creditAccount->id,
-            'debit_account_id' => $debitAccount->id,
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 1000,
             'description' => 'Pizza',
             'date' => '2026-03-10',
@@ -98,7 +105,7 @@ class LedgerTransactionApiTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.amount', 1000)
             ->assertJsonPath('data.split_rule', 'equal')
-            ->assertJsonCount(2, 'data.postings');
+            ->assertJsonCount(4, 'data.postings');
     }
 
     public function testNonMemberCannotCreateTransactionForForeignLedger(): void
@@ -108,14 +115,12 @@ class LedgerTransactionApiTest extends TestCase
         $ledger = Ledger::factory()->create();
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'amount' => 1000,
             'description' => 'Pizza',
             'date' => '2026-03-10',
@@ -131,14 +136,12 @@ class LedgerTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
         $transaction = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledger->id}/transactions")->assertForbidden();
@@ -151,11 +154,9 @@ class LedgerTransactionApiTest extends TestCase
         // Arrange
         $ledger = Ledger::factory()->create();
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
         $transaction = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
             'participants' => [],
         ]);
 
@@ -168,8 +169,7 @@ class LedgerTransactionApiTest extends TestCase
         $response = match (mb_strtoupper($method)) {
             'GET' => $this->getJson($uri),
             'POST' => $this->postJson($uri, array_merge([
-                'credit_account_id' => $credit->id,
-                'debit_account_id' => $debit->id,
+                'payer_account_id' => $credit->id,
                 'amount' => 1000,
                 'description' => 'Dinner',
                 'date' => '2026-03-10',
@@ -198,16 +198,19 @@ class LedgerTransactionApiTest extends TestCase
         $ledgerA = Ledger::factory()->create();
         $ledgerB = Ledger::factory()->create();
         $ledgerA->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledgerA->id);
+        $user->assignRole('Admin');
         $ledgerB->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledgerB->id);
+        $user->assignRole('Admin');
         $credit = Account::factory()->create(['ledger_id' => $ledgerB->id]);
         $debit = Account::factory()->create(['ledger_id' => $ledgerB->id]);
         $transactionInLedgerB = Transaction::factory()->create([
             'ledger_id' => $ledgerB->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledgerA->id}/transactions/{$transactionInLedgerB->id}")
@@ -220,14 +223,14 @@ class LedgerTransactionApiTest extends TestCase
         $user = User::factory()->create();
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
         $creditA = Account::factory()->create(['ledger_id' => $ledger->id]);
         $creditB = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
 
         $match = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditA->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $creditA->id,
             'amount' => 1000,
             'split_rule' => 'equal',
             'participants' => [],
@@ -235,15 +238,14 @@ class LedgerTransactionApiTest extends TestCase
         ]);
         Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditB->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $creditB->id,
             'amount' => 2000,
             'split_rule' => 'equal',
             'participants' => [],
             'date' => '2026-03-09',
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         // Act & Assert
         $this->getJson("/api/ledgers/{$ledger->id}/transactions?from_date=2026-03-10&to_date=2026-03-10&account_id={$creditA->id}")
@@ -265,20 +267,38 @@ class LedgerTransactionApiTest extends TestCase
         $users = [$user, $user2];
         $ledger = Ledger::factory()->create();
         $ledger->users()->attach($user->id, ['role' => 'admin']);
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+        $credit = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::UserFunding->value,
+            'owner_id' => $user->id,
+        ]);
+        $spaceExpenseAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', \App\Enums\AccountType::SpaceExpense->value)
+            ->firstOrFail();
+        $poolAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::PoolAsset->value,
+            'owner_id' => null,
+        ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['*']);
 
         $fullPayload = array_merge([
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 1000,
             'description' => 'Invalid',
             'date' => '2026-03-10',
             'split_rule' => 'equal',
             'participants' => [],
         ], $payload);
+
+        if (($fullPayload['destination_account_id'] ?? null) === '__pool__') {
+            $fullPayload['destination_account_id'] = $poolAccount->id;
+        }
 
         if ($participantUserIndices !== null && isset($fullPayload['participants'])) {
             foreach ($fullPayload['participants'] as $i => $participant) {
@@ -290,16 +310,55 @@ class LedgerTransactionApiTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function testStoreRejectsZeroAmountWithFriendlyMessage(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $credit = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::UserFunding->value,
+            'owner_id' => $user->id,
+        ]);
+        $spaceExpenseAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', \App\Enums\AccountType::SpaceExpense->value)
+            ->firstOrFail();
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act
+        $response = $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 0,
+            'description' => 'Invalid',
+            'date' => '2026-03-10',
+            'split_rule' => 'equal',
+            'participants' => [],
+        ]);
+
+        // Assert
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['amount'])
+            ->assertJsonPath('errors.amount.0', 'The amount must be greater than zero.');
+    }
+
     public static function storeValidationDataProvider(): array
     {
         return [
             'zero amount' => [['amount' => 0], null],
-            'missing debit_account_id' => [
-                ['debit_account_id' => null],
+
+            'missing payer_account_id' => [
+                ['payer_account_id' => null],
                 null,
             ],
-            'missing credit_account_id' => [
-                ['credit_account_id' => null],
+            'destination not space expense' => [
+                ['destination_account_id' => '__pool__'],
                 null,
             ],
             'manual split without share' => [
@@ -320,6 +379,13 @@ class LedgerTransactionApiTest extends TestCase
                 ],
                 [0],
             ],
+            'manual split with empty participants' => [
+                [
+                    'split_rule' => 'manual',
+                    'participants' => [],
+                ],
+                null,
+            ],
             'individual split with zero participants' => [
                 [
                     'split_rule' => 'individual',
@@ -338,5 +404,201 @@ class LedgerTransactionApiTest extends TestCase
                 [0, 1],
             ],
         ];
+    }
+
+    public function testCannotUseSoftDeletedMemberAsParticipantOnStore(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $admin->id]);
+        $spaceExpenseAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense->value,
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->postJson("/api/ledgers/{$ledger->id}/transactions", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 1000,
+            'description' => 'Pizza',
+            'date' => '2026-03-10',
+            'type' => 'manual',
+            'split_rule' => 'equal',
+            'participants' => [
+                ['user_id' => $removedMember->id],
+            ],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['participants.0.user_id']);
+    }
+
+    public function testCannotUseSoftDeletedMemberAsParticipantOnUpdate(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $removedMember = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($admin->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $admin->assignRole('Admin');
+        $ledger->users()->attach($removedMember->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $removedMember->assignRole('Member');
+
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $removedMember->id)
+            ->firstOrFail()
+            ->delete();
+
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $admin->id]);
+        $spaceExpenseAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense->value,
+        ]);
+
+        $transaction = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 1000,
+            'description' => 'Original',
+            'date' => '2026-03-10',
+            'split_rule' => 'equal',
+            'participants' => [],
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        // Act & Assert
+        $this->patchJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 2000,
+            'description' => 'Updated Pizza',
+            'date' => '2026-03-11',
+            'split_rule' => 'equal',
+            'participants' => [['user_id' => $removedMember->id]],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['participants.0.user_id']);
+    }
+
+    public function testMemberCanUpdateTransaction(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'type' => \App\Enums\AccountType::SpaceExpense->value]);
+
+        $transaction = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 1000,
+            'description' => 'Original',
+            'date' => '2026-03-10',
+            'split_rule' => 'equal',
+            'participants' => [],
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act
+        $response = $this->patchJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 2000,
+            'description' => 'Updated Pizza',
+            'date' => '2026-03-11',
+            'split_rule' => 'equal',
+            'participants' => [['user_id' => $user->id]],
+        ]);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.amount', 2000)
+            ->assertJsonPath('data.description', 'Updated Pizza');
+    }
+
+    public function testMemberCanDeleteTransaction(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $transaction = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'amount' => 1000,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act & Assert
+        $this->deleteJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
+    }
+
+    public function testCannotUpdateOrDeleteSettledTransaction(): void
+    {
+        // Arrange
+        $user = User::factory()->create();
+        $ledger = Ledger::factory()->create();
+        $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
+
+        $payerAccount = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::factory()->create(['ledger_id' => $ledger->id, 'type' => \App\Enums\AccountType::SpaceExpense->value]);
+        $settlement = \App\Models\Settlement::factory()->create(['ledger_id' => $ledger->id]);
+
+        $transaction = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'settlement_id' => $settlement->id,
+            'amount' => 1000,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act & Assert (Update)
+        $this->patchJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
+            'amount' => 2000,
+            'date' => '2026-03-10',
+            'split_rule' => 'equal',
+        ])->assertStatus(422);
+
+        // Act & Assert (Delete)
+        $this->deleteJson("/api/ledgers/{$ledger->id}/transactions/{$transaction->id}")
+            ->assertStatus(422);
     }
 }

@@ -1,10 +1,8 @@
-import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { afterEach } from 'vitest';
 
-afterEach(() => {
-    cleanup();
-});
+// RTL auto-cleans after each test under Vitest.
+// Do not register afterEach/beforeEach in setupFiles — Vitest 4 can throw
+// "failed to find the current suite" when suite hooks run outside a test context.
 
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -18,4 +16,15 @@ Object.defineProperty(window, 'matchMedia', {
         removeEventListener: () => {},
         dispatchEvent: () => false,
     }),
+});
+
+class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+}
+
+Object.defineProperty(window, 'ResizeObserver', {
+    writable: true,
+    value: ResizeObserverStub,
 });

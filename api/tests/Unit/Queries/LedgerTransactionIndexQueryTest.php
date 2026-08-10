@@ -25,14 +25,12 @@ class LedgerTransactionIndexQueryTest extends TestCase
         $otherLedger = Ledger::factory()->create();
         $creditA = Account::factory()->create(['ledger_id' => $ledger->id]);
         $creditB = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
         $otherCredit = Account::factory()->create(['ledger_id' => $otherLedger->id]);
         $otherDebit = Account::factory()->create(['ledger_id' => $otherLedger->id]);
 
         $expected = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditA->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $creditA->id,
             'split_rule' => 'equal',
             'amount' => 1000,
             'participants' => [],
@@ -41,8 +39,7 @@ class LedgerTransactionIndexQueryTest extends TestCase
 
         Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditB->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $creditB->id,
             'split_rule' => 'equal',
             'amount' => 1000,
             'participants' => [],
@@ -51,8 +48,7 @@ class LedgerTransactionIndexQueryTest extends TestCase
 
         Transaction::factory()->create([
             'ledger_id' => $otherLedger->id,
-            'credit_account_id' => $otherCredit->id,
-            'debit_account_id' => $otherDebit->id,
+            'payer_account_id' => $otherCredit->id,
             'split_rule' => 'equal',
             'amount' => 1000,
             'participants' => [],
@@ -83,18 +79,22 @@ class LedgerTransactionIndexQueryTest extends TestCase
 
         $expected = Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditA->id,
-            'debit_account_id' => $sharedDebit->id,
+            'payer_account_id' => $creditA->id,
             'split_rule' => 'equal',
             'amount' => 1000,
             'participants' => [],
             'date' => '2026-03-10',
         ]);
 
+        $expected->postings()->create([
+            'account_id' => $sharedDebit->id,
+            'amount' => 1000,
+            'direction' => 'debit',
+        ]);
+
         Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $creditB->id,
-            'debit_account_id' => $otherDebit->id,
+            'payer_account_id' => $creditB->id,
             'split_rule' => 'equal',
             'amount' => 2000,
             'participants' => [],
@@ -112,5 +112,56 @@ class LedgerTransactionIndexQueryTest extends TestCase
         // Assert
         $this->assertCount(1, $result);
         $this->assertSame($expected->id, $result->first()?->id);
+    }
+
+    public function testItFiltersTransactionsByCreatorUserIdsSplitRulesTypesAndSettlementId(): void
+    {
+        // Arrange
+        $userA = \App\Models\User::factory()->create();
+        $userB = \App\Models\User::factory()->create();
+        $ledger = Ledger::factory()->create();
+
+        $accountA = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userA->id]);
+        $accountB = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $userB->id]);
+
+        $settlement = \App\Models\Settlement::factory()->create(['ledger_id' => $ledger->id]);
+
+        $tx1 = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $accountA->id,
+            'split_rule' => 'proportional',
+            'type' => 'manual',
+            'settlement_id' => $settlement->id,
+        ]);
+
+        $tx2 = Transaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $accountB->id,
+            'split_rule' => 'equal',
+            'type' => 'recurring',
+            'settlement_id' => null,
+        ]);
+
+        $query = app(LedgerTransactionIndexQuery::class);
+
+        // Filter by creatorUserIds
+        $resCreator = $query->execute($ledger, new TransactionIndexFiltersData(creatorUserIds: [$userA->id]));
+        $this->assertCount(1, $resCreator);
+        $this->assertSame($tx1->id, $resCreator->first()?->id);
+
+        // Filter by splitRules
+        $resSplit = $query->execute($ledger, new TransactionIndexFiltersData(splitRules: ['equal']));
+        $this->assertCount(1, $resSplit);
+        $this->assertSame($tx2->id, $resSplit->first()?->id);
+
+        // Filter by types
+        $resType = $query->execute($ledger, new TransactionIndexFiltersData(types: ['manual']));
+        $this->assertCount(1, $resType);
+        $this->assertSame($tx1->id, $resType->first()?->id);
+
+        // Filter by settlementId
+        $resSettlement = $query->execute($ledger, new TransactionIndexFiltersData(settlementId: $settlement->id));
+        $this->assertCount(1, $resSettlement);
+        $this->assertSame($tx1->id, $resSettlement->first()?->id);
     }
 }

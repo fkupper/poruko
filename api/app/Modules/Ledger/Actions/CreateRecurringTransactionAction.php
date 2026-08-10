@@ -5,6 +5,7 @@ namespace App\Modules\Ledger\Actions;
 use App\Models\Ledger;
 use App\Models\RecurringTransaction;
 use App\Modules\Ledger\Data\CreateRecurringTransactionData;
+use Illuminate\Support\Str;
 
 final readonly class CreateRecurringTransactionAction
 {
@@ -12,8 +13,9 @@ final readonly class CreateRecurringTransactionAction
     {
         return RecurringTransaction::query()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $data->creditAccountId,
-            'debit_account_id' => $data->debitAccountId,
+            'series_id' => (string) Str::uuid(),
+            'payer_account_id' => $data->payerAccountId,
+            'destination_account_id' => $data->destinationAccountId,
             'amount' => $data->amount,
             'description' => $data->description,
             'split_rule' => $data->splitRule,

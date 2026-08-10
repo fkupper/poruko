@@ -20,6 +20,7 @@
     "test:api": "bash scripts/dev.sh test-api",
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
+    "scribe": "bash scripts/dev.sh artisan scribe:generate",
     "phpstan": "bash scripts/dev.sh phpstan",
     "php-cs-fixer:fix": "bash scripts/dev.sh php-cs-fixer-fix",
     "php-cs-fixer:dry": "bash scripts/dev.sh php-cs-fixer-dry"

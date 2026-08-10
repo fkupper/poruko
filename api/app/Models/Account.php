@@ -7,16 +7,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
+ * @property int $ledger_id
+ * @property int|null $owner_id
  * @property AccountType $type
+ * @property string $name
+ * @property string|null $code
  * @property int $base_budget
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 class Account extends Model
 {
     /** @use HasFactory<\Database\Factories\AccountFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     /** @var list<string> */
     protected $fillable = [
@@ -55,17 +65,5 @@ class Account extends Model
     public function postings(): HasMany
     {
         return $this->hasMany(Posting::class);
-    }
-
-    /** @return HasMany<Transaction, $this> */
-    public function creditTransactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class, 'credit_account_id');
-    }
-
-    /** @return HasMany<Transaction, $this> */
-    public function debitTransactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class, 'debit_account_id');
     }
 }

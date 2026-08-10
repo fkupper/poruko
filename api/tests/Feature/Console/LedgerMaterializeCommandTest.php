@@ -26,13 +26,15 @@ class LedgerMaterializeCommandTest extends TestCase
         $ledger = Ledger::factory()->create([
             'settlement_timezone' => 'UTC',
         ]);
-        $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $user = \App\Models\User::factory()->create();
+        \App\Models\LedgerUser::query()->create(['ledger_id' => $ledger->id, 'user_id' => $user->id, 'role' => 'admin']);
+        $credit = Account::factory()->create(['ledger_id' => $ledger->id, 'owner_id' => $user->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 100000,
             'frequency' => 'monthly',
             'valid_from' => '2026-01-01',
@@ -57,12 +59,12 @@ class LedgerMaterializeCommandTest extends TestCase
 
         $ledger = Ledger::factory()->create(['settlement_timezone' => 'UTC']);
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         $blueprint = RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 100000,
             'frequency' => 'monthly',
             'valid_from' => '2026-01-01',
@@ -71,8 +73,8 @@ class LedgerMaterializeCommandTest extends TestCase
 
         Transaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'source_recurring_transaction_id' => $blueprint->id,
             'amount' => 100000,
             'type' => 'recurring',
@@ -92,12 +94,12 @@ class LedgerMaterializeCommandTest extends TestCase
 
         $ledger = Ledger::factory()->create(['settlement_timezone' => 'UTC']);
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
-        $debit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $spaceExpenseAccount = Account::query()->where('ledger_id', $ledger->id)->where('type', \App\Enums\AccountType::SpaceExpense->value)->firstOrFail();
 
         RecurringTransaction::factory()->create([
             'ledger_id' => $ledger->id,
-            'credit_account_id' => $credit->id,
-            'debit_account_id' => $debit->id,
+            'payer_account_id' => $credit->id,
+            'destination_account_id' => $spaceExpenseAccount->id,
             'amount' => 100000,
             'frequency' => 'monthly',
             'valid_from' => '2026-01-01',

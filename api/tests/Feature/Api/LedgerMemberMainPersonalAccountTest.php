@@ -22,6 +22,8 @@ class LedgerMemberMainPersonalAccountTest extends TestCase
         $ledger = Ledger::factory()->create();
 
         $ledger->users()->attach($user->id, ['role' => 'admin']);
+        setPermissionsTeamId($ledger->id);
+        $user->assignRole('Admin');
 
         $mainId = DB::table('ledger_user')
             ->where('ledger_id', $ledger->id)
@@ -32,9 +34,9 @@ class LedgerMemberMainPersonalAccountTest extends TestCase
 
         $account = Account::query()->findOrFail($mainId);
 
-        $this->assertSame(AccountType::Personal, $account->type);
+        $this->assertSame(AccountType::UserFunding, $account->type);
         $this->assertSame($user->id, $account->owner_id);
-        $this->assertSame("Alex's Personal Account", $account->name);
+        $this->assertSame("Alex's Funding Account", $account->name);
         $this->assertSame($ledger->id, $account->ledger_id);
     }
 }

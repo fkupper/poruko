@@ -35,15 +35,20 @@ class UpdateAccountRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'base_budget' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'balance' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'type' => ['sometimes', 'required', new Enum(AccountType::class)],
             'owner_id' => [
                 'sometimes',
                 'nullable',
                 'integer',
                 'exists:users,id',
-                Rule::exists('ledger_user', 'user_id')->where('ledger_id', $ledgerId),
+                Rule::exists('ledger_user', 'user_id')
+                    ->where('ledger_id', $ledgerId)
+                    ->whereNull('deleted_at'),
             ],
             'code' => $codeRules,
+            'current_funds' => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
     }
 
