@@ -58,13 +58,6 @@ export default function SettingsPage() {
         enabled: !!activeLedgerId,
     });
 
-    // If no ledger is selected, default to the first one
-    React.useEffect(() => {
-        if (ledgers.length && activeLedgerId === null) {
-            useLedgerStore.getState().setActiveLedgerId(ledgers[0].id);
-        }
-    }, [ledgers, activeLedgerId]);
-    
     const activeLedger = ledgers.find(l => l.id === activeLedgerId) ?? ledgers[0];
 
     const { data: currenciesData } = useQuery({

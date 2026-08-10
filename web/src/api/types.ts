@@ -103,6 +103,7 @@ export interface FinancialProfile {
 
 export interface RecurringBlueprint {
     id: number;
+    series_id: string;
     payer_account_id: number;
     destination_account_id: number;
     amount: number;

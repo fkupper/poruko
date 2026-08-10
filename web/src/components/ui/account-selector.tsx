@@ -1,8 +1,8 @@
 import * as React from 'react';
 import type { Account } from '@/api/types';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 
 interface AccountSelectorProps {
     accounts: Account[] | undefined;
@@ -13,13 +13,15 @@ interface AccountSelectorProps {
 }
 
 export function AccountSelector({ accounts, value, onChange, label, usage }: AccountSelectorProps) {
+    const currencySymbol = useLedgerCurrencySymbol();
+
     const filteredAccounts = React.useMemo(() => {
         if (!accounts) return [];
         if (usage === 'payer') {
-            return accounts.filter(a => a.type !== 'space_expense');
+            return accounts.filter((a) => a.type !== 'space_expense');
         }
         if (usage === 'destination') {
-            return accounts.filter(a => a.type === 'space_expense');
+            return accounts.filter((a) => a.type === 'space_expense');
         }
         return accounts;
     }, [accounts, usage]);
@@ -44,19 +46,16 @@ export function AccountSelector({ accounts, value, onChange, label, usage }: Acc
                     <SelectContent>
                         {filteredAccounts.map((acc) => (
                             <SelectItem key={acc.id} value={String(acc.id)}>
-                                {acc.name} {usage === 'payer' ? `(${centsToCurrency(acc.balance)})` : ''}
+                                {acc.name}{' '}
+                                {usage === 'payer' ? `(${centsToCurrency(acc.balance, currencySymbol)})` : ''}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
             ) : (
-                <Input
-                    type="number"
-                    placeholder={`${usage === 'payer' ? 'Payer' : 'Destination'} Account ID`}
-                    value={value ?? ''}
-                    onChange={(e) => onChange(Number(e.target.value))}
-                    className="h-10 w-full"
-                />
+                <p className="text-xs text-muted-foreground rounded-lg border border-dashed border-border px-3 py-2.5">
+                    No accounts available
+                </p>
             )}
         </div>
     );

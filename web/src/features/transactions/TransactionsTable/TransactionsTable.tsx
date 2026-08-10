@@ -6,6 +6,7 @@ import { fetchLedgerMembers } from '@/api/members';
 import { fetchSettlementPeriods } from '@/api/settlements';
 import type { Transaction } from '@/api/types';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +44,7 @@ export function TransactionsTable({
     onEditTransaction,
 }: TransactionsTableProps) {
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
     const queryClient = useQueryClient();
 
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -65,7 +67,7 @@ export function TransactionsTable({
     });
 
     const { data: members = [] } = useQuery({
-        queryKey: ['ledger-members', activeLedgerId],
+        queryKey: ['members', activeLedgerId],
         queryFn: () => fetchLedgerMembers(activeLedgerId!),
         enabled: !!activeLedgerId && showFilters,
     });
@@ -112,6 +114,7 @@ export function TransactionsTable({
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
             queryClient.invalidateQueries({ queryKey: ['settlement-preview', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
         },
     });
 
@@ -327,7 +330,7 @@ export function TransactionsTable({
                                         {tx.type}
                                     </TableCell>
                                     <TableCell className="text-right font-mono font-semibold text-foreground">
-                                        {centsToCurrency(tx.amount)}
+                                        {centsToCurrency(tx.amount, currencySymbol)}
                                     </TableCell>
                                     <TableCell>
                                         <DropdownMenu>

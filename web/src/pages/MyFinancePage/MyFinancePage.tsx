@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchFinancialProfile, updateFinancialProfile } from '@/api/finances';
 import type { IncomeOrDeductionItem } from '@/api/types';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -14,6 +15,7 @@ import { PlusIcon, Trash2Icon, UserIcon, SaveIcon, Loader2Icon, CheckCircle2Icon
 export default function MyFinancePage() {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
     const currentUser = useAuthStore((s) => s.user);
 
     const [incomes, setIncomes] = React.useState<IncomeOrDeductionItem[]>([]);
@@ -142,7 +144,7 @@ export default function MyFinancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                            {centsToCurrency(totalIncome)}
+                            {centsToCurrency(totalIncome, currencySymbol)}
                         </div>
                     </CardContent>
                 </Card>
@@ -155,7 +157,7 @@ export default function MyFinancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono text-orange-600 dark:text-orange-400">
-                            {centsToCurrency(totalDeductions)}
+                            {centsToCurrency(totalDeductions, currencySymbol)}
                         </div>
                     </CardContent>
                 </Card>
@@ -168,7 +170,7 @@ export default function MyFinancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono text-foreground">
-                            {centsToCurrency(shareableIncome)}
+                            {centsToCurrency(shareableIncome, currencySymbol)}
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-1">
                             Used for proportional expense splits
@@ -203,6 +205,7 @@ export default function MyFinancePage() {
                                     <CurrencyInput
                                         value={item.amount}
                                         onCentsChange={(cents) => updateIncome(idx, 'amount', cents || 0)}
+                                        currencySymbol={currencySymbol}
                                     />
                                 </div>
                                 <Button
@@ -245,6 +248,7 @@ export default function MyFinancePage() {
                                     <CurrencyInput
                                         value={item.amount}
                                         onCentsChange={(cents) => updateDeduction(idx, 'amount', cents || 0)}
+                                        currencySymbol={currencySymbol}
                                     />
                                 </div>
                                 <Button

@@ -15,13 +15,39 @@ export function centsToCurrency(cents: number | null | undefined, currencySymbol
 }
 
 /**
+ * Normalizes a currency amount string so the decimal separator is `.`.
+ * - If both `,` and `.` are present, the last separator is the decimal.
+ * - If only `,` is present, it is treated as the decimal separator.
+ * - Currency symbols and other non-numeric characters are stripped.
+ */
+function normalizeAmountString(amountString: string): string {
+    // Strip currency symbols / letters / whitespace; keep digits, separators, and sign
+    const cleaned = amountString.replace(/[^0-9.,-]/g, '');
+
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastDot = cleaned.lastIndexOf('.');
+
+    if (lastComma === -1 && lastDot === -1) {
+        return cleaned;
+    }
+
+    const decimalIndex = Math.max(lastComma, lastDot);
+    const integerPart = cleaned.slice(0, decimalIndex).replace(/[.,]/g, '');
+    const fractionalPart = cleaned.slice(decimalIndex + 1).replace(/[.,]/g, '');
+    const sign = integerPart.startsWith('-') ? '-' : '';
+    const digits = integerPart.replace(/^-/, '');
+
+    return `${sign}${digits}.${fractionalPart}`;
+}
+
+/**
  * Parses user currency input string into integer cents.
- * E.g., "60.00" -> 6000, "60" -> 6000, "670.50" -> 67050
+ * Accepts US ("60.50", "1,234.56") and European ("60,50", "1.234,56") formats.
+ * E.g., "60.00" -> 6000, "60" -> 6000, "60,50" -> 6050, "1.234,56" -> 123456
  */
 export function currencyToCents(amountString: string): number {
     if (!amountString) return 0;
-    // Remove currency symbols and whitespace, allow standard numbers and optional decimal
-    const sanitized = amountString.replace(/[^0-9.-]/g, '');
+    const sanitized = normalizeAmountString(amountString);
     const floatVal = parseFloat(sanitized);
     if (isNaN(floatVal)) return 0;
     return Math.round(floatVal * 100);

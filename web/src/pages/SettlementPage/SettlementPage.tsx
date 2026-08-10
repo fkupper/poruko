@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { fetchSettlementPreview, fetchSettlementPeriods, executeSettlement } from '@/api/settlements';
 import { centsToCurrency, formatPercent } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { TransactionsTable } from '@/features/transactions/TransactionsTable/TransactionsTable';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import {
 export default function SettlementPage() {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const selectedDate = searchParams.get('date') || undefined;
@@ -64,6 +66,7 @@ export default function SettlementPage() {
             queryClient.invalidateQueries({ queryKey: ['settlement-preview', activeLedgerId] });
             queryClient.invalidateQueries({ queryKey: ['settlement-periods', activeLedgerId] });
             queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
             setIsConfirmOpen(false);
             setConfirmText('');
         },
@@ -180,13 +183,13 @@ export default function SettlementPage() {
                             <span>
                                 Total Spend:{' '}
                                 <strong className="text-foreground">
-                                    {centsToCurrency(settlement.summary.total_shared_spend)}
+                                    {centsToCurrency(settlement.summary.total_shared_spend, currencySymbol)}
                                 </strong>
                             </span>
                             <span>
                                 Pool Balance:{' '}
                                 <strong className="text-foreground">
-                                    {centsToCurrency(settlement.summary.pool_current_balance)}
+                                    {centsToCurrency(settlement.summary.pool_current_balance, currencySymbol)}
                                 </strong>
                             </span>
                         </div>
@@ -220,7 +223,7 @@ export default function SettlementPage() {
                                                 </div>
                                             </div>
                                             <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                                                {centsToCurrency(tx.amount)}
+                                                {centsToCurrency(tx.amount, currencySymbol)}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -272,10 +275,10 @@ export default function SettlementPage() {
                                                     {formatPercent(user.active_ratio)}
                                                 </TableCell>
                                                 <TableCell className="text-right font-mono">
-                                                    {centsToCurrency(user.target_liability)}
+                                                    {centsToCurrency(user.target_liability, currencySymbol)}
                                                 </TableCell>
                                                 <TableCell className="text-right font-mono text-muted-foreground">
-                                                    {centsToCurrency(user.paid_out_of_pocket)}
+                                                    {centsToCurrency(user.paid_out_of_pocket, currencySymbol)}
                                                 </TableCell>
                                                 <TableCell
                                                     className={`text-right font-mono font-bold ${
@@ -284,7 +287,7 @@ export default function SettlementPage() {
                                                             : 'text-emerald-600 dark:text-emerald-400'
                                                     }`}
                                                 >
-                                                    {centsToCurrency(user.net_balance)}
+                                                    {centsToCurrency(user.net_balance, currencySymbol)}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -296,7 +299,7 @@ export default function SettlementPage() {
 
                     {/* Cycle Transactions */}
                     <Card>
-                        <CardHeader pb-2>
+                        <CardHeader className="pb-2">
                             <CardTitle className="text-base font-semibold text-foreground">
                                 Cycle Transactions ({settlement.period_start} to {settlement.period_end})
                             </CardTitle>

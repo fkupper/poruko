@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPendingTransactions, uploadBankStatement, approvePendingTransactions } from '@/api/ingestion';
 import { fetchAccounts } from '@/api/accounts';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function IngestionPage() {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
     
     const [apiKey, setApiKey] = React.useState(() => localStorage.getItem('byok_llm_key') || '');
     const [selectedAccount, setSelectedAccount] = React.useState<number | null>(() => {
@@ -46,6 +48,16 @@ export default function IngestionPage() {
         queryFn: () => fetchAccounts(activeLedgerId!),
         enabled: !!activeLedgerId,
     });
+
+    // Reset selection when switching spaces (avoid cross-ledger account ids)
+    React.useEffect(() => {
+        if (activeLedgerId === null) {
+            setSelectedAccount(null);
+            return;
+        }
+        const saved = localStorage.getItem(`ai_target_account_${activeLedgerId}`);
+        setSelectedAccount(saved ? Number(saved) : null);
+    }, [activeLedgerId]);
 
     React.useEffect(() => {
         if (accounts.length > 0 && selectedAccount === null) {
@@ -75,10 +87,16 @@ export default function IngestionPage() {
         const file = e.target.files?.[0];
         if (!file || !activeLedgerId) return;
 
+        if (selectedAccount === null) {
+            setUploadMsg('Please select a target account before uploading.');
+            e.target.value = '';
+            return;
+        }
+
         setUploading(true);
         setUploadMsg(null);
         try {
-            const res = await uploadBankStatement(activeLedgerId, file, selectedAccount || 1);
+            const res = await uploadBankStatement(activeLedgerId, file, selectedAccount);
             setUploadMsg(res.message || 'Statement uploaded & queued for processing!');
             queryClient.invalidateQueries({ queryKey: ['pending-ingestion', activeLedgerId] });
         } catch (err) {
@@ -259,7 +277,7 @@ export default function IngestionPage() {
                                         {item.rationale || 'High-confidence AI categorization based on payee keywords.'}
                                     </TableCell>
                                     <TableCell className="text-right font-mono font-semibold text-foreground">
-                                        {centsToCurrency(item.suggested_amount)}
+                                        {centsToCurrency(item.suggested_amount, currencySymbol)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button

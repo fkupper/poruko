@@ -23,6 +23,7 @@ class RecurringTransactionFactory extends Factory
 
         return [
             'ledger_id' => $ledger->id,
+            'series_id' => fake()->uuid(),
             'payer_account_id' => fn (array $attributes) => Account::factory()->create([
                 'ledger_id' => $attributes['ledger_id'] ?? $ledger->id,
             ])->id,

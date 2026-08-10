@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { fetchTransactions } from '@/api/transactions';
 import { fetchSettlementPreview } from '@/api/settlements';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { AddExpenseModal } from '@/features/transactions/AddExpenseModal/AddExpenseModal';
@@ -23,6 +24,7 @@ import {
 
 export default function DashboardPage() {
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
     const currentUser = useAuthStore((s) => s.user);
     const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
 
@@ -82,7 +84,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono">
-                            {centsToCurrency(settlement?.summary.total_shared_spend ?? 0)}
+                            {centsToCurrency(settlement?.summary.total_shared_spend ?? 0, currencySymbol)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Current month total joint transactions
@@ -99,7 +101,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono">
-                            {centsToCurrency(settlement?.summary.pool_current_balance ?? 0)}
+                            {centsToCurrency(settlement?.summary.pool_current_balance ?? 0, currencySymbol)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Available in shared pool account
@@ -122,7 +124,7 @@ export default function DashboardPage() {
                                     : 'text-emerald-600 dark:text-emerald-400'
                             }`}
                         >
-                            {centsToCurrency(myBreakdown?.net_balance ?? 0)}
+                            {centsToCurrency(myBreakdown?.net_balance ?? 0, currencySymbol)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             {(myBreakdown?.net_balance ?? 0) < 0
@@ -210,7 +212,7 @@ export default function DashboardPage() {
                                         {tx.type}
                                     </TableCell>
                                     <TableCell className="text-right font-mono font-semibold text-foreground">
-                                        {centsToCurrency(tx.amount)}
+                                        {centsToCurrency(tx.amount, currencySymbol)}
                                     </TableCell>
                                 </TableRow>
                             ))}

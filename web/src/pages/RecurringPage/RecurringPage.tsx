@@ -4,6 +4,7 @@ import { fetchRecurringBlueprints, createRecurringBlueprint, updateRecurringBlue
 import { fetchAccounts } from '@/api/accounts';
 import { fetchLedgers } from '@/api/ledgers';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import type { SplitRule, RecurringBlueprint } from '@/api/types';
 export default function RecurringPage() {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
 
     const [filterStatus, setFilterStatus] = React.useState<'active' | 'deleted'>('active');
     const [openRows, setOpenRows] = React.useState<Record<number, boolean>>({});
@@ -97,7 +99,7 @@ export default function RecurringPage() {
 
     const getPreviousVersionsFor = (activeBp: RecurringBlueprint) => {
         return previousVersions
-            .filter((pv) => pv.description === activeBp.description && pv.payer_account_id === activeBp.payer_account_id)
+            .filter((pv) => pv.series_id === activeBp.series_id && pv.id !== activeBp.id)
             .sort((a, b) => new Date(b.valid_from).getTime() - new Date(a.valid_from).getTime());
     };
 
@@ -147,14 +149,16 @@ export default function RecurringPage() {
         mutationFn: async () => {
             if (!activeLedgerId) throw new Error('No active space.');
             if (!amountCents || amountCents <= 0) throw new Error('Please enter a valid amount.');
+            if (!payerAccountId) throw new Error('Please select a payer account.');
+            if (!destinationAccountId) throw new Error('Please select a destination account.');
             const payload = {
                 description,
                 amount: amountCents,
                 frequency,
                 split_rule: splitRule,
                 start_date: startDate,
-                payer_account_id: payerAccountId || (accounts?.find((a) => a.type !== 'space_expense')?.id) || 1,
-                destination_account_id: destinationAccountId || (accounts?.find((a) => a.type === 'space_expense')?.id) || 1,
+                payer_account_id: payerAccountId,
+                destination_account_id: destinationAccountId,
             };
             if (editingId) {
                 return updateRecurringBlueprint(activeLedgerId, editingId, payload);
@@ -290,7 +294,7 @@ export default function RecurringPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right font-mono font-semibold text-foreground">
-                                            {centsToCurrency(bp.amount)}
+                                            {centsToCurrency(bp.amount, currencySymbol)}
                                         </TableCell>
                                         <TableCell>
                                             {bp.status === 'active' && (
@@ -342,7 +346,7 @@ export default function RecurringPage() {
                                                                         <span className="capitalize">{pv.split_rule}</span>
                                                                     </div>
                                                                     <div className="font-semibold text-foreground">
-                                                                        {centsToCurrency(pv.amount)}
+                                                                        {centsToCurrency(pv.amount, currencySymbol)}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -387,8 +391,13 @@ export default function RecurringPage() {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">Amount (€)</label>
-                            <CurrencyInput value={amountCents} onCentsChange={setAmountCents} required />
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">Amount</label>
+                            <CurrencyInput
+                                value={amountCents}
+                                onCentsChange={setAmountCents}
+                                currencySymbol={currencySymbol}
+                                required
+                            />
                         </div>
                         <div>
                             <label className="text-xs font-medium text-muted-foreground block mb-1">Start Date</label>

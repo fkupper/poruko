@@ -3,10 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { fetchLedgers } from '@/api/ledgers';
 import { Spinner } from '@/components/ui/spinner';
+import { useLedgerStore } from '@/stores/ledgerStore';
 
 export function SpaceGuard() {
     const location = useLocation();
     const isSetupPage = location.pathname === '/setup';
+    const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const setActiveLedgerId = useLedgerStore((s) => s.setActiveLedgerId);
 
     const { data: ledgers, isPending, isError } = useQuery({
         queryKey: ['ledgers'],
@@ -22,6 +25,23 @@ export function SpaceGuard() {
             setHadSpacesOnMount(!isError && Array.isArray(ledgers) && ledgers.length > 0);
         }
     }, [isPending, isError, ledgers, hadSpacesOnMount]);
+
+    // Centralize active ledger bootstrap so pages work before SpaceSwitcher mounts
+    useEffect(() => {
+        if (isPending || isError || !Array.isArray(ledgers)) {
+            return;
+        }
+        if (ledgers.length === 0) {
+            if (activeLedgerId !== null) {
+                setActiveLedgerId(null);
+            }
+            return;
+        }
+        const exists = ledgers.some((l) => l.id === activeLedgerId);
+        if (!exists) {
+            setActiveLedgerId(ledgers[0].id);
+        }
+    }, [isPending, isError, ledgers, activeLedgerId, setActiveLedgerId]);
 
     if (isPending) {
         return (

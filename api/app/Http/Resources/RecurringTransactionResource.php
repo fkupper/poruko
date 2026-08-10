@@ -26,6 +26,7 @@ class RecurringTransactionResource extends JsonResource
         return [
             'id' => $model->id,
             'ledger_id' => $model->ledger_id,
+            'series_id' => $model->series_id,
             'payer_account_id' => $model->payer_account_id,
             'payer_account_name' => $this->whenLoaded('payerAccount', fn () => $model->payerAccount?->name),
             'destination_account_id' => $model->destination_account_id,

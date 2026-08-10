@@ -81,6 +81,7 @@ export default function MembersPage() {
             showFeedback('success', 'User has been deactivated.');
             setDeactivateMemberId(null);
             queryClient.invalidateQueries({ queryKey: ['members', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
         },
         onError: () => {
             showFeedback('error', 'Failed to deactivate user.');
@@ -93,6 +94,7 @@ export default function MembersPage() {
             showFeedback('success', 'User has been restored.');
             setRestoreMemberId(null);
             queryClient.invalidateQueries({ queryKey: ['members', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
         },
         onError: () => {
             showFeedback('error', 'Failed to restore user.');

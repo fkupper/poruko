@@ -131,8 +131,13 @@ class RecurringTransactionApiTest extends TestCase
             ->assertJsonPath('data.payer_account_id', $credit->id)
             ->assertJsonPath('data.destination_account_id', $destination->id);
 
+        $seriesId = $response->json('data.series_id');
+        $this->assertIsString($seriesId);
+        $this->assertNotEmpty($seriesId);
+
         $this->assertDatabaseHas('recurring_transactions', [
             'ledger_id' => $ledger->id,
+            'series_id' => $seriesId,
             'amount' => 120000,
             'description' => 'Monthly Rent',
             'destination_account_id' => $destination->id,
@@ -164,18 +169,28 @@ class RecurringTransactionApiTest extends TestCase
         ]);
 
         $response->assertSuccessful()
-            ->assertJsonPath('data.amount', 110000);
+            ->assertJsonPath('data.amount', 110000)
+            ->assertJsonPath('data.series_id', $blueprint->series_id);
 
         $this->assertDatabaseHas('recurring_transactions', [
             'id' => $blueprint->id,
+            'series_id' => $blueprint->series_id,
             'valid_to' => now()->subDay()->format('Y-m-d'),
         ]);
 
         $this->assertDatabaseHas('recurring_transactions', [
             'ledger_id' => $ledger->id,
+            'series_id' => $blueprint->series_id,
             'amount' => 110000,
             'valid_from' => now()->format('Y-m-d'),
             'valid_to' => null,
+        ]);
+
+        $newId = $response->json('data.id');
+        $this->assertNotSame($blueprint->id, $newId);
+        $this->assertDatabaseHas('recurring_transactions', [
+            'id' => $newId,
+            'series_id' => $blueprint->series_id,
         ]);
     }
 

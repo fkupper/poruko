@@ -31,6 +31,7 @@ type FormValues = z.infer<typeof schema>;
 export default function LoginPage() {
     const navigate = useNavigate();
     const setAuth = useAuthStore((s) => s.setAuth);
+    const setPendingTwoFactorToken = useAuthStore((s) => s.setPendingTwoFactorToken);
     const [requiresTwoFactor, setRequiresTwoFactor] = React.useState(false);
     const [twoFactorCode, setTwoFactorCode] = React.useState('');
     const [useRecoveryCode, setUseRecoveryCode] = React.useState(false);
@@ -39,18 +40,27 @@ export default function LoginPage() {
         register,
         handleSubmit,
         setError,
+        clearErrors,
         formState: { errors, isSubmitting },
     } = useForm<FormValues>({
         resolver: zodResolver(schema),
         defaultValues: { email: '', password: '' },
     });
 
+    const resetTwoFactorChallenge = React.useCallback(() => {
+        setRequiresTwoFactor(false);
+        setTwoFactorCode('');
+        setUseRecoveryCode(false);
+        setPendingTwoFactorToken(null);
+        clearErrors('root');
+    }, [clearErrors, setPendingTwoFactorToken]);
+
     const mutation = useMutation({
         mutationFn: login,
         onSuccess: (data) => {
             if (data.two_factor) {
-                // Save temporary token and show 2FA form
-                useAuthStore.getState().setAuth(data.user, data.token);
+                // Keep challenge UI on /login — do not promote limited token to full session
+                setPendingTwoFactorToken(data.token);
                 setRequiresTwoFactor(true);
                 return;
             }
@@ -65,8 +75,8 @@ export default function LoginPage() {
 
     const challengeMutation = useMutation({
         mutationFn: () => {
-            const payload = useRecoveryCode 
-                ? { recovery_code: twoFactorCode } 
+            const payload = useRecoveryCode
+                ? { recovery_code: twoFactorCode }
                 : { code: twoFactorCode };
             return challengeTwoFactor(payload);
         },
@@ -75,6 +85,11 @@ export default function LoginPage() {
             navigate('/');
         },
         onError: (error: AxiosError<ApiError>) => {
+            if (error.response?.status === 401) {
+                resetTwoFactorChallenge();
+                setError('root', { message: 'Session expired. Please sign in again.' });
+                return;
+            }
             const message = error.response?.data?.message ?? 'Invalid code. Please try again.';
             setError('root', { message });
         },
@@ -133,10 +148,7 @@ export default function LoginPage() {
                                 type="button"
                                 variant="outline"
                                 className="w-full"
-                                onClick={() => {
-                                    setRequiresTwoFactor(false);
-                                    useAuthStore.getState().logout();
-                                }}
+                                onClick={resetTwoFactorChallenge}
                             >
                                 Cancel
                             </Button>

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property string $series_id
  * @property TransactionSplitRule $split_rule
  * @property RecurringFrequency $frequency
  * @property CarbonInterface $valid_from
@@ -35,6 +36,7 @@ class RecurringTransaction extends Model
     /** @var list<string> */
     protected $fillable = [
         'ledger_id',
+        'series_id',
         'payer_account_id',
         'destination_account_id',
         'amount',

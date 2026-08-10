@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchAccounts, createAccount, updateAccount, deleteAccount } from '@/api/accounts';
 import { fetchLedgers } from '@/api/ledgers';
 import { centsToCurrency } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -31,6 +32,7 @@ export default function AccountsPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
     const user = useAuthStore((s) => s.user);
 
     const [isAddOpen, setIsAddOpen] = React.useState(false);
@@ -187,7 +189,7 @@ export default function AccountsPage() {
             <CardContent className="pt-4">
                 <p className="text-xs text-muted-foreground">Account Balance</p>
                 <div className="text-2xl font-bold font-mono text-foreground mt-1">
-                    {centsToCurrency(acc.balance)}
+                    {centsToCurrency(acc.balance, currencySymbol)}
                 </div>
                 <div className="mt-3 text-[11px] text-muted-foreground font-mono">
                     ID: #{acc.id}
@@ -329,11 +331,12 @@ export default function AccountsPage() {
 
                     <div>
                         <label className="text-xs font-medium text-muted-foreground block mb-1">
-                            {editingId ? 'Current Funds (€)' : 'Starting Balance (€)'}
+                            {editingId ? 'Current Funds' : 'Starting Balance'}
                         </label>
                         <CurrencyInput
                             value={initialBalance}
                             onCentsChange={(cents) => setInitialBalance(cents || 0)}
+                            currencySymbol={currencySymbol}
                         />
                     </div>
 

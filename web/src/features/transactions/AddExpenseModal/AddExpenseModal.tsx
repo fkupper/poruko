@@ -16,6 +16,7 @@ import { fetchLedgers } from '@/api/ledgers';
 import { createTransaction, updateTransaction } from '@/api/transactions';
 import type { ParticipantShare, SplitRule, Transaction } from '@/api/types';
 import { centsToCurrency, formatPercent } from '@/lib/currency';
+import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { Loader2Icon, ReceiptIcon } from 'lucide-react';
 import { AccountSelector } from '@/components/ui/account-selector';
@@ -29,6 +30,7 @@ interface AddExpenseModalProps {
 export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseModalProps) {
     const queryClient = useQueryClient();
     const activeLedgerId = useLedgerStore((s) => s.activeLedgerId);
+    const currencySymbol = useLedgerCurrencySymbol();
 
     const [description, setDescription] = React.useState('');
     const [amountCents, setAmountCents] = React.useState<number | null>(null);
@@ -133,9 +135,11 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
         if (splitRule === 'equal') {
             const perPerson = Math.floor(amt / activeMembers.length);
             const remainder = amt - perPerson * activeMembers.length;
+            const equalRatio = 1 / activeMembers.length;
             return activeMembers.map((m, idx) => ({
                 user_id: m.id,
                 share: perPerson + (idx === 0 ? remainder : 0),
+                share_ratio: equalRatio,
             }));
         }
 
@@ -144,9 +148,11 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                 // Fallback to equal split if no shareable income set
                 const perPerson = Math.floor(amt / activeMembers.length);
                 const remainder = amt - perPerson * activeMembers.length;
+                const equalRatio = 1 / activeMembers.length;
                 return activeMembers.map((m, idx) => ({
                     user_id: m.id,
                     share: perPerson + (idx === 0 ? remainder : 0),
+                    share_ratio: equalRatio,
                 }));
             }
 
@@ -164,6 +170,7 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
             return activeMembers.map((m, idx) => ({
                 user_id: m.id,
                 share: shares[idx],
+                share_ratio: m.shareable_income / totalShareableIncome,
             }));
         }
 
@@ -206,6 +213,7 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
             queryClient.invalidateQueries({ queryKey: ['settlement-preview', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
             onOpenChange(false);
             // Reset form
             setDescription('');
@@ -224,7 +232,7 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                     <ReceiptIcon className="size-5 text-primary" />
-                    Log New Expense
+                    {transaction ? 'Edit Expense' : 'Log New Expense'}
                 </DialogTitle>
             </DialogHeader>
 
@@ -248,11 +256,12 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className="text-xs font-medium text-muted-foreground block mb-1">
-                            Amount (€)
+                            Amount
                         </label>
                         <CurrencyInput
                             value={amountCents}
                             onCentsChange={setAmountCents}
+                            currencySymbol={currencySymbol}
                             required
                         />
                     </div>
@@ -341,7 +350,7 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                                             <span className="font-medium text-foreground">{member.name}</span>
                                             {splitRule === 'proportional' && (
                                                 <span className="text-[11px] text-muted-foreground ml-2">
-                                                    (Income: {centsToCurrency(member.shareable_income)} · {formatPercent(ratio)})
+                                                    (Income: {centsToCurrency(member.shareable_income, currencySymbol)} · {formatPercent(ratio)})
                                                 </span>
                                             )}
                                         </div>
@@ -349,11 +358,12 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
                                             <CurrencyInput
                                                 value={manualShares[member.id] || 0}
                                                 onCentsChange={(cents) => setManualShares((prev) => ({ ...prev, [member.id]: cents || 0 }))}
+                                                currencySymbol={currencySymbol}
                                                 className="w-28 h-7 text-xs"
                                             />
                                         ) : (
                                             <span className="font-mono font-semibold text-foreground">
-                                                {centsToCurrency(shareAmt)}
+                                                {centsToCurrency(shareAmt, currencySymbol)}
                                             </span>
                                         )}
                                     </div>

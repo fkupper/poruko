@@ -214,6 +214,7 @@ class DevSeeder extends Seeder
         if (!RecurringTransaction::query()->where('ledger_id', $ledger->id)->where('description', 'Monthly Rent')->exists()) {
             RecurringTransaction::query()->create([
                 'ledger_id' => $ledger->id,
+                'series_id' => (string) Str::uuid(),
                 'payer_account_id' => $housePool->id,
                 'destination_account_id' => $generalExpenses->id,
                 'amount' => 100000,
@@ -229,6 +230,7 @@ class DevSeeder extends Seeder
         if (!RecurringTransaction::query()->where('ledger_id', $ledger->id)->where('description', 'Internet')->exists()) {
             RecurringTransaction::query()->create([
                 'ledger_id' => $ledger->id,
+                'series_id' => (string) Str::uuid(),
                 'payer_account_id' => $bobWallet->id,
                 'destination_account_id' => $generalExpenses->id,
                 'amount' => 5000,

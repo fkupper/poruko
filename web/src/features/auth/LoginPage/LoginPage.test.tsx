@@ -48,13 +48,13 @@ describe('LoginPage', () => {
     beforeEach(() => {
         loginMock.mockReset();
         localStorage.removeItem('poruko-auth');
-        useAuthStore.setState({ user: null, token: null });
+        useAuthStore.setState({ user: null, token: null, pendingTwoFactorToken: null, authStatus: 'anonymous' });
     });
 
     afterEach(() => {
         loginMock.mockReset();
         localStorage.removeItem('poruko-auth');
-        useAuthStore.setState({ user: null, token: null });
+        useAuthStore.setState({ user: null, token: null, pendingTwoFactorToken: null, authStatus: 'anonymous' });
     });
 
     it('renders sign-in copy and register link', () => {
@@ -168,5 +168,26 @@ describe('LoginPage', () => {
         await waitFor(() => {
             expect(screen.getByText('Logged-in home')).toBeInTheDocument();
         });
+    });
+
+    it('keeps user on login and stores pending 2FA token when two_factor is required', async () => {
+        const user = userEvent.setup();
+        loginMock.mockResolvedValueOnce({
+            user: successResponse.user,
+            token: 'issue-2fa-token',
+            two_factor: true,
+        });
+
+        renderLoginPage();
+
+        await user.type(screen.getByLabelText(/^email$/i), 'hello@example.com');
+        await user.type(screen.getByLabelText(/^password$/i), 'password123');
+        await user.click(screen.getByRole('button', { name: /sign in$/i }));
+
+        expect(await screen.findByText('Two-Factor Authentication')).toBeInTheDocument();
+        expect(screen.queryByText('Logged-in home')).not.toBeInTheDocument();
+        expect(useAuthStore.getState().token).toBeNull();
+        expect(useAuthStore.getState().pendingTwoFactorToken).toBe('issue-2fa-token');
+        expect(useAuthStore.getState().user).toBeNull();
     });
 });
