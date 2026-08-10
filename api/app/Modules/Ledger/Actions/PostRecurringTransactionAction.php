@@ -32,7 +32,6 @@ final readonly class PostRecurringTransactionAction
             'ledger_id' => $blueprint->ledger_id,
             'payer_account_id' => $blueprint->payer_account_id,
             'destination_account_id' => $blueprint->destination_account_id,
-            'destination_account_id' => $blueprint->destination_account_id,
             'amount' => $blueprint->amount,
             'split_rule' => $splitRule,
             'participants' => $participants,

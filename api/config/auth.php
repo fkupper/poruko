@@ -112,4 +112,16 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Enforce Two-Factor Authentication
+    |--------------------------------------------------------------------------
+    |
+    | When true, authenticated API users without 2FA configured are rejected
+    | (except for logout / 2FA setup routes).
+    |
+    */
+
+    'enforce_2fa' => (bool) env('ENFORCE_2FA', false),
+
 ];

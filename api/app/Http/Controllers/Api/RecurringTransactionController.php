@@ -24,7 +24,7 @@ class RecurringTransactionController extends Controller
 
         $query = RecurringTransaction::query()
             ->forLedger($ledger->id)
-            ->with(['payerAccount'])
+            ->with(['payerAccount', 'destinationAccount'])
             ->orderByDesc('valid_from');
 
         $status = request()->query('status');
@@ -54,7 +54,7 @@ class RecurringTransactionController extends Controller
         $data = CreateRecurringTransactionData::fromArray($request->validated());
         $blueprint = $action->execute($ledger, $data);
 
-        return RecurringTransactionResource::make($blueprint->load(['payerAccount']))
+        return RecurringTransactionResource::make($blueprint->load(['payerAccount', 'destinationAccount']))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -72,7 +72,7 @@ class RecurringTransactionController extends Controller
         $updated = $action->execute($recurringTransaction, $data);
 
         return RecurringTransactionResource::make(
-            $updated->load(['payerAccount']),
+            $updated->load(['payerAccount', 'destinationAccount']),
         );
     }
 

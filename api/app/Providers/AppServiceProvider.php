@@ -30,5 +30,17 @@ class AppServiceProvider extends ServiceProvider
                 ? Limit::none()
                 : Limit::perMinute(10)->by($request->ip());
         });
+
+        RateLimiter::for('login', function (Request $request): Limit {
+            $email = (string) $request->input('email', '');
+
+            return Limit::perMinute(5)->by(mb_strtolower($email).'|'.$request->ip());
+        });
+
+        RateLimiter::for('two-factor', function (Request $request): Limit {
+            $key = $request->user()?->getAuthIdentifier() ?? $request->ip();
+
+            return Limit::perMinute(5)->by((string) $key);
+        });
     }
 }

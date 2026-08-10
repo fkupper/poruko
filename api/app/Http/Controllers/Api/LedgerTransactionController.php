@@ -39,7 +39,7 @@ class LedgerTransactionController extends Controller
         PostManualTransactionAction $action
     ): JsonResponse {
         try {
-            /** @var array{ledger_id:int, credit_account_id:int, debit_account_id:int, amount:int, split_rule:string, participants:list<array{user_id:int, share?:int}>, description:string|null, date:string, type:string} $payload */
+            /** @var array{ledger_id:int, payer_account_id:int, destination_account_id:int, amount:int, split_rule:string, participants:list<array{user_id:int, share?:int}>, description:string|null, date:string, type:string} $payload */
             $payload = [
                 ...$request->validated(),
                 'ledger_id' => $ledger->id,
@@ -75,7 +75,7 @@ class LedgerTransactionController extends Controller
         UpdateTransactionAction $action
     ): JsonResponse {
         try {
-            /** @var array{ledger_id:int, credit_account_id:int, debit_account_id:int, amount:int, split_rule:string, participants:list<array{user_id:int, share?:int}>, description:string|null, date:string, type:string} $payload */
+            /** @var array{ledger_id:int, payer_account_id:int, destination_account_id:int, amount:int, split_rule:string, participants:list<array{user_id:int, share?:int}>, description:string|null, date:string, type:string} $payload */
             $payload = [
                 ...$request->validated(),
                 'ledger_id' => $ledger->id,

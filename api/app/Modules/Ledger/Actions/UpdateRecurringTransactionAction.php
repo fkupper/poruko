@@ -35,6 +35,7 @@ final readonly class UpdateRecurringTransactionAction
             $merged = array_merge($blueprint->only([
                 'ledger_id',
                 'payer_account_id',
+                'destination_account_id',
                 'amount',
                 'description',
                 'split_rule',

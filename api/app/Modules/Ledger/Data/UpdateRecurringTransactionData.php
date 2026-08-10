@@ -9,7 +9,7 @@ final readonly class UpdateRecurringTransactionData
      */
     public function __construct(
         public ?int $payerAccountId = null,
-        public ?int $Id = null,
+        public ?int $destinationAccountId = null,
         public ?int $amount = null,
         public ?string $description = null,
         public ?string $splitRule = null,
@@ -25,6 +25,7 @@ final readonly class UpdateRecurringTransactionData
     {
         return new self(
             payerAccountId: isset($validated['payer_account_id']) ? (int) $validated['payer_account_id'] : null,
+            destinationAccountId: isset($validated['destination_account_id']) ? (int) $validated['destination_account_id'] : null,
             amount: isset($validated['amount']) ? (int) $validated['amount'] : null,
             description: array_key_exists('description', $validated) ? ($validated['description'] !== null ? (string) $validated['description'] : null) : null,
             splitRule: isset($validated['split_rule']) ? (string) $validated['split_rule'] : null,
@@ -41,6 +42,7 @@ final readonly class UpdateRecurringTransactionData
     {
         return array_filter([
             'payer_account_id' => $this->payerAccountId,
+            'destination_account_id' => $this->destinationAccountId,
             'amount' => $this->amount,
             'description' => $this->description,
             'split_rule' => $this->splitRule,

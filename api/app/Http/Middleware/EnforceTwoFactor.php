@@ -15,7 +15,7 @@ class EnforceTwoFactor
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $enforce = filter_var(env('ENFORCE_2FA', false), FILTER_VALIDATE_BOOLEAN);
+        $enforce = (bool) config('auth.enforce_2fa');
 
         if ($enforce && $request->user() && !$request->user()->two_factor_secret) {
             if (!$request->is('api/auth/logout', 'api/auth/user/two-factor*')) {

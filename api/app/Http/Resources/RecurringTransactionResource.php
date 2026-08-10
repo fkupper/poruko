@@ -26,8 +26,10 @@ class RecurringTransactionResource extends JsonResource
         return [
             'id' => $model->id,
             'ledger_id' => $model->ledger_id,
-            'credit_account_id' => $model->credit_account_id,
+            'payer_account_id' => $model->payer_account_id,
             'payer_account_name' => $this->whenLoaded('payerAccount', fn () => $model->payerAccount?->name),
+            'destination_account_id' => $model->destination_account_id,
+            'destination_account_name' => $this->whenLoaded('destinationAccount', fn () => $model->destinationAccount?->name),
             'amount' => $model->amount,
             'description' => $model->description,
             'split_rule' => $model->split_rule instanceof TransactionSplitRule ? $model->split_rule->value : (string) $model->split_rule,

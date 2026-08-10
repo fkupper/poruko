@@ -104,11 +104,16 @@ class RecurringTransactionApiTest extends TestCase
         $user->assignRole('Admin');
 
         $credit = Account::factory()->create(['ledger_id' => $ledger->id]);
+        $destination = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => \App\Enums\AccountType::SpaceExpense,
+        ]);
 
         Sanctum::actingAs($user);
 
         $response = $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
             'payer_account_id' => $credit->id,
+            'destination_account_id' => $destination->id,
             'amount' => 120000,
             'description' => 'Monthly Rent',
             'split_rule' => 'proportional',
@@ -122,12 +127,15 @@ class RecurringTransactionApiTest extends TestCase
             ->assertJsonPath('data.description', 'Monthly Rent')
             ->assertJsonPath('data.valid_from', '2026-04-01')
             ->assertJsonPath('data.frequency', 'monthly')
-            ->assertJsonPath('data.is_active', true);
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonPath('data.payer_account_id', $credit->id)
+            ->assertJsonPath('data.destination_account_id', $destination->id);
 
         $this->assertDatabaseHas('recurring_transactions', [
             'ledger_id' => $ledger->id,
             'amount' => 120000,
             'description' => 'Monthly Rent',
+            'destination_account_id' => $destination->id,
         ]);
     }
 
@@ -205,6 +213,7 @@ class RecurringTransactionApiTest extends TestCase
 
         $this->postJson("/api/ledgers/{$ledger->id}/recurring-transactions", [
             'payer_account_id' => $credit->id,
+            'destination_account_id' => $credit->id,
             'amount' => 1000,
             'start_date' => '2026-04-01',
             'split_rule' => 'equal',

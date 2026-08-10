@@ -30,6 +30,7 @@ class UpdateRecurringTransactionRequest extends FormRequest
 
         return [
             'payer_account_id' => ['sometimes', 'required', 'integer', $accountExistsInLedger],
+            'destination_account_id' => ['sometimes', 'required', 'integer', $accountExistsInLedger],
             'amount' => ['sometimes', 'required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
             'split_rule' => ['sometimes', 'required', new Enum(TransactionSplitRule::class)],

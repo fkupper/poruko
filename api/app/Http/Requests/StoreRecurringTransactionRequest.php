@@ -32,6 +32,7 @@ class StoreRecurringTransactionRequest extends FormRequest
 
         return [
             'payer_account_id' => ['required', 'integer', $accountExistsInLedger],
+            'destination_account_id' => ['required', 'integer', $accountExistsInLedger],
             'amount' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
             'split_rule' => ['required', new Enum(TransactionSplitRule::class)],
@@ -59,8 +60,8 @@ class StoreRecurringTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'credit_account_id.required' => 'The payer account is required.',
-            'debit_account_id.required' => 'The debit account is required.',
+            'payer_account_id.required' => 'The payer account is required.',
+            'destination_account_id.required' => 'The destination account is required.',
             'amount.required' => 'The amount is required.',
             'amount.min' => 'The amount must be at least 1.',
             'start_date.required' => 'The start date is required.',

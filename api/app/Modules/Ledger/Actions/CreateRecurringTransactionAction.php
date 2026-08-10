@@ -13,6 +13,7 @@ final readonly class CreateRecurringTransactionAction
         return RecurringTransaction::query()->create([
             'ledger_id' => $ledger->id,
             'payer_account_id' => $data->payerAccountId,
+            'destination_account_id' => $data->destinationAccountId,
             'amount' => $data->amount,
             'description' => $data->description,
             'split_rule' => $data->splitRule,

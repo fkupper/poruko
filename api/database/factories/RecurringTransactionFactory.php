@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountType;
 use App\Enums\RecurringFrequency;
 use App\Enums\TransactionSplitRule;
 use App\Models\Account;
@@ -25,7 +26,10 @@ class RecurringTransactionFactory extends Factory
             'payer_account_id' => fn (array $attributes) => Account::factory()->create([
                 'ledger_id' => $attributes['ledger_id'] ?? $ledger->id,
             ])->id,
-
+            'destination_account_id' => fn (array $attributes) => Account::factory()->create([
+                'ledger_id' => $attributes['ledger_id'] ?? $ledger->id,
+                'type' => AccountType::SpaceExpense,
+            ])->id,
             'amount' => fake()->numberBetween(1000, 100_000),
             'description' => fake()->sentence(),
             'split_rule' => TransactionSplitRule::Equal->value,

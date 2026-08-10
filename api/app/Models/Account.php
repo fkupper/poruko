@@ -59,12 +59,4 @@ class Account extends Model
     {
         return $this->hasMany(Posting::class);
     }
-
-    /** @return HasMany<Transaction, $this> */
-    public function creditTransactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class, 'credit_account_id');
-    }
-
-    /** @return HasMany<Transaction, $this> */
 }
