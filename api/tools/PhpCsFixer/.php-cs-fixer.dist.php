@@ -303,7 +303,8 @@ return $config
                 __DIR__ . '/../../database',
                 __DIR__ . '/../../routes',
                 __DIR__ . '/../../tests',
-            ]),
+            ])
+            ->exclude(['cache']),
     )
     ->setCacheFile(__DIR__ . '/.php-cs-fixer.cache')
     ->setParallelConfig(Tools\PhpCsFixer\ParallelConfig::get());
