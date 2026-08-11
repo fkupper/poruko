@@ -14,7 +14,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final readonly class AcceptInvitationAction
 {
     public function __construct(
-        private EnsureMainPersonalAccountForLedgerMemberAction $ensureAccountAction
+        private EnsureMainPersonalAccountForLedgerMemberAction $ensureAccountAction,
+        private EnsureDefaultPermissionsAction $ensureDefaultPermissionsAction,
     ) {}
 
     public function execute(AcceptInvitationData $data): User
@@ -84,6 +85,7 @@ final readonly class AcceptInvitationAction
 
             setPermissionsTeamId($invitation->ledger_id);
 
+            $this->ensureDefaultPermissionsAction->execute();
             if (!$user->hasRole('Member')) {
                 $user->assignRole('Member');
             }
@@ -96,6 +98,7 @@ final readonly class AcceptInvitationAction
         $invitation->ledger->users()->attach($user->id, ['role' => 'member']);
 
         setPermissionsTeamId($invitation->ledger_id);
+        $this->ensureDefaultPermissionsAction->execute();
         $user->assignRole('Member');
 
         $ledgerUser = LedgerUser::query()
@@ -127,6 +130,7 @@ final readonly class AcceptInvitationAction
         $invitation->ledger->users()->attach($user->id, ['role' => 'member']);
 
         setPermissionsTeamId($invitation->ledger_id);
+        $this->ensureDefaultPermissionsAction->execute();
         $user->assignRole('Member');
 
         $ledgerUser = LedgerUser::query()

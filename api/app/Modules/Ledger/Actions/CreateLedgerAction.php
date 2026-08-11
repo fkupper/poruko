@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\DB;
 final readonly class CreateLedgerAction
 {
     public function __construct(
-        private EnsureMainPersonalAccountForLedgerMemberAction $ensureAccountAction
+        private EnsureMainPersonalAccountForLedgerMemberAction $ensureAccountAction,
+        private EnsureDefaultPermissionsAction $ensureDefaultPermissionsAction,
     ) {}
 
     public function execute(User $user, CreateLedgerData $data): Ledger
@@ -38,6 +39,7 @@ final readonly class CreateLedgerAction
 
             $ledger->users()->attach($user->id, ['role' => 'admin']);
             setPermissionsTeamId($ledger->id);
+            $this->ensureDefaultPermissionsAction->execute();
             $user->assignRole('Admin');
             Account::query()->create([
                 'ledger_id' => $ledger->id,

@@ -3,15 +3,24 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionsSeeder extends Seeder
 {
+    /**
+     * Spatie roles/permissions use the web guard. During Sanctum API requests
+     * auth.defaults.guard may be "sanctum", so findOrCreate must pin guard explicitly.
+     */
+    private const GUARD = 'web';
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $permissions = [
             'users',
@@ -24,13 +33,13 @@ class PermissionsSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            \Spatie\Permission\Models\Permission::findOrCreate($permission);
+            Permission::findOrCreate($permission, self::GUARD);
         }
 
-        $admin = \Spatie\Permission\Models\Role::findOrCreate('Admin');
+        $admin = Role::findOrCreate('Admin', self::GUARD);
         $admin->syncPermissions($permissions);
 
-        $member = \Spatie\Permission\Models\Role::findOrCreate('Member');
+        $member = Role::findOrCreate('Member', self::GUARD);
         $member->syncPermissions([]);
     }
 }

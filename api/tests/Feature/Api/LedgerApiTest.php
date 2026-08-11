@@ -7,9 +7,13 @@ use App\Http\Controllers\Api\LedgerController;
 use App\Models\Ledger;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 #[Group('ledgers')]
@@ -91,6 +95,38 @@ class LedgerApiTest extends TestCase
             'currency' => 'USD',
             'settlement_mode' => SettlementMode::JointClearinghouse->value,
         ]);
+    }
+
+    public function testCreateLedgerBootstrapsMissingPermissionsRoles(): void
+    {
+        // Simulate a fresh self-host install: migrations only, no PermissionsSeeder.
+        DB::table('role_has_permissions')->delete();
+        DB::table('model_has_roles')->delete();
+        DB::table('model_has_permissions')->delete();
+        Role::query()->delete();
+        Permission::query()->delete();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->assertDatabaseCount('roles', 0);
+        $this->assertDatabaseCount('permissions', 0);
+
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user, ['*']);
+
+        $response = $this->postJson('/api/ledgers', [
+            'name' => 'Fresh Install Space',
+            'currency' => 'EUR',
+            'settlement_mode' => SettlementMode::JointClearinghouse->value,
+            'settlement_timezone' => 'UTC',
+            'settlement_cutoff_day' => 31,
+            'settlement_auto_execute_enabled' => false,
+        ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('roles', ['name' => 'Admin']);
+        $this->assertDatabaseHas('roles', ['name' => 'Member']);
     }
 
     public function testCreateLedgerValidationFailsWithoutName(): void

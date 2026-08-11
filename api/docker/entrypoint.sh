@@ -78,6 +78,8 @@ cache_runtime
 if [[ "${RUN_MIGRATIONS:-false}" == "true" ]]; then
   echo "entrypoint: running migrations..."
   php artisan migrate --force
+  echo "entrypoint: ensuring default permissions/roles..."
+  php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force
 fi
 
 exec "$@"

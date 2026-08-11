@@ -52,7 +52,7 @@ With `LOCK_REGISTRATION_AFTER_FIRST_USER=true` (default), open registration stop
 | `scheduler` | `schedule:work` (settlements + recurring materialization) |
 | `db` / `redis` | Only with `COMPOSE_PROFILES=bundle` |
 
-The API entrypoint waits for `DB_*`, optionally runs `php artisan migrate --force` when `RUN_MIGRATIONS=true` (api only), then starts the process. The web role skips DB wait.
+The API entrypoint waits for `DB_*`, optionally runs `php artisan migrate --force` when `RUN_MIGRATIONS=true` (api only), seeds default Spatie roles/permissions (`PermissionsSeeder`), then starts the process. The web role skips DB wait.
 
 ### Environment reference
 
