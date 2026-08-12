@@ -17,6 +17,144 @@
       "irreversibleDestructiveActionsWithoutConfirm": true
     }
   },
+  "themes": {
+    "poruko": {
+      "label": "Poruko",
+      "description": "Emerald Ethos — The Mindful Ledger. Botanical greens, calm surfaces, pill actions.",
+      "light": {
+        "background": "#f6f8f7",
+        "foreground": "#1a1c1a",
+        "primary": "#169c50",
+        "secondary": "#58816E",
+        "tertiary": "#DC5E74",
+        "neutral": "#727971",
+        "surface": "#f6f8f7",
+        "surfaceContainerLowest": "#ffffff",
+        "inputFill": "#eef2f3",
+        "inflow": "#2B8C52",
+        "outflow": "#D94633",
+        "destructive": "#D94633",
+        "radius": "1rem",
+        "buttonRadius": "9999px",
+        "fonts": {
+          "headline": "Inter",
+          "body": "Inter",
+          "label": "Space Grotesk"
+        }
+      },
+      "dark": {
+        "background": "#121412",
+        "foreground": "#eef0ee",
+        "primary": "#169c50",
+        "secondary": "#58815E",
+        "tertiary": "#DC5E74",
+        "neutral": "#727971",
+        "surface": "#1c1e1c",
+        "surfaceContainer": "#2a2e2a",
+        "inflow": "#2B8C52",
+        "outflow": "#DC5E74",
+        "destructive": "#DC5E74",
+        "radius": "1rem",
+        "buttonRadius": "9999px"
+      }
+    },
+    "neutral": {
+      "label": "Neutral",
+      "description": "Default shadcn-neutral palette.",
+      "light": {
+        "background": "#ffffff",
+        "foreground": "#0f172a",
+        "primary": "#0f172a",
+        "surface": "#f1f5f9",
+        "inflow": "#16a34a",
+        "outflow": "#ea580c",
+        "destructive": "#dc2626",
+        "info": "#2563eb",
+        "radius": "0.625rem"
+      },
+      "dark": {
+        "background": "#0f172a",
+        "foreground": "#f8fafc",
+        "primary": "#f1f5f9",
+        "surface": "#1e293b",
+        "inflow": "#4ade80",
+        "outflow": "#fb923c",
+        "destructive": "#f87171",
+        "info": "#60a5fa",
+        "radius": "0.625rem"
+      }
+    },
+    "quiet": {
+      "label": "Quiet",
+      "description": "Ethical ledger aesthetic with teal tonal depth and soft surface nesting.",
+      "light": {
+        "background": "#f8fafa",
+        "foreground": "#191c1d",
+        "primary": "#004D40",
+        "surface": "#f8fafa",
+        "surfaceContainerLowest": "#ffffff",
+        "surfaceContainerHigh": "#e6e8e8",
+        "inflow": "#7ebdac",
+        "outflow": "#693527",
+        "destructive": "#ba1a1a",
+        "radius": "0.75rem"
+      },
+      "dark": {
+        "background": "#0C0E0E",
+        "foreground": "#F5F7F7",
+        "primary": "#A8D5C5",
+        "primaryForeground": "#004D40",
+        "secondary": "#546E7A",
+        "tertiary": "#693527",
+        "neutral": "#F5F7F7",
+        "surface": "#1A1C1C",
+        "surfaceContainerHigh": "#2A2E2E",
+        "inflow": "#A8D5C5",
+        "outflow": "#E8B4A0",
+        "info": "#90A4AE",
+        "destructive": "#E57373",
+        "radius": "0.75rem",
+        "source": "Quiet Architect dark style guide (Primary/Secondary/Tertiary/Neutral scales)"
+      }
+    },
+    "neon-tokyo": {
+      "label": "Neon Tokyo",
+      "description": "Electric nightscape — cyberpunk neon accents on dark only.",
+      "darkOnly": true,
+      "light": {
+        "note": "Neon Tokyo rejects light canvases; light colorMode still uses the nightscape palette.",
+        "background": "#0a0a12",
+        "foreground": "#e8e8f0",
+        "primary": "#ff2d78",
+        "secondary": "#00ffcc",
+        "tertiary": "#ffe04a",
+        "surface": "#12121c",
+        "surfaceContainer": "#1a1a28",
+        "inflow": "#00ffcc",
+        "outflow": "#ffe04a",
+        "destructive": "#ff2d78",
+        "radius": "0.5rem"
+      },
+      "dark": {
+        "background": "#0a0a12",
+        "foreground": "#e8e8f0",
+        "primary": "#ff2d78",
+        "secondary": "#00ffcc",
+        "tertiary": "#ffe04a",
+        "surface": "#12121c",
+        "surfaceContainer": "#1a1a28",
+        "inflow": "#00ffcc",
+        "outflow": "#ffe04a",
+        "destructive": "#ff2d78",
+        "radius": "0.5rem",
+        "fonts": {
+          "headline": "Sora",
+          "body": "Inter",
+          "label": "Space Grotesk"
+        }
+      }
+    }
+  },
   "primitives": {
     "color": {
       "green-700": { "$type": "color", "$value": "#15803d" },

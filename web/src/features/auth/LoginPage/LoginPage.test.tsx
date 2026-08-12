@@ -43,7 +43,13 @@ function renderLoginPage() {
 }
 
 const successResponse: AuthResponse = {
-    user: { id: 1, name: 'Test User', email: 'test@example.com' },
+    user: {
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+        theme: 'poruko',
+        color_mode: 'system',
+    },
     token: 'test-token',
 };
 

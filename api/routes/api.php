@@ -31,6 +31,7 @@ Route::post('/invitations/accept', [App\Http\Controllers\Api\InvitationControlle
 
 Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFactor::class])->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
+    Route::put('/auth/me/appearance', [AuthController::class, 'updateAppearance'])->name('auth.appearance.update');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
     Route::get('/currencies', [App\Http\Controllers\Api\CurrenciesController::class, 'index'])->name('currencies.index');

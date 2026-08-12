@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 import type { User } from '@/api/types';
 import { queryClient } from '@/lib/queryClient';
 import { useLedgerStore } from '@/stores/ledgerStore';
+import { useThemeStore } from '@/stores/themeStore';
 
 export type AuthStatus = 'anonymous' | 'hydrating' | 'ready';
 
@@ -41,8 +42,12 @@ export const useAuthStore = create<AuthState>()(
             setAuth: (user, token) => {
                 clearLedgerSession();
                 set({ user, token, pendingTwoFactorToken: null, authStatus: 'ready' });
+                useThemeStore.getState().hydrateFromUser(user);
             },
-            setUser: (user) => set({ user, authStatus: 'ready' }),
+            setUser: (user) => {
+                set({ user, authStatus: 'ready' });
+                useThemeStore.getState().hydrateFromUser(user);
+            },
             setPendingTwoFactorToken: (token) => set({ pendingTwoFactorToken: token }),
             setAuthStatus: (status) => set({ authStatus: status }),
             logout: () => {

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UiColorMode;
+use App\Enums\UiTheme;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +20,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $email
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property string $password
+ * @property UiTheme $theme
+ * @property UiColorMode $color_mode
  * @property string|null $remember_token
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -38,6 +42,16 @@ class User extends Authenticatable
     use TwoFactorAuthenticatable;
 
     /**
+     * The model's default values for attributes.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'theme' => 'poruko',
+        'color_mode' => 'system',
+    ];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -46,6 +60,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'theme',
+        'color_mode',
     ];
 
     /**
@@ -68,6 +84,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'theme' => UiTheme::class,
+            'color_mode' => UiColorMode::class,
         ];
     }
 

@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { me } from '@/api/auth';
 import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
+import { ThemeSync } from '@/components/ThemeSync/ThemeSync';
 import LoginPage from '@/features/auth/LoginPage/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage/RegisterPage';
 import DashboardLayout from '@/layouts/DashboardLayout/DashboardLayout';
@@ -96,6 +97,7 @@ export default function App() {
             <TooltipProvider>
                 <BrowserRouter>
                 <AuthHydration />
+                <ThemeSync />
                 <Routes>
                     <Route element={<PublicOnlyRoute />}>
                         <Route path="/login" element={<LoginPage />} />

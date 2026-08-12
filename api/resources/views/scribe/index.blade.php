@@ -128,6 +128,9 @@
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-auth-me">
                                 <a href="#endpoints-GETapi-auth-me">GET api/auth/me</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PUTapi-auth-me-appearance">
+                                <a href="#endpoints-PUTapi-auth-me-appearance">PUT api/auth/me/appearance</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-currencies">
                                 <a href="#endpoints-GETapi-currencies">GET api/currencies</a>
                             </li>
@@ -254,7 +257,7 @@ Simple readiness endpoint.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: August 10, 2026</li>
+        <li>Last updated: August 12, 2026</li>
     </ul>
 </div>
 
@@ -2704,6 +2707,156 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
+                    <h2 id="endpoints-PUTapi-auth-me-appearance">PUT api/auth/me/appearance</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PUTapi-auth-me-appearance">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:8000/api/auth/me/appearance" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"theme\": \"neon-tokyo\",
+    \"color_mode\": \"system\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/auth/me/appearance"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "theme": "neon-tokyo",
+    "color_mode": "system"
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-auth-me-appearance">
+</span>
+<span id="execution-results-PUTapi-auth-me-appearance" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PUTapi-auth-me-appearance"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-auth-me-appearance"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-auth-me-appearance" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-auth-me-appearance">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PUTapi-auth-me-appearance" data-method="PUT"
+      data-path="api/auth/me/appearance"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-auth-me-appearance', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-auth-me-appearance"
+                    onclick="tryItOut('PUTapi-auth-me-appearance');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-auth-me-appearance"
+                    onclick="cancelTryOut('PUTapi-auth-me-appearance');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-auth-me-appearance"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/auth/me/appearance</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-auth-me-appearance"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-auth-me-appearance"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>theme</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="theme"                data-endpoint="PUTapi-auth-me-appearance"
+               value="neon-tokyo"
+               data-component="body">
+    <br>
+<p>Example: <code>neon-tokyo</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>neutral</code></li> <li><code>quiet</code></li> <li><code>neon-tokyo</code></li></ul>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>color_mode</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="color_mode"                data-endpoint="PUTapi-auth-me-appearance"
+               value="system"
+               data-component="body">
+    <br>
+<p>Example: <code>system</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>light</code></li> <li><code>dark</code></li> <li><code>system</code></li></ul>
+        </div>
+        </form>
+
                     <h2 id="endpoints-GETapi-currencies">GET api/currencies</h2>
 
 <p>
@@ -2976,11 +3129,11 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"currency\": \"GBP\",
+    \"currency\": \"AUD\",
     \"settlement_mode\": \"architecto\",
     \"settlement_cutoff_day\": 2,
     \"settlement_timezone\": \"Antarctica\\/Rothera\",
-    \"settlement_auto_execute_enabled\": true
+    \"settlement_auto_execute_enabled\": false
 }"
 </code></pre></div>
 
@@ -2997,11 +3150,11 @@ const headers = {
 
 let body = {
     "name": "b",
-    "currency": "GBP",
+    "currency": "AUD",
     "settlement_mode": "architecto",
     "settlement_cutoff_day": 2,
     "settlement_timezone": "Antarctica\/Rothera",
-    "settlement_auto_execute_enabled": true
+    "settlement_auto_execute_enabled": false
 };
 
 fetch(url, {
@@ -3105,10 +3258,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="currency"                data-endpoint="POSTapi-ledgers"
-               value="GBP"
+               value="AUD"
                data-component="body">
     <br>
-<p>Example: <code>GBP</code></p>
+<p>Example: <code>AUD</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>EUR</code></li> <li><code>USD</code></li> <li><code>GBP</code></li> <li><code>BRL</code></li> <li><code>CAD</code></li> <li><code>AUD</code></li> <li><code>JPY</code></li></ul>
         </div>
@@ -3170,7 +3323,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -3187,7 +3340,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:8000/api/ledgers/1/settings" \
+    "http://localhost:8000/api/ledgers/16/settings" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -3195,15 +3348,15 @@ Must be one of:
     \"currency_code\": \"ngz\",
     \"settlement_cutoff_day\": 1,
     \"settlement_timezone\": \"America\\/Moncton\",
-    \"settlement_cutoff_time\": \"22:09:27\",
-    \"settlement_auto_execute_enabled\": false
+    \"settlement_cutoff_time\": \"09:28:42\",
+    \"settlement_auto_execute_enabled\": true
 }"
 </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/settings"
+    "http://localhost:8000/api/ledgers/16/settings"
 );
 
 const headers = {
@@ -3216,8 +3369,8 @@ let body = {
     "currency_code": "ngz",
     "settlement_cutoff_day": 1,
     "settlement_timezone": "America\/Moncton",
-    "settlement_cutoff_time": "22:09:27",
-    "settlement_auto_execute_enabled": false
+    "settlement_cutoff_time": "09:28:42",
+    "settlement_auto_execute_enabled": true
 };
 
 fetch(url, {
@@ -3309,10 +3462,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PUTapi-ledgers--ledger_id--settings"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -3370,10 +3523,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="settlement_cutoff_time"                data-endpoint="PUTapi-ledgers--ledger_id--settings"
-               value="22:09:27"
+               value="09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>22:09:27</code></p>
+<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>settlement_auto_execute_enabled</code></b>&nbsp;&nbsp;
@@ -3395,7 +3548,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -3412,7 +3565,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:8000/api/ledgers/1/my-preferences" \
+    "http://localhost:8000/api/ledgers/16/my-preferences" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -3424,7 +3577,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/my-preferences"
+    "http://localhost:8000/api/ledgers/16/my-preferences"
 );
 
 const headers = {
@@ -3526,10 +3679,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PUTapi-ledgers--ledger_id--my-preferences"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -3542,7 +3695,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value="16"
                data-component="body">
     <br>
-<p>The <code>id</code> of an existing record in the accounts table. Example: <code>16</code></p>
+<p>Example: <code>16</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>default_expense_account_id</code></b>&nbsp;&nbsp;
@@ -3554,7 +3707,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value="16"
                data-component="body">
     <br>
-<p>The <code>id</code> of an existing record in the accounts table. Example: <code>16</code></p>
+<p>Example: <code>16</code></p>
         </div>
         </form>
 
@@ -3571,14 +3724,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/accounts" \
+    --get "http://localhost:8000/api/ledgers/16/accounts" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/accounts"
+    "http://localhost:8000/api/ledgers/16/accounts"
 );
 
 const headers = {
@@ -3691,10 +3844,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--accounts"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -3711,12 +3864,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ledgers/1/accounts" \
+    "http://localhost:8000/api/ledgers/16/accounts" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"type\": \"pool_asset\",
+    \"type\": \"user_liability\",
     \"owner_id\": 16,
     \"base_budget\": 39,
     \"balance\": 84,
@@ -3727,7 +3880,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/accounts"
+    "http://localhost:8000/api/ledgers/16/accounts"
 );
 
 const headers = {
@@ -3737,7 +3890,7 @@ const headers = {
 
 let body = {
     "name": "b",
-    "type": "pool_asset",
+    "type": "user_liability",
     "owner_id": 16,
     "base_budget": 39,
     "balance": 84,
@@ -3833,10 +3986,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--accounts"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -3858,10 +4011,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="POSTapi-ledgers--ledger_id--accounts"
-               value="pool_asset"
+               value="user_liability"
                data-component="body">
     <br>
-<p>Example: <code>pool_asset</code></p>
+<p>Example: <code>user_liability</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>pool_asset</code></li> <li><code>space_expense</code></li> <li><code>split_clearing</code></li> <li><code>user_funding</code></li> <li><code>user_liability</code></li></ul>
         </div>
@@ -3928,14 +4081,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/accounts/1" \
+    --get "http://localhost:8000/api/ledgers/16/accounts/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/accounts/1"
+    "http://localhost:8000/api/ledgers/16/accounts/16"
 );
 
 const headers = {
@@ -4048,10 +4201,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--accounts--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -4060,10 +4213,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="GETapi-ledgers--ledger_id--accounts--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the account. Example: <code>1</code></p>
+<p>The ID of the account. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -4080,14 +4233,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PATCH \
-    "http://localhost:8000/api/ledgers/1/accounts/1" \
+    "http://localhost:8000/api/ledgers/16/accounts/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
     \"base_budget\": 39,
     \"balance\": 84,
-    \"type\": \"space_expense\",
+    \"type\": \"user_liability\",
     \"owner_id\": 16,
     \"code\": \"n\",
     \"current_funds\": 84
@@ -4097,7 +4250,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/accounts/1"
+    "http://localhost:8000/api/ledgers/16/accounts/16"
 );
 
 const headers = {
@@ -4109,7 +4262,7 @@ let body = {
     "name": "b",
     "base_budget": 39,
     "balance": 84,
-    "type": "space_expense",
+    "type": "user_liability",
     "owner_id": 16,
     "code": "n",
     "current_funds": 84
@@ -4204,10 +4357,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PATCHapi-ledgers--ledger_id--accounts--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -4216,10 +4369,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="PATCHapi-ledgers--ledger_id--accounts--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the account. Example: <code>1</code></p>
+<p>The ID of the account. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -4265,10 +4418,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="PATCHapi-ledgers--ledger_id--accounts--id-"
-               value="space_expense"
+               value="user_liability"
                data-component="body">
     <br>
-<p>Example: <code>space_expense</code></p>
+<p>Example: <code>user_liability</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>pool_asset</code></li> <li><code>space_expense</code></li> <li><code>split_clearing</code></li> <li><code>user_funding</code></li> <li><code>user_liability</code></li></ul>
         </div>
@@ -4323,14 +4476,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/ledgers/1/accounts/1" \
+    "http://localhost:8000/api/ledgers/16/accounts/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/accounts/1"
+    "http://localhost:8000/api/ledgers/16/accounts/16"
 );
 
 const headers = {
@@ -4427,10 +4580,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="DELETEapi-ledgers--ledger_id--accounts--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -4439,10 +4592,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="DELETEapi-ledgers--ledger_id--accounts--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the account. Example: <code>1</code></p>
+<p>The ID of the account. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -4459,14 +4612,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/roles" \
+    --get "http://localhost:8000/api/ledgers/16/roles" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/roles"
+    "http://localhost:8000/api/ledgers/16/roles"
 );
 
 const headers = {
@@ -4579,10 +4732,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--roles"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -4599,7 +4752,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ledgers/1/invitations" \
+    "http://localhost:8000/api/ledgers/16/invitations" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -4611,7 +4764,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/invitations"
+    "http://localhost:8000/api/ledgers/16/invitations"
 );
 
 const headers = {
@@ -4713,10 +4866,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--invitations"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -4758,12 +4911,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/transactions" \
+    --get "http://localhost:8000/api/ledgers/16/transactions" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"from_date\": \"2026-08-10T22:09:28\",
-    \"to_date\": \"2052-09-02\",
+    \"from_date\": \"2026-08-12T09:28:42\",
+    \"to_date\": \"2052-09-04\",
     \"account_id\": 16,
     \"account_ids\": [
         16
@@ -4775,7 +4928,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         \"architecto\"
     ],
     \"types\": [
-        \"reversal\"
+        \"manual\"
     ],
     \"settlement_id\": 16,
     \"per_page\": 22,
@@ -4786,7 +4939,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/transactions"
+    "http://localhost:8000/api/ledgers/16/transactions"
 );
 
 const headers = {
@@ -4795,8 +4948,8 @@ const headers = {
 };
 
 let body = {
-    "from_date": "2026-08-10T22:09:28",
-    "to_date": "2052-09-02",
+    "from_date": "2026-08-12T09:28:42",
+    "to_date": "2052-09-04",
     "account_id": 16,
     "account_ids": [
         16
@@ -4808,7 +4961,7 @@ let body = {
         "architecto"
     ],
     "types": [
-        "reversal"
+        "manual"
     ],
     "settlement_id": 16,
     "per_page": 22,
@@ -4920,10 +5073,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -4933,10 +5086,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="from_date"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>to_date</code></b>&nbsp;&nbsp;
@@ -4945,10 +5098,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="to_date"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="2052-09-02"
+               value="2052-09-04"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>from_date</code>. Example: <code>2052-09-02</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>from_date</code>. Example: <code>2052-09-04</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>account_id</code></b>&nbsp;&nbsp;
@@ -5073,7 +5226,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ledgers/1/transactions" \
+    "http://localhost:8000/api/ledgers/16/transactions" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -5081,9 +5234,9 @@ Must be one of:
     \"destination_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"date\": \"2026-08-10T22:09:28\",
+    \"date\": \"2026-08-12T09:28:42\",
     \"type\": \"manual\",
-    \"split_rule\": \"manual\",
+    \"split_rule\": \"equal\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -5096,7 +5249,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/transactions"
+    "http://localhost:8000/api/ledgers/16/transactions"
 );
 
 const headers = {
@@ -5109,9 +5262,9 @@ let body = {
     "destination_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "date": "2026-08-10T22:09:28",
+    "date": "2026-08-12T09:28:42",
     "type": "manual",
-    "split_rule": "manual",
+    "split_rule": "equal",
     "participants": [
         {
             "user_id": 16,
@@ -5209,10 +5362,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -5270,10 +5423,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>type</code></b>&nbsp;&nbsp;
@@ -5296,10 +5449,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="manual"
+               value="equal"
                data-component="body">
     <br>
-<p>Example: <code>manual</code></p>
+<p>Example: <code>equal</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
         </div>
@@ -5354,14 +5507,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/transactions/1" \
+    --get "http://localhost:8000/api/ledgers/16/transactions/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/transactions/1"
+    "http://localhost:8000/api/ledgers/16/transactions/16"
 );
 
 const headers = {
@@ -5474,10 +5627,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--transactions--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -5486,10 +5639,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="GETapi-ledgers--ledger_id--transactions--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the transaction. Example: <code>1</code></p>
+<p>The ID of the transaction. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -5506,7 +5659,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PATCH \
-    "http://localhost:8000/api/ledgers/1/transactions/1" \
+    "http://localhost:8000/api/ledgers/16/transactions/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -5514,9 +5667,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"destination_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"date\": \"2026-08-10T22:09:28\",
+    \"date\": \"2026-08-12T09:28:42\",
     \"type\": \"manual\",
-    \"split_rule\": \"manual\",
+    \"split_rule\": \"individual\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -5529,7 +5682,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/transactions/1"
+    "http://localhost:8000/api/ledgers/16/transactions/16"
 );
 
 const headers = {
@@ -5542,9 +5695,9 @@ let body = {
     "destination_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "date": "2026-08-10T22:09:28",
+    "date": "2026-08-12T09:28:42",
     "type": "manual",
-    "split_rule": "manual",
+    "split_rule": "individual",
     "participants": [
         {
             "user_id": 16,
@@ -5642,10 +5795,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PATCHapi-ledgers--ledger_id--transactions--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -5654,10 +5807,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="PATCHapi-ledgers--ledger_id--transactions--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the transaction. Example: <code>1</code></p>
+<p>The ID of the transaction. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -5715,10 +5868,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="PATCHapi-ledgers--ledger_id--transactions--id-"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>type</code></b>&nbsp;&nbsp;
@@ -5741,10 +5894,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="PATCHapi-ledgers--ledger_id--transactions--id-"
-               value="manual"
+               value="individual"
                data-component="body">
     <br>
-<p>Example: <code>manual</code></p>
+<p>Example: <code>individual</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
         </div>
@@ -5799,14 +5952,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/ledgers/1/transactions/1" \
+    "http://localhost:8000/api/ledgers/16/transactions/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/transactions/1"
+    "http://localhost:8000/api/ledgers/16/transactions/16"
 );
 
 const headers = {
@@ -5903,10 +6056,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="DELETEapi-ledgers--ledger_id--transactions--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -5915,10 +6068,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="DELETEapi-ledgers--ledger_id--transactions--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the transaction. Example: <code>1</code></p>
+<p>The ID of the transaction. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -5935,14 +6088,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/recurring-transactions" \
+    --get "http://localhost:8000/api/ledgers/16/recurring-transactions" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/recurring-transactions"
+    "http://localhost:8000/api/ledgers/16/recurring-transactions"
 );
 
 const headers = {
@@ -6055,10 +6208,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--recurring-transactions"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -6075,7 +6228,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ledgers/1/recurring-transactions" \
+    "http://localhost:8000/api/ledgers/16/recurring-transactions" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -6083,9 +6236,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"destination_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"split_rule\": \"manual\",
-    \"start_date\": \"2026-08-10T22:09:28\",
-    \"frequency\": \"annually\",
+    \"split_rule\": \"equal\",
+    \"start_date\": \"2026-08-12T09:28:42\",
+    \"frequency\": \"monthly\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -6098,7 +6251,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/recurring-transactions"
+    "http://localhost:8000/api/ledgers/16/recurring-transactions"
 );
 
 const headers = {
@@ -6111,9 +6264,9 @@ let body = {
     "destination_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "split_rule": "manual",
-    "start_date": "2026-08-10T22:09:28",
-    "frequency": "annually",
+    "split_rule": "equal",
+    "start_date": "2026-08-12T09:28:42",
+    "frequency": "monthly",
     "participants": [
         {
             "user_id": 16,
@@ -6211,10 +6364,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -6272,12 +6425,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="manual"
+               value="equal"
                data-component="body">
     <br>
-<p>Example: <code>manual</code></p>
+<p>Example: <code>equal</code></p>
 Must be one of:
-<ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
+<ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>proportional</code></li></ul>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
         <details>
@@ -6322,10 +6475,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>frequency</code></b>&nbsp;&nbsp;
@@ -6334,10 +6487,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="frequency"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="annually"
+               value="monthly"
                data-component="body">
     <br>
-<p>Example: <code>annually</code></p>
+<p>Example: <code>monthly</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>weekly</code></li> <li><code>monthly</code></li> <li><code>annually</code></li></ul>
         </div>
@@ -6356,7 +6509,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PATCH \
-    "http://localhost:8000/api/ledgers/1/recurring-transactions/1" \
+    "http://localhost:8000/api/ledgers/16/recurring-transactions/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -6364,9 +6517,9 @@ Must be one of:
     \"destination_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"split_rule\": \"individual\",
-    \"start_date\": \"2026-08-10T22:09:28\",
-    \"frequency\": \"monthly\",
+    \"split_rule\": \"proportional\",
+    \"start_date\": \"2026-08-12T09:28:42\",
+    \"frequency\": \"annually\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -6379,7 +6532,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/recurring-transactions/1"
+    "http://localhost:8000/api/ledgers/16/recurring-transactions/16"
 );
 
 const headers = {
@@ -6392,9 +6545,9 @@ let body = {
     "destination_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "split_rule": "individual",
-    "start_date": "2026-08-10T22:09:28",
-    "frequency": "monthly",
+    "split_rule": "proportional",
+    "start_date": "2026-08-12T09:28:42",
+    "frequency": "annually",
     "participants": [
         {
             "user_id": 16,
@@ -6492,10 +6645,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>recurringTransaction_id</code></b>&nbsp;&nbsp;
@@ -6504,10 +6657,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="recurringTransaction_id"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the recurringTransaction. Example: <code>1</code></p>
+<p>The ID of the recurringTransaction. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -6565,12 +6718,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="individual"
+               value="proportional"
                data-component="body">
     <br>
-<p>Example: <code>individual</code></p>
+<p>Example: <code>proportional</code></p>
 Must be one of:
-<ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
+<ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>proportional</code></li></ul>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
         <details>
@@ -6615,10 +6768,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>frequency</code></b>&nbsp;&nbsp;
@@ -6627,10 +6780,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="frequency"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="monthly"
+               value="annually"
                data-component="body">
     <br>
-<p>Example: <code>monthly</code></p>
+<p>Example: <code>annually</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>weekly</code></li> <li><code>monthly</code></li> <li><code>annually</code></li></ul>
         </div>
@@ -6649,14 +6802,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/ledgers/1/recurring-transactions/1" \
+    "http://localhost:8000/api/ledgers/16/recurring-transactions/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/recurring-transactions/1"
+    "http://localhost:8000/api/ledgers/16/recurring-transactions/16"
 );
 
 const headers = {
@@ -6753,10 +6906,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="DELETEapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>recurringTransaction_id</code></b>&nbsp;&nbsp;
@@ -6765,10 +6918,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="recurringTransaction_id"                data-endpoint="DELETEapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the recurringTransaction. Example: <code>1</code></p>
+<p>The ID of the recurringTransaction. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -6785,14 +6938,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/users/1/financial-profile/active" \
+    --get "http://localhost:8000/api/ledgers/16/users/16/financial-profile/active" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/users/1/financial-profile/active"
+    "http://localhost:8000/api/ledgers/16/users/16/financial-profile/active"
 );
 
 const headers = {
@@ -6905,10 +7058,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--users--user_id--financial-profile-active"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>user_id</code></b>&nbsp;&nbsp;
@@ -6917,10 +7070,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="user_id"                data-endpoint="GETapi-ledgers--ledger_id--users--user_id--financial-profile-active"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the user. Example: <code>1</code></p>
+<p>The ID of the user. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -6937,7 +7090,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:8000/api/ledgers/1/users/1/financial-profile/active" \
+    "http://localhost:8000/api/ledgers/16/users/16/financial-profile/active" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -6959,7 +7112,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/users/1/financial-profile/active"
+    "http://localhost:8000/api/ledgers/16/users/16/financial-profile/active"
 );
 
 const headers = {
@@ -7071,10 +7224,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PUTapi-ledgers--ledger_id--users--user_id--financial-profile-active"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>user_id</code></b>&nbsp;&nbsp;
@@ -7083,10 +7236,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="user_id"                data-endpoint="PUTapi-ledgers--ledger_id--users--user_id--financial-profile-active"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the user. Example: <code>1</code></p>
+<p>The ID of the user. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -7176,18 +7329,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/settlements/preview" \
+    --get "http://localhost:8000/api/ledgers/16/settlements/preview" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"date\": \"2026-08-10T22:09:28\"
+    \"date\": \"2026-08-12T09:28:42\"
 }"
 </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/settlements/preview"
+    "http://localhost:8000/api/ledgers/16/settlements/preview"
 );
 
 const headers = {
@@ -7196,7 +7349,7 @@ const headers = {
 };
 
 let body = {
-    "date": "2026-08-10T22:09:28"
+    "date": "2026-08-12T09:28:42"
 };
 
 fetch(url, {
@@ -7304,10 +7457,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--settlements-preview"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -7317,10 +7470,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="GETapi-ledgers--ledger_id--settlements-preview"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
         </form>
 
@@ -7337,14 +7490,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/settlements/periods" \
+    --get "http://localhost:8000/api/ledgers/16/settlements/periods" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/settlements/periods"
+    "http://localhost:8000/api/ledgers/16/settlements/periods"
 );
 
 const headers = {
@@ -7457,10 +7610,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--settlements-periods"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -7477,14 +7630,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/settlements" \
+    --get "http://localhost:8000/api/ledgers/16/settlements" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/settlements"
+    "http://localhost:8000/api/ledgers/16/settlements"
 );
 
 const headers = {
@@ -7597,10 +7750,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--settlements"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -7617,18 +7770,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ledgers/1/settlements/architecto/confirm" \
+    "http://localhost:8000/api/ledgers/16/settlements/architecto/confirm" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"period_end\": \"2026-08-10T22:09:28\"
+    \"period_end\": \"2026-08-12T09:28:42\"
 }"
 </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/settlements/architecto/confirm"
+    "http://localhost:8000/api/ledgers/16/settlements/architecto/confirm"
 );
 
 const headers = {
@@ -7637,7 +7790,7 @@ const headers = {
 };
 
 let body = {
-    "period_end": "2026-08-10T22:09:28"
+    "period_end": "2026-08-12T09:28:42"
 };
 
 fetch(url, {
@@ -7729,10 +7882,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--settlements--cycle--confirm"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>cycle</code></b>&nbsp;&nbsp;
@@ -7754,10 +7907,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="period_end"                data-endpoint="POSTapi-ledgers--ledger_id--settlements--cycle--confirm"
-               value="2026-08-10T22:09:28"
+               value="2026-08-12T09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-10T22:09:28</code></p>
+<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
         </div>
         </form>
 
@@ -7774,13 +7927,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PATCH \
-    "http://localhost:8000/api/ledgers/1/cycle-config" \
+    "http://localhost:8000/api/ledgers/16/cycle-config" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
     \"settlement_timezone\": \"Asia\\/Yekaterinburg\",
     \"settlement_cutoff_day\": 2,
-    \"settlement_cutoff_time\": \"22:09:28\",
+    \"settlement_cutoff_time\": \"09:28:42\",
     \"settlement_auto_execute_enabled\": false
 }"
 </code></pre></div>
@@ -7788,7 +7941,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/cycle-config"
+    "http://localhost:8000/api/ledgers/16/cycle-config"
 );
 
 const headers = {
@@ -7799,7 +7952,7 @@ const headers = {
 let body = {
     "settlement_timezone": "Asia\/Yekaterinburg",
     "settlement_cutoff_day": 2,
-    "settlement_cutoff_time": "22:09:28",
+    "settlement_cutoff_time": "09:28:42",
     "settlement_auto_execute_enabled": false
 };
 
@@ -7892,10 +8045,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="PATCHapi-ledgers--ledger_id--cycle-config"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -7929,10 +8082,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="settlement_cutoff_time"                data-endpoint="PATCHapi-ledgers--ledger_id--cycle-config"
-               value="22:09:28"
+               value="09:28:42"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>22:09:28</code></p>
+<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>09:28:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>settlement_auto_execute_enabled</code></b>&nbsp;&nbsp;
@@ -7976,14 +8129,14 @@ from their active financial profile on the given date.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/ledgers/1/users?date=2026-03-17" \
+    --get "http://localhost:8000/api/ledgers/16/users?date=2026-03-17" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/users"
+    "http://localhost:8000/api/ledgers/16/users"
 );
 
 const params = {
@@ -8102,10 +8255,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--users"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>ledger</code></b>&nbsp;&nbsp;
@@ -8147,14 +8300,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/ledgers/1/users/1" \
+    "http://localhost:8000/api/ledgers/16/users/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/users/1"
+    "http://localhost:8000/api/ledgers/16/users/16"
 );
 
 const headers = {
@@ -8251,10 +8404,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="DELETEapi-ledgers--ledger_id--users--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -8263,10 +8416,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="DELETEapi-ledgers--ledger_id--users--id-"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the user. Example: <code>1</code></p>
+<p>The ID of the user. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -8283,14 +8436,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ledgers/1/users/1/restore" \
+    "http://localhost:8000/api/ledgers/16/users/16/restore" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/users/1/restore"
+    "http://localhost:8000/api/ledgers/16/users/16/restore"
 );
 
 const headers = {
@@ -8387,10 +8540,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--users--user_id--restore"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>user_id</code></b>&nbsp;&nbsp;
@@ -8399,10 +8552,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="user_id"                data-endpoint="POSTapi-ledgers--ledger_id--users--user_id--restore"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the user. Example: <code>1</code></p>
+<p>The ID of the user. Example: <code>16</code></p>
             </div>
                     </form>
 
@@ -8419,14 +8572,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/ledgers/1/users/1/two-factor" \
+    "http://localhost:8000/api/ledgers/16/users/16/two-factor" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ledgers/1/users/1/two-factor"
+    "http://localhost:8000/api/ledgers/16/users/16/two-factor"
 );
 
 const headers = {
@@ -8523,10 +8676,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="ledger_id"                data-endpoint="DELETEapi-ledgers--ledger_id--users--user_id--two-factor"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the ledger. Example: <code>1</code></p>
+<p>The ID of the ledger. Example: <code>16</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>user_id</code></b>&nbsp;&nbsp;
@@ -8535,10 +8688,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="user_id"                data-endpoint="DELETEapi-ledgers--ledger_id--users--user_id--two-factor"
-               value="1"
+               value="16"
                data-component="url">
     <br>
-<p>The ID of the user. Example: <code>1</code></p>
+<p>The ID of the user. Example: <code>16</code></p>
             </div>
                     </form>
 

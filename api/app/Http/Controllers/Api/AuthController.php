@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\TwoFactorChallengeRequest;
+use App\Http\Requests\UpdateAppearanceRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Modules\Auth\Actions\LoginUserAction;
@@ -100,6 +101,21 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => UserResource::make($request->user()),
+        ]);
+    }
+
+    public function updateAppearance(UpdateAppearanceRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        /** @var array{theme: string, color_mode: string} $data */
+        $data = $request->validated();
+
+        $user->fill($data)->save();
+
+        return response()->json([
+            'user' => UserResource::make($user->refresh()),
         ]);
     }
 

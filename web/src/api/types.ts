@@ -2,6 +2,8 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    theme: 'poruko' | 'neutral' | 'quiet' | 'neon-tokyo';
+    color_mode: 'light' | 'dark' | 'system';
 }
 
 export interface AuthResponse {

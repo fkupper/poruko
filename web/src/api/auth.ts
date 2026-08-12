@@ -47,6 +47,14 @@ export const me = async (): Promise<{ user: User }> => {
     return data;
 };
 
+export const updateAppearance = async (payload: {
+    theme: User['theme'];
+    color_mode: User['color_mode'];
+}): Promise<{ user: User }> => {
+    const { data } = await client.put<{ user: User }>('/auth/me/appearance', payload);
+    return data;
+};
+
 export const logout = async (): Promise<void> => {
     await client.post('/auth/logout');
 };

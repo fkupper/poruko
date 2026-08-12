@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { ShieldCheckIcon, ShieldAlertIcon, Loader2Icon, CopyIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AppearanceSettings } from '@/pages/AccountSettingsPage/AppearanceSettings';
+
 export default function AccountSettingsPage() {
     const queryClient = useQueryClient();
     
@@ -101,6 +103,8 @@ export default function AccountSettingsPage() {
                     <AlertDescription>{feedback.message}</AlertDescription>
                 </Alert>
             )}
+
+            <AppearanceSettings onFeedback={showFeedback} />
 
             <Card className="bg-surface border-border">
                 <CardHeader className="pb-3 border-b border-border mb-4">

@@ -56,7 +56,7 @@ class UpdateLedgerUserPreferencesRequest extends FormRequest
                         })
                         ->exists();
 
-                    if (! $valid) {
+                    if (!$valid) {
                         $fail('The selected payment account is invalid.');
                     }
                 },
@@ -75,7 +75,7 @@ class UpdateLedgerUserPreferencesRequest extends FormRequest
                         ->where('type', AccountType::SpaceExpense)
                         ->exists();
 
-                    if (! $valid) {
+                    if (!$valid) {
                         $fail('The selected expense account is invalid.');
                     }
                 },

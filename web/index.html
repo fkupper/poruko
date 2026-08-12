@@ -5,6 +5,32 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Poruko</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('poruko-theme');
+          var parsed = raw ? JSON.parse(raw) : null;
+          var state = parsed && parsed.state ? parsed.state : {};
+          var rawTheme = state.theme === 'quiet-architect' ? 'quiet' : state.theme;
+          var allowed = { poruko: 1, neutral: 1, quiet: 1, 'neon-tokyo': 1 };
+          var theme = allowed[rawTheme] ? rawTheme : 'poruko';
+          var colorMode = state.colorMode === 'light' || state.colorMode === 'dark' || state.colorMode === 'system'
+            ? state.colorMode
+            : 'system';
+          var resolved =
+            theme === 'neon-tokyo'
+              ? 'dark'
+              : colorMode === 'system'
+                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                : colorMode;
+          var root = document.documentElement;
+          root.dataset.theme = theme;
+          if (resolved === 'dark') root.classList.add('dark');
+          else root.classList.remove('dark');
+          root.style.colorScheme = resolved;
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

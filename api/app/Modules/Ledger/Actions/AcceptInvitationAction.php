@@ -86,6 +86,7 @@ final readonly class AcceptInvitationAction
             setPermissionsTeamId($invitation->ledger_id);
 
             $this->ensureDefaultPermissionsAction->execute();
+
             if (!$user->hasRole('Member')) {
                 $user->assignRole('Member');
             }
