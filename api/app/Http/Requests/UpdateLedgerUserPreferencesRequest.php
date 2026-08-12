@@ -3,10 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Enums\AccountType;
+use App\Models\Account;
 use App\Models\Ledger;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateLedgerUserPreferencesRequest extends FormRequest
 {
@@ -36,29 +37,49 @@ class UpdateLedgerUserPreferencesRequest extends FormRequest
             'default_payment_account_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('accounts', 'id')
-                    ->where('ledger_id', $ledgerId)
-                    ->where('type', AccountType::UserFunding->value)
-                    ->where('owner_id', $userId),
+                function (string $attribute, mixed $value, Closure $fail) use ($ledgerId, $userId): void {
+                    if ($value === null) {
+                        return;
+                    }
+
+                    $valid = Account::query()
+                        ->whereKey($value)
+                        ->where('ledger_id', $ledgerId)
+                        ->where(function ($query) use ($userId): void {
+                            $query
+                                ->where(function ($owned) use ($userId): void {
+                                    $owned
+                                        ->where('type', AccountType::UserFunding)
+                                        ->where('owner_id', $userId);
+                                })
+                                ->orWhere('type', AccountType::PoolAsset);
+                        })
+                        ->exists();
+
+                    if (! $valid) {
+                        $fail('The selected payment account is invalid.');
+                    }
+                },
             ],
             'default_expense_account_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('accounts', 'id')
-                    ->where('ledger_id', $ledgerId)
-                    ->where('type', AccountType::SpaceExpense->value),
-            ],
-        ];
-    }
+                function (string $attribute, mixed $value, Closure $fail) use ($ledgerId): void {
+                    if ($value === null) {
+                        return;
+                    }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'default_payment_account_id.exists' => 'The selected payment account is invalid.',
-            'default_expense_account_id.exists' => 'The selected expense account is invalid.',
+                    $valid = Account::query()
+                        ->whereKey($value)
+                        ->where('ledger_id', $ledgerId)
+                        ->where('type', AccountType::SpaceExpense)
+                        ->exists();
+
+                    if (! $valid) {
+                        $fail('The selected expense account is invalid.');
+                    }
+                },
+            ],
         ];
     }
 }

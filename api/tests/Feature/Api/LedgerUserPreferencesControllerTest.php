@@ -46,6 +46,76 @@ class LedgerUserPreferencesControllerTest extends TestCase
         ]);
     }
 
+    public function testCanSetPoolAssetAsDefaultPaymentAccount(): void
+    {
+        // Arrange
+        [$user, $ledger, , $expenseAccount] = $this->seedMemberWithAccounts();
+        $housePool = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => AccountType::PoolAsset,
+            'name' => 'House Joint Account',
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act
+        $response = $this->putJson(route('ledgers.my-preferences.update', $ledger), [
+            'default_payment_account_id' => $housePool->id,
+            'default_expense_account_id' => $expenseAccount->id,
+        ]);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.my_preferences.default_payment_account_id', $housePool->id)
+            ->assertJsonPath('data.my_preferences.default_expense_account_id', $expenseAccount->id);
+
+        $this->assertDatabaseHas('ledger_user', [
+            'ledger_id' => $ledger->id,
+            'user_id' => $user->id,
+            'default_payment_account_id' => $housePool->id,
+            'default_expense_account_id' => $expenseAccount->id,
+        ]);
+    }
+
+    public function testUserLiabilityCannotBeDefaultPaymentAccount(): void
+    {
+        // Arrange
+        [$user, $ledger] = $this->seedMemberWithAccounts();
+        $liabilityAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'owner_id' => $user->id,
+            'type' => AccountType::UserLiability,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act & Assert
+        $this->putJson(route('ledgers.my-preferences.update', $ledger), [
+            'default_payment_account_id' => $liabilityAccount->id,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['default_payment_account_id']);
+    }
+
+    public function testPoolAssetCannotBeDefaultExpenseAccount(): void
+    {
+        // Arrange
+        [$user, $ledger] = $this->seedMemberWithAccounts();
+        $poolAsset = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'type' => AccountType::PoolAsset,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        // Act & Assert
+        $this->putJson(route('ledgers.my-preferences.update', $ledger), [
+            'default_expense_account_id' => $poolAsset->id,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['default_expense_account_id']);
+    }
+
     public function testNonMemberCannotUpdatePreferences(): void
     {
         // Arrange

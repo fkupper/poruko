@@ -181,7 +181,7 @@ class DevSeeder extends Seeder
             ->where('ledger_id', $ledger->id)
             ->whereIn('user_id', [$bob->id, $clara->id])
             ->update([
-                'default_payment_account_id' => DB::raw('main_personal_account_id'),
+                'default_payment_account_id' => $housePool->id,
                 'default_expense_account_id' => $generalExpenses->id,
             ]);
 

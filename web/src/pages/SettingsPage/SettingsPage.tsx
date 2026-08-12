@@ -1,13 +1,16 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type UseFormSetError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import axios from 'axios';
 import { updateLedgerSettings, updateMyPreferences, fetchLedgers } from '@/api/ledgers';
 import { fetchCurrencies } from '@/api/currencies';
 import { fetchAccounts } from '@/api/accounts';
+import type { ApiError } from '@/api/types';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { useAuthStore } from '@/stores/authStore';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -39,6 +42,42 @@ const automationSchema = z.object({
 });
 
 type AutomationFormValues = z.infer<typeof automationSchema>;
+
+const FORM_API_FIELDS = [
+    'name',
+    'currency_code',
+    'settlement_timezone',
+    'settlement_cutoff_day',
+    'settlement_auto_execute_enabled',
+    'default_payment_account_id',
+    'default_expense_account_id',
+] as const satisfies ReadonlyArray<keyof AutomationFormValues>;
+
+function applyApiErrors(error: unknown, setError: UseFormSetError<AutomationFormValues>): void {
+    if (!axios.isAxiosError<ApiError>(error)) {
+        setError('root', { message: 'Failed to save settings. Please try again.' });
+        return;
+    }
+
+    const data = error.response?.data;
+    const fieldErrors = data?.errors ?? {};
+    let mappedField = false;
+
+    for (const [field, messages] of Object.entries(fieldErrors)) {
+        const message = messages[0];
+        if (!message) continue;
+
+        if ((FORM_API_FIELDS as readonly string[]).includes(field)) {
+            setError(field as (typeof FORM_API_FIELDS)[number], { message });
+            mappedField = true;
+        }
+    }
+
+    setError('root', {
+        message: data?.message
+            ?? (mappedField ? 'Please fix the highlighted fields and try again.' : 'Failed to save settings. Please try again.'),
+    });
+}
 
 export default function SettingsPage() {
     const [saveSuccess, setSaveSuccess] = React.useState(false);
@@ -88,6 +127,7 @@ export default function SettingsPage() {
             default_expense_account_id: null,
         },
     });
+    const { setError, clearErrors, formState: { errors } } = form;
 
     React.useEffect(() => {
         if (activeLedger) {
@@ -108,7 +148,9 @@ export default function SettingsPage() {
     const settingsMutation = useMutation({
         mutationFn: async (values: AutomationFormValues) => {
             const targetLedgerId = activeLedgerId ?? activeLedger?.id;
-            if (!targetLedgerId) return;
+            if (!targetLedgerId) {
+                throw new Error('No active space selected.');
+            }
 
             await updateMyPreferences(targetLedgerId, {
                 default_payment_account_id: values.default_payment_account_id,
@@ -124,13 +166,20 @@ export default function SettingsPage() {
             });
         },
         onSuccess: () => {
+            clearErrors('root');
             queryClient.invalidateQueries({ queryKey: ['ledgers'] });
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         },
+        onError: (error: unknown) => {
+            setSaveSuccess(false);
+            applyApiErrors(error, setError);
+        },
     });
 
     const onSettingsSubmit = (values: AutomationFormValues) => {
+        clearErrors();
+        setSaveSuccess(false);
         settingsMutation.mutate(values);
     };
 
@@ -161,6 +210,13 @@ export default function SettingsPage() {
                     {saveSuccess ? 'Saved!' : 'Save Settings'}
                 </Button>
             </div>
+
+            {errors.root && (
+                <Alert variant="destructive">
+                    <AlertTriangleIcon />
+                    <AlertDescription>{errors.root.message}</AlertDescription>
+                </Alert>
+            )}
 
             {/* General Settings Card */}
             <Card className="bg-surface border-border">
@@ -250,7 +306,11 @@ export default function SettingsPage() {
                                     <FieldLabel>Default Payment Account</FieldLabel>
                                     <FieldContent>
                                         {(() => {
-                                            const paymentAccounts = accounts.filter(a => (a.type === 'user_funding' || a.type === 'user_liability') && a.owner_id === user?.id);
+                                            const paymentAccounts = accounts.filter(
+                                                (a) =>
+                                                    a.type === 'pool_asset'
+                                                    || (a.type === 'user_funding' && a.owner_id === user?.id),
+                                            );
                                             return (
                                                 <Select
                                                     key={(!isLoadingAccounts && isFormHydrated) ? `payment-ready-${paymentAccounts.length}` : 'payment-loading'}
@@ -284,7 +344,7 @@ export default function SettingsPage() {
                                     <FieldLabel>Default Expense Category</FieldLabel>
                                     <FieldContent>
                                         {(() => {
-                                            const expenseAccounts = accounts.filter(a => a.type === 'space_expense' || a.type === 'pool_asset');
+                                            const expenseAccounts = accounts.filter(a => a.type === 'space_expense');
                                             return (
                                                 <Select
                                                     key={(!isLoadingAccounts && isFormHydrated) ? `expense-ready-${expenseAccounts.length}` : 'expense-loading'}
