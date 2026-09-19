@@ -1,7 +1,9 @@
 import client from '@/api/client';
 import type {
+    ApprovePendingItem,
     AiImportSettings,
     BankAccountMapping,
+    PendingTransaction,
     StatementImport,
 } from '@/api/types';
 
@@ -37,7 +39,9 @@ export async function deleteAiImportSettings(ledgerId: number): Promise<void> {
 export async function uploadBankStatement(
     ledgerId: number,
     file: File,
-): Promise<StatementImport> {
+    _legacyTargetAccountId?: number,
+): Promise<StatementImport & { message?: string }> {
+    void _legacyTargetAccountId;
     const formData = new FormData();
     formData.append('statement', file);
 
@@ -50,6 +54,29 @@ export async function uploadBankStatement(
     );
 
     return data.data;
+}
+
+/**
+ * @deprecated The transaction page owns the shared approval queue.
+ */
+export async function fetchPendingTransactions(ledgerId: number): Promise<PendingTransaction[]> {
+    const { data } = await client.get<{ data: PendingTransaction[] }>(
+        `/ledgers/${ledgerId}/pending-transactions`,
+    );
+
+    return data.data.filter((transaction) => transaction.source === 'ai_import');
+}
+
+/**
+ * @deprecated Use the shared pending-transactions API.
+ */
+export async function approvePendingTransactions(
+    ledgerId: number,
+    transactions: ApprovePendingItem[],
+): Promise<void> {
+    await client.post(`/ledgers/${ledgerId}/pending-transactions/approve-batch`, {
+        pending_transaction_ids: transactions.map((transaction) => transaction.pending_transaction_id),
+    });
 }
 
 export async function fetchStatementImports(ledgerId: number): Promise<StatementImport[]> {

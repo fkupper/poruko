@@ -70,6 +70,7 @@ export function PendingTransactionReviewDialog({
     React.useEffect(() => {
         if (!transaction || !open) return;
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- seed the review form when a proposal opens
         setPayerAccountId(transaction.payer_account_id);
         setDestinationAccountId(transaction.destination_account_id);
         setCreateFor(transaction.payer_account_id === null ? 'payer' : 'destination');

@@ -141,7 +141,8 @@ describe('AiImportPage', () => {
         renderPage();
 
         expect(await screen.findByText('AI statement import')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('••••••••1234')).toBeInTheDocument();
+        expect(await screen.findByLabelText('Replace API key'))
+            .toHaveAttribute('placeholder', '••••••••1234');
         expect(screen.getByText('Everyday Checking')).toBeInTheDocument();
         expect(screen.getByText('Use suggestion: Alice Checking')).toBeInTheDocument();
         expect(screen.getByText('september.csv')).toBeInTheDocument();

@@ -34,14 +34,14 @@ final class ByokStatementParser
             throw new RuntimeException('The AI provider returned invalid statement JSON.', previous: $exception);
         }
 
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             throw new RuntimeException('The AI provider did not return a statement object.');
         }
 
         $accounts = $decoded['bank_accounts'] ?? [];
         $transactions = $decoded['transactions'] ?? [];
 
-        if (!is_array($accounts) || !is_array($transactions)) {
+        if (! is_array($accounts) || ! is_array($transactions)) {
             throw new RuntimeException('The AI provider returned an invalid statement structure.');
         }
 
@@ -71,7 +71,7 @@ final class ByokStatementParser
 
         $content = $response->json('choices.0.message.content');
 
-        if (!is_string($content) || $content === '') {
+        if (! is_string($content) || $content === '') {
             throw new RuntimeException('OpenAI returned an empty statement response.');
         }
 
@@ -98,14 +98,14 @@ final class ByokStatementParser
 
         $blocks = $response->json('content');
 
-        if (!is_array($blocks)) {
+        if (! is_array($blocks)) {
             throw new RuntimeException('Anthropic returned an empty statement response.');
         }
 
         $content = collect($blocks)
             ->where('type', 'text')
             ->pluck('text')
-            ->filter('is_string')
+            ->filter(static fn (mixed $text): bool => is_string($text))
             ->implode("\n");
 
         if ($content === '') {
@@ -154,7 +154,7 @@ Return one JSON object and no markdown using exactly this shape:
 Amounts must be positive integer minor currency units. Use expense for debits and income for credits.
 Keep low-confidence rows instead of omitting them when their date and amount are legible.
 PROMPT
-            . "\n\nMIME type: {$mimeType}\n\nSTATEMENT:\n"
-            . $contents;
+            ."\n\nMIME type: {$mimeType}\n\nSTATEMENT:\n"
+            .$contents;
     }
 }

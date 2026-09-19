@@ -120,6 +120,7 @@ export default function AiImportPage() {
         const settings = settingsQuery.data;
         if (!settings) return;
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate editable fields from server state
         setProvider(settings.provider ?? 'openai');
         setModel(settings.model ?? '');
         setAutoCreateAccounts(settings.auto_create_accounts);
