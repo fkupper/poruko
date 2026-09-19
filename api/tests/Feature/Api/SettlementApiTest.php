@@ -28,7 +28,7 @@ class SettlementApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_member_can_preview_settlement_for_ledger(): void
+    public function testMemberCanPreviewSettlementForLedger(): void
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
 
@@ -52,7 +52,7 @@ class SettlementApiTest extends TestCase
             ]);
     }
 
-    public function test_member_can_fetch_settlement_periods(): void
+    public function testMemberCanFetchSettlementPeriods(): void
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
 
@@ -67,7 +67,7 @@ class SettlementApiTest extends TestCase
             ]);
     }
 
-    public function test_preview_uses_previous_calendar_month_for_cutoff_day_one(): void
+    public function testPreviewUsesPreviousCalendarMonthForCutoffDayOne(): void
     {
         [$ledger, $user] = $this->createLedgerWithAdmin([
             'settlement_timezone' => 'UTC',
@@ -83,7 +83,7 @@ class SettlementApiTest extends TestCase
             ->assertJsonPath('data.period_end', '2026-04-30');
     }
 
-    public function test_non_member_cannot_preview_settlement_for_foreign_ledger(): void
+    public function testNonMemberCannotPreviewSettlementForForeignLedger(): void
     {
         [$ledger] = $this->createLedgerWithAdmin();
         $nonMember = User::factory()->create();
@@ -93,7 +93,7 @@ class SettlementApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_member_can_list_recent_settlements(): void
+    public function testMemberCanListRecentSettlements(): void
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
 
@@ -135,7 +135,7 @@ class SettlementApiTest extends TestCase
             ->assertJsonPath('data.0.transactions.0.destination_account_name', $destinationAccount->name);
     }
 
-    public function test_admin_can_confirm_cycle_when_safety_gate_blocks_auto_execution(): void
+    public function testAdminCanConfirmCycleWhenSafetyGateBlocksAutoExecution(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_auto_execute_enabled' => false,
@@ -177,7 +177,7 @@ class SettlementApiTest extends TestCase
             'deductions' => [],
         ]);
 
-        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
+        app(PostManualTransactionAction::class)->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
             'payer_account_id' => $adminAccount->id,
             'destination_account_id' => $externalAccount->id,
@@ -219,7 +219,7 @@ class SettlementApiTest extends TestCase
         $this->assertNotNull($transaction?->settlement_id);
     }
 
-    public function test_member_cannot_confirm_settlement_cycle(): void
+    public function testMemberCannotConfirmSettlementCycle(): void
     {
         // Arrange
         [$ledger] = $this->createLedgerWithAdmin([
@@ -241,7 +241,7 @@ class SettlementApiTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_admin_can_record_an_idempotent_mid_cycle_transfer(): void
+    public function testAdminCanRecordAnIdempotentMidCycleTransfer(): void
     {
         [$ledger, $admin, , $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer();
         Sanctum::actingAs($admin, ['*']);
@@ -274,7 +274,7 @@ class SettlementApiTest extends TestCase
         );
     }
 
-    public function test_member_cannot_record_mid_cycle_transfer(): void
+    public function testMemberCannotRecordMidCycleTransfer(): void
     {
         [$ledger, , $member, $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer();
         Sanctum::actingAs($member, ['*']);
@@ -288,7 +288,7 @@ class SettlementApiTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_mid_cycle_transfer_rejects_foreign_accounts_and_malformed_keys(): void
+    public function testMidCycleTransferRejectsForeignAccountsAndMalformedKeys(): void
     {
         [$ledger, $admin, , , $toAccount] = $this->createLedgerWithPendingTransfer();
         $foreignAccount = Account::factory()->create();
@@ -313,7 +313,29 @@ class SettlementApiTest extends TestCase
             ->assertJsonValidationErrors(['from_account_id']);
     }
 
-    public function test_confirm_returns_validation_error_when_cycle_does_not_require_manual_confirmation(): void
+    public function testAdminCannotRecordTransferForSettledCycle(): void
+    {
+        [$ledger, $admin, , $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer();
+        Sanctum::actingAs($admin, ['*']);
+
+        Settlement::factory()->create([
+            'ledger_id' => $ledger->id,
+            'period_start' => '2026-03-01',
+            'period_end' => '2026-03-31',
+            'executed_at' => '2026-04-01 00:00:00',
+        ]);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 5_000,
+            'idempotency_key' => '7d4c1e2a-9b83-4f51-8c0d-2a6e5f9b1c70',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['period_end']);
+    }
+
+    public function testConfirmReturnsValidationErrorWhenCycleDoesNotRequireManualConfirmation(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_auto_execute_enabled' => true,
@@ -328,7 +350,7 @@ class SettlementApiTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_member_can_update_cycle_config(): void
+    public function testMemberCanUpdateCycleConfig(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_timezone' => 'UTC',
@@ -356,7 +378,7 @@ class SettlementApiTest extends TestCase
         $this->assertTrue($ledger->settlement_auto_execute_enabled);
     }
 
-    public function test_preview_allows_missing_date(): void
+    public function testPreviewAllowsMissingDate(): void
     {
         [$ledger, $user] = $this->createLedgerWithAdmin();
         Sanctum::actingAs($user, ['*']);
@@ -365,7 +387,7 @@ class SettlementApiTest extends TestCase
             ->assertStatus(200);
     }
 
-    public function test_cycle_config_rejects_invalid_timezone(): void
+    public function testCycleConfigRejectsInvalidTimezone(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin();
         Sanctum::actingAs($admin, ['*']);
@@ -378,7 +400,7 @@ class SettlementApiTest extends TestCase
         ])->assertStatus(422);
     }
 
-    public function test_confirm_rejects_invalid_cycle_param(): void
+    public function testConfirmRejectsInvalidCycleParam(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_auto_execute_enabled' => false,
@@ -389,7 +411,7 @@ class SettlementApiTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_member_cannot_update_cycle_config(): void
+    public function testMemberCannotUpdateCycleConfig(): void
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin();
         $member = User::factory()->create();
@@ -411,7 +433,7 @@ class SettlementApiTest extends TestCase
      */
 
     /**
-     * @param  array<string, mixed>  $ledgerOverrides
+     * @param array<string, mixed> $ledgerOverrides
      * @return array{Ledger, User}
      */
     private function createLedgerWithAdmin(array $ledgerOverrides = []): array

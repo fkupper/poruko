@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Ledger;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RecordMidCycleSettlementTransferRequest extends FormRequest
 {
@@ -29,10 +30,15 @@ class RecordMidCycleSettlementTransferRequest extends FormRequest
      */
     public function rules(): array
     {
+        $ledger = $this->route('ledger');
+        $ledgerId = $ledger instanceof Ledger ? $ledger->id : null;
+        $accountExistsInLedger = Rule::exists('accounts', 'id')
+            ->where('ledger_id', $ledgerId);
+
         return [
             'period_end' => ['required', 'date'],
-            'from_account_id' => ['required', 'integer'],
-            'to_account_id' => ['required', 'integer', 'different:from_account_id'],
+            'from_account_id' => ['required', 'integer', $accountExistsInLedger],
+            'to_account_id' => ['required', 'integer', 'different:from_account_id', $accountExistsInLedger],
             'amount' => ['required', 'integer', 'min:1'],
             'idempotency_key' => ['required', 'uuid'],
         ];

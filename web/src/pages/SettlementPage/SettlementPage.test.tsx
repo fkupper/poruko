@@ -123,6 +123,7 @@ describe('SettlementPage', () => {
 
         expect(await screen.findByText('Bob transfers to Alice')).toBeInTheDocument();
         expect(screen.getByText('Available as a mid-cycle transfer')).toBeInTheDocument();
+        expect(screen.getByText(/Suggested amount for the cycle ending 2026-09-30/i)).toBeInTheDocument();
         expect(screen.getByText(/reduces the final true-up/i)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: /record transfer now/i }));
@@ -171,5 +172,7 @@ describe('SettlementPage', () => {
 
         expect(await screen.findByText('Bob transfers to Alice')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /record transfer now/i })).not.toBeInTheDocument();
+        expect(screen.queryByText('Available as a mid-cycle transfer')).not.toBeInTheDocument();
+        expect(screen.queryByText(/reduces the final true-up/i)).not.toBeInTheDocument();
     });
 });

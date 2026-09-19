@@ -99,7 +99,7 @@ final readonly class RecordMidCycleSettlementTransferAction
                     && (int) $transfer['to_account_id'] === $toAccountId,
             );
 
-            if (! is_array($suggestedTransfer)) {
+            if (!is_array($suggestedTransfer)) {
                 throw ValidationException::withMessages([
                     'from_account_id' => ['This transfer is not currently required for the selected cycle.'],
                 ]);

@@ -314,17 +314,18 @@ export default function SettlementPage() {
                                             </div>
                                         </CardHeader>
                                         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                                            <div className="flex flex-col gap-2">
-                                                {!settlement.is_settled && (
+                                            {!settlement.is_settled && (
+                                                <div className="flex flex-col gap-2">
                                                     <Badge variant="secondary" className="w-fit">
                                                         Available as a mid-cycle transfer
                                                     </Badge>
-                                                )}
-                                                <p className="text-xs text-muted-foreground">
-                                                    Recording this now applies it to the cycle ending{' '}
-                                                    {settlement.period_end} and reduces the final true-up.
-                                                </p>
-                                            </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Suggested amount for the cycle ending{' '}
+                                                        {settlement.period_end}. Recording this now reduces the
+                                                        final true-up.
+                                                    </p>
+                                                </div>
+                                            )}
                                             <div className="shrink-0 font-mono text-xl font-bold text-inflow">
                                                 {centsToCurrency(tx.amount, currencySymbol)}
                                             </div>

@@ -44,7 +44,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_records_partial_transfer_and_preserves_final_settlement_math(): void
+    public function testRecordsPartialTransferAndPreservesFinalSettlementMath(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
 
@@ -98,7 +98,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         $this->assertSame([], $settledPreview['required_transfers']);
     }
 
-    public function test_returns_the_original_transaction_for_an_idempotent_retry(): void
+    public function testReturnsTheOriginalTransactionForAnIdempotentRetry(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
         $key = 'd2391384-b599-44c2-a1dc-63f31a2805bd';
@@ -128,7 +128,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         $this->assertCount(2, $second->postings);
     }
 
-    public function test_rejects_an_amount_above_the_remaining_suggestion(): void
+    public function testRejectsAnAmountAboveTheRemainingSuggestion(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
 
@@ -156,7 +156,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         ]);
     }
 
-    public function test_rejects_a_non_positive_amount_when_called_directly(): void
+    public function testRejectsANonPositiveAmountWhenCalledDirectly(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
 
@@ -180,7 +180,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         ]);
     }
 
-    public function test_rejects_reusing_a_key_for_different_transfer_data(): void
+    public function testRejectsReusingAKeyForDifferentTransferData(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
         $key = '19fd2de9-90db-4791-a765-8eff7ac8acbb';
@@ -206,7 +206,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         );
     }
 
-    public function test_rejects_accounts_outside_the_current_suggestion(): void
+    public function testRejectsAccountsOutsideTheCurrentSuggestion(): void
     {
         [$ledger, $aliceAccount] = $this->seedPendingTransfer();
         $foreignAccount = Account::factory()->create();
@@ -250,7 +250,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         ]);
     }
 
-    public function test_rejects_transfers_for_an_executed_settlement(): void
+    public function testRejectsTransfersForAnExecutedSettlement(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
         Settlement::factory()->create([
@@ -273,6 +273,31 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('period_end', $exception->errors());
         }
+    }
+
+    public function testRejectsTransfersForAFutureCycle(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-19 12:00:00');
+        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+
+        try {
+            $this->action()->execute(
+                $ledger,
+                '2026-09-30',
+                $bobLiabilityAccount->id,
+                $aliceAccount->id,
+                5_000,
+                '6c0b2a5e-7d41-4a6f-9c2e-1f8a0b3d4e5f',
+            );
+            $this->fail('Expected a future-cycle validation failure.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('period_end', $exception->errors());
+        }
+
+        $this->assertDatabaseMissing('transactions', [
+            'ledger_id' => $ledger->id,
+            'type' => TransactionType::Settlement->value,
+        ]);
     }
 
     private function action(): RecordMidCycleSettlementTransferAction
