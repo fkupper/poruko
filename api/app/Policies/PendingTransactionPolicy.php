@@ -27,4 +27,9 @@ class PendingTransactionPolicy
     {
         return $this->view($user, $pendingTransaction);
     }
+
+    public function update(User $user, PendingTransaction $pendingTransaction): bool
+    {
+        return $this->view($user, $pendingTransaction);
+    }
 }

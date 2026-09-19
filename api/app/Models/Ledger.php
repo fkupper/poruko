@@ -71,7 +71,7 @@ class Ledger extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'ai_import_auto_create_accounts', 'deleted_at')
             ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
@@ -81,7 +81,7 @@ class Ledger extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'ai_import_auto_create_accounts', 'deleted_at')
             ->withTimestamps();
     }
 
@@ -101,5 +101,17 @@ class Ledger extends Model
     public function recurringTransactions(): HasMany
     {
         return $this->hasMany(RecurringTransaction::class);
+    }
+
+    /** @return HasMany<BankAccountMapping, $this> */
+    public function bankAccountMappings(): HasMany
+    {
+        return $this->hasMany(BankAccountMapping::class);
+    }
+
+    /** @return HasMany<StatementImport, $this> */
+    public function statementImports(): HasMany
+    {
+        return $this->hasMany(StatementImport::class);
     }
 }

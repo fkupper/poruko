@@ -151,6 +151,33 @@ class PendingTransactionApiTest extends TestCase
         $this->assertDatabaseCount('transactions', 0);
     }
 
+    public function testMemberCanCompletePendingDetailsBeforeApproval(): void
+    {
+        [$ledger, $user, $payerAccount, $destinationAccount] = $this->createLedgerWithAdmin();
+        $pending = PendingTransaction::factory()->create([
+            'ledger_id' => $ledger->id,
+            'user_id' => $user->id,
+            'payer_account_id' => null,
+            'destination_account_id' => null,
+            'suggested_amount' => 2500,
+            'suggested_split_rule' => 'equal',
+            'suggested_participants' => [],
+            'date' => '2026-09-19',
+            'source' => TransactionSource::AiImport,
+        ]);
+        Sanctum::actingAs($user, ['*']);
+
+        $this->patchJson("/api/ledgers/{$ledger->id}/pending-transactions/{$pending->id}", [
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $destinationAccount->id,
+            'description' => 'Reviewed groceries',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.payer_account_id', $payerAccount->id)
+            ->assertJsonPath('data.destination_account_id', $destinationAccount->id)
+            ->assertJsonPath('data.suggested_description', 'Reviewed groceries');
+    }
+
     public function testNonMemberCannotListOrReviewPendingTransactions(): void
     {
         [$ledger, $member, $payerAccount, $destinationAccount] = $this->createLedgerWithAdmin();

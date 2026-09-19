@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BatchReviewPendingTransactionsRequest;
 use App\Http\Requests\RejectPendingTransactionRequest;
+use App\Http\Requests\UpdatePendingTransactionRequest;
 use App\Http\Resources\PendingTransactionResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\Ledger;
@@ -30,6 +31,43 @@ class PendingTransactionController extends Controller
         $this->authorize('viewAny', [PendingTransaction::class, $ledger]);
 
         return PendingTransactionResource::collection($query->execute($ledger));
+    }
+
+    public function update(
+        UpdatePendingTransactionRequest $request,
+        Ledger $ledger,
+        PendingTransaction $pendingTransaction,
+    ): PendingTransactionResource|JsonResponse {
+        if ($pendingTransaction->status !== \App\Enums\PendingTransactionStatus::Pending) {
+            return response()->json([
+                'message' => 'Only pending transaction proposals can be edited.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $validated = $request->validated();
+        $updates = [];
+        $fieldMap = [
+            'payer_account_id' => 'payer_account_id',
+            'destination_account_id' => 'destination_account_id',
+            'description' => 'suggested_description',
+            'amount' => 'suggested_amount',
+            'date' => 'date',
+            'split_rule' => 'suggested_split_rule',
+            'participants' => 'suggested_participants',
+        ];
+
+        foreach ($fieldMap as $requestField => $modelField) {
+            if (array_key_exists($requestField, $validated)) {
+                $updates[$modelField] = $validated[$requestField];
+            }
+        }
+
+        $pendingTransaction->update($updates);
+
+        return PendingTransactionResource::make(
+            $pendingTransaction->fresh(['proposer', 'payerAccount', 'destinationAccount'])
+                ?? $pendingTransaction,
+        );
     }
 
     public function approve(

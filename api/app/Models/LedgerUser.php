@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $main_personal_account_id
  * @property int|null $default_payment_account_id
  * @property int|null $default_expense_account_id
+ * @property bool $ai_import_auto_create_accounts
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -34,6 +35,7 @@ class LedgerUser extends Pivot
         'main_personal_account_id',
         'default_payment_account_id',
         'default_expense_account_id',
+        'ai_import_auto_create_accounts',
     ];
 
     /**
@@ -45,6 +47,7 @@ class LedgerUser extends Pivot
             'main_personal_account_id' => 'integer',
             'default_payment_account_id' => 'integer',
             'default_expense_account_id' => 'integer',
+            'ai_import_auto_create_accounts' => 'boolean',
         ];
     }
 
