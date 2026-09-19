@@ -55,6 +55,10 @@ function sourceLabel(source: PendingTransaction['source']): string {
         return 'MCP';
     }
 
+    if (source === 'ai_import') {
+        return 'AI Import';
+    }
+
     return source.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
