@@ -2,9 +2,12 @@
 
 namespace App\Mcp\Tools;
 
+use App\Http\Resources\PendingTransactionResource;
 use App\Models\Ledger;
 use App\Models\LedgerUser;
+use App\Models\PendingTransaction;
 use App\Models\User;
+use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
 use App\Modules\Mcp\Actions\SubmitMcpTransactionAction;
 use App\Modules\Mcp\Services\McpCapabilityService;
 use Laravel\Mcp\Request;
@@ -32,9 +35,15 @@ class ProposeTransactionTool extends PostTransactionTool
             forceQueue: true,
         );
 
+        $pending = $result['pending_transaction'] ?? null;
+
+        if (!$pending instanceof PendingTransaction) {
+            throw new InvalidLedgerPostingException('The pending transaction could not be created.');
+        }
+
         return [
             'mode' => $result['mode'],
-            'data' => $this->resourceArray(\App\Http\Resources\PendingTransactionResource::make($result['pending_transaction'])),
+            'data' => $this->resourceArray(PendingTransactionResource::make($pending)),
         ];
     }
 }

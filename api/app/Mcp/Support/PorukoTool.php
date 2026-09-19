@@ -14,9 +14,11 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Tool;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
@@ -45,7 +47,12 @@ abstract class PorukoTool extends Tool
         return true;
     }
 
-    public function handle(Request $request): Response
+    public function name(): string
+    {
+        return (string) Str::of(parent::name())->replaceEnd('-tool', '');
+    }
+
+    public function handle(Request $request): Response|ResponseFactory
     {
         $startedAt = microtime(true);
         $status = 'error';
@@ -155,7 +162,7 @@ abstract class PorukoTool extends Tool
 
     /**
      * @param iterable<int, mixed> $resources
-     * @return list<array<string, mixed>>
+     * @return array<int, array<string, mixed>>
      */
     protected function resourceCollection(iterable $resources): array
     {

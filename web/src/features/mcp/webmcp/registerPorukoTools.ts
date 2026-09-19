@@ -8,7 +8,7 @@ import { fetchTransaction, fetchTransactions } from '@/api/transactions';
 import { useAuthStore } from '@/stores/authStore';
 import { useLedgerStore } from '@/stores/ledgerStore';
 
-import { getModelContext, type ModelContextLike } from './getModelContext';
+import { type ModelContextLike } from './getModelContext';
 
 function requireLedgerId(): number {
     const ledgerId = useLedgerStore.getState().activeLedgerId;

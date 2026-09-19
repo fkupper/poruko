@@ -8,7 +8,10 @@ use App\Http\Resources\TransactionResource;
 use App\Mcp\Support\PorukoTool;
 use App\Models\Ledger;
 use App\Models\LedgerUser;
+use App\Models\PendingTransaction;
+use App\Models\Transaction;
 use App\Models\User;
+use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
 use App\Modules\Mcp\Actions\SubmitMcpTransactionAction;
 use App\Modules\Mcp\Services\McpCapabilityService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -58,17 +61,27 @@ class PostTransactionTool extends PorukoTool
             [...$validated, 'tool' => $this->name()],
         );
 
-        if (isset($result['pending_transaction'])) {
+        $pending = $result['pending_transaction'] ?? null;
+
+        if ($pending instanceof PendingTransaction) {
             return [
                 'mode' => $result['mode'],
-                'data' => $this->resourceArray(PendingTransactionResource::make($result['pending_transaction'])),
+                'data' => $this->resourceArray(PendingTransactionResource::make($pending)),
             ];
         }
 
-        return [
-            'mode' => $result['mode'],
-            'data' => $this->resourceArray(TransactionResource::make($result['transaction'])),
-        ];
+        $transaction = $result['transaction'] ?? null;
+
+        if ($transaction instanceof Transaction) {
+            return [
+                'mode' => $result['mode'],
+                'data' => $this->resourceArray(TransactionResource::make($transaction)),
+            ];
+        }
+
+        throw new InvalidLedgerPostingException(
+            'The transaction could not be submitted.',
+        );
     }
 
     /**
