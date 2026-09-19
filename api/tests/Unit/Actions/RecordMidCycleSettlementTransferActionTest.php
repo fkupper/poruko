@@ -226,7 +226,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         }
     }
 
-    public function test_rejects_transfers_for_a_future_cycle(): void
+    public function testRejectsTransfersForAFutureCycle(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
 
