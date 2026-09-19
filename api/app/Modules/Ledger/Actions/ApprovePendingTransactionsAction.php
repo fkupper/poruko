@@ -81,10 +81,26 @@ final readonly class ApprovePendingTransactionsAction
                         );
                     }
 
-                    $participantUserIds = array_values(array_unique(array_map(
-                        static fn (array $participant): int => (int) ($participant['user_id'] ?? 0),
-                        $pendingTransaction->suggested_participants ?? [],
-                    )));
+                    /** @var list<array{user_id:int, share?:int}> $participants */
+                    $participants = [];
+
+                    foreach ($pendingTransaction->suggested_participants ?? [] as $participant) {
+                        if (!isset($participant['user_id'])) {
+                            throw new PendingTransactionReviewException(
+                                "Pending transaction {$pendingTransaction->id} contains an invalid participant.",
+                            );
+                        }
+
+                        $normalizedParticipant = ['user_id' => (int) $participant['user_id']];
+
+                        if (isset($participant['share'])) {
+                            $normalizedParticipant['share'] = (int) $participant['share'];
+                        }
+
+                        $participants[] = $normalizedParticipant;
+                    }
+
+                    $participantUserIds = array_values(array_unique(array_column($participants, 'user_id')));
 
                     if (
                         in_array(0, $participantUserIds, true)
@@ -109,7 +125,7 @@ final readonly class ApprovePendingTransactionsAction
                             destinationAccountId: $pendingTransaction->destination_account_id,
                             amount: $pendingTransaction->suggested_amount,
                             splitRule: $pendingTransaction->suggested_split_rule->value,
-                            participants: $pendingTransaction->suggested_participants ?? [],
+                            participants: $participants,
                             date: $pendingTransaction->date->toDateString(),
                             description: $pendingTransaction->suggested_description,
                             type: TransactionType::Manual->value,

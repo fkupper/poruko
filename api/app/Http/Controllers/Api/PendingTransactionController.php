@@ -54,7 +54,9 @@ class PendingTransactionController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return TransactionResource::make($transaction)->response();
+        return TransactionResource::make($transaction)
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
     }
 
     public function approveBatch(
