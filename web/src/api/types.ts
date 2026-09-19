@@ -217,6 +217,41 @@ export interface ApprovePendingItem {
     participants?: ParticipantShare[];
 }
 
+export interface AiImportSettings {
+    configured: boolean;
+    provider: 'openai' | 'anthropic' | null;
+    model: string | null;
+    masked_api_key: string | null;
+    auto_create_accounts: boolean;
+}
+
+export interface BankAccountMapping {
+    id: number;
+    ledger_id: number;
+    external_account_name: string;
+    masked_identifier: string | null;
+    ownership_type: 'personal' | 'joint';
+    account_id: number | null;
+    account_name: string | null;
+    suggested_account_id: number | null;
+    suggested_account_name: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface StatementImport {
+    id: string;
+    status: 'queued' | 'processing' | 'completed' | 'failed';
+    filename: string;
+    parsed_count: number;
+    pending_count: number;
+    duplicate_count: number;
+    failed_count: number;
+    error_message: string | null;
+    processed_at: string | null;
+    created_at: string | null;
+}
+
 export interface Account {
     id: number;
     ledger_id: number;

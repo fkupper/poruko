@@ -13,6 +13,10 @@ const approvePendingTransactionMock = vi.fn();
 const approvePendingTransactionsMock = vi.fn();
 const rejectPendingTransactionMock = vi.fn();
 const rejectPendingTransactionsMock = vi.fn();
+const updatePendingTransactionMock = vi.fn();
+const fetchAccountsMock = vi.fn();
+const createAccountMock = vi.fn();
+const updateBankAccountMappingMock = vi.fn();
 
 vi.mock('@/api/pending-transactions', () => ({
     fetchPendingTransactions: (...args: unknown[]) => fetchPendingTransactionsMock(...args),
@@ -20,6 +24,16 @@ vi.mock('@/api/pending-transactions', () => ({
     approvePendingTransactions: (...args: unknown[]) => approvePendingTransactionsMock(...args),
     rejectPendingTransaction: (...args: unknown[]) => rejectPendingTransactionMock(...args),
     rejectPendingTransactions: (...args: unknown[]) => rejectPendingTransactionsMock(...args),
+    updatePendingTransaction: (...args: unknown[]) => updatePendingTransactionMock(...args),
+}));
+
+vi.mock('@/api/accounts', () => ({
+    fetchAccounts: (...args: unknown[]) => fetchAccountsMock(...args),
+    createAccount: (...args: unknown[]) => createAccountMock(...args),
+}));
+
+vi.mock('@/api/ingestion', () => ({
+    updateBankAccountMapping: (...args: unknown[]) => updateBankAccountMappingMock(...args),
 }));
 
 vi.mock('@/hooks/use-ledger-currency', () => ({
@@ -91,6 +105,10 @@ describe('PendingApprovalTable', () => {
         approvePendingTransactionsMock.mockReset();
         rejectPendingTransactionMock.mockReset();
         rejectPendingTransactionsMock.mockReset();
+        updatePendingTransactionMock.mockReset();
+        fetchAccountsMock.mockReset();
+        createAccountMock.mockReset();
+        updateBankAccountMappingMock.mockReset();
         useLedgerStore.setState({ activeLedgerId: 7 });
 
         fetchPendingTransactionsMock.mockResolvedValue(proposals);
@@ -100,6 +118,34 @@ describe('PendingApprovalTable', () => {
         rejectPendingTransactionsMock.mockResolvedValue(
             proposals.map((proposal) => ({ ...proposal, status: 'rejected' })),
         );
+        updatePendingTransactionMock.mockResolvedValue(proposals[0]);
+        fetchAccountsMock.mockResolvedValue([
+            {
+                id: 100,
+                ledger_id: 7,
+                owner_id: 1,
+                name: 'Alice Checking',
+                type: 'user_funding',
+                balance: 0,
+            },
+            {
+                id: 200,
+                ledger_id: 7,
+                owner_id: null,
+                name: 'Household',
+                type: 'space_expense',
+                balance: 0,
+            },
+        ]);
+        createAccountMock.mockResolvedValue({
+            id: 300,
+            ledger_id: 7,
+            owner_id: 1,
+            name: 'Imported checking',
+            type: 'user_funding',
+            balance: 0,
+        });
+        updateBankAccountMappingMock.mockResolvedValue({});
     });
 
     afterEach(() => {
@@ -143,6 +189,44 @@ describe('PendingApprovalTable', () => {
 
         await waitFor(() => {
             expect(rejectPendingTransactionMock).toHaveBeenCalledWith(7, 10);
+        });
+    });
+
+    it('creates and associates a Poruko account while reviewing an import', async () => {
+        const user = userEvent.setup();
+        fetchPendingTransactionsMock.mockResolvedValue([
+            {
+                ...proposals[0],
+                payer_account_id: null,
+                payer_account_name: null,
+                raw_data: {
+                    description: 'MARKET',
+                    bank_account_mapping_id: 44,
+                    bank_account_name: 'Imported checking',
+                    ownership: 'personal',
+                },
+            },
+        ]);
+        renderTable();
+
+        await screen.findByText('Groceries');
+        await user.click(screen.getByRole('button', { name: 'Review Groceries' }));
+        await user.click(screen.getByRole('button', { name: 'Create' }));
+
+        await waitFor(() => {
+            expect(createAccountMock).toHaveBeenCalledWith(7, {
+                name: 'Imported checking',
+                type: 'user_funding',
+            });
+            expect(updateBankAccountMappingMock).toHaveBeenCalledWith(7, 44, 300);
+        });
+
+        await user.click(screen.getByRole('button', { name: 'Save review details' }));
+        await waitFor(() => {
+            expect(updatePendingTransactionMock).toHaveBeenCalledWith(7, 10, {
+                payer_account_id: 300,
+                destination_account_id: 200,
+            });
         });
     });
 });

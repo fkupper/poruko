@@ -10,6 +10,7 @@ import { SpaceSwitcher, type SpaceSwitcherItem } from '@/components/SpaceSwitche
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import {
     ArrowLeftRightIcon,
+    BotIcon,
     BugIcon,
     HandCoinsIcon,
     LayoutDashboardIcon,
@@ -75,11 +76,11 @@ const data = {
             url: '/my-finance',
             icon: <UserIcon />,
         },
-        // {
-        //     title: 'AI Ingestion',
-        //     url: '/ingestion',
-        //     icon: <BotIcon />,
-        // },
+        {
+            title: 'AI Import',
+            url: '/ai-import',
+            icon: <BotIcon />,
+        },
         {
             title: 'Settings',
             url: '/settings',

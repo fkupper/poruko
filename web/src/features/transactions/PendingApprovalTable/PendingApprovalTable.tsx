@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2Icon, XCircleIcon } from 'lucide-react';
+import { CheckCircle2Icon, PencilIcon, XCircleIcon } from 'lucide-react';
 
 import {
     approvePendingTransaction,
@@ -37,6 +37,8 @@ import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { centsToCurrency } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 
+import { PendingTransactionReviewDialog } from './PendingTransactionReviewDialog';
+
 interface ReviewRequest {
     decision: 'approve' | 'reject';
     ids: number[];
@@ -68,6 +70,7 @@ export function PendingApprovalTable() {
     const queryClient = useQueryClient();
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
     const [rejectingIds, setRejectingIds] = React.useState<number[]>([]);
+    const [reviewingTransaction, setReviewingTransaction] = React.useState<PendingTransaction | null>(null);
 
     const { data: pendingTransactions = [], isPending } = useQuery({
         queryKey: ['pending-transactions', activeLedgerId],
@@ -238,6 +241,15 @@ export function PendingApprovalTable() {
                                                 <Button
                                                     size="icon-sm"
                                                     variant="ghost"
+                                                    aria-label={`Review ${transaction.suggested_description || `proposal ${transaction.id}`}`}
+                                                    disabled={reviewMutation.isPending}
+                                                    onClick={() => setReviewingTransaction(transaction)}
+                                                >
+                                                    <PencilIcon />
+                                                </Button>
+                                                <Button
+                                                    size="icon-sm"
+                                                    variant="ghost"
                                                     aria-label={`Approve ${transaction.suggested_description || `proposal ${transaction.id}`}`}
                                                     disabled={!ready || reviewMutation.isPending}
                                                     onClick={() => reviewMutation.mutate({
@@ -302,6 +314,14 @@ export function PendingApprovalTable() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <PendingTransactionReviewDialog
+                transaction={reviewingTransaction}
+                open={reviewingTransaction !== null}
+                onOpenChange={(open) => {
+                    if (!open) setReviewingTransaction(null);
+                }}
+            />
         </>
     );
 }
