@@ -111,6 +111,8 @@ describe('PendingApprovalTable', () => {
         renderTable();
 
         await screen.findByText('Groceries');
+        expect(screen.getByText('AI Import')).toBeInTheDocument();
+        expect(screen.getByText('MCP')).toBeInTheDocument();
         await user.click(screen.getByRole('button', { name: 'Approve Groceries' }));
 
         await waitFor(() => {

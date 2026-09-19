@@ -50,6 +50,14 @@ function isReadyForApproval(transaction: PendingTransaction): boolean {
         && transaction.date !== null;
 }
 
+function sourceLabel(source: PendingTransaction['source']): string {
+    if (source === 'mcp') {
+        return 'MCP';
+    }
+
+    return source.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export function PendingApprovalTable() {
     const activeLedgerId = useLedgerStore((state) => state.activeLedgerId);
     const currencySymbol = useLedgerCurrencySymbol();
@@ -207,8 +215,8 @@ export function PendingApprovalTable() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="secondary" className="capitalize">
-                                                {transaction.source.replaceAll('_', ' ')}
+                                            <Badge variant="secondary">
+                                                {sourceLabel(transaction.source)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
