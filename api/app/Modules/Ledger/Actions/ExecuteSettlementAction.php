@@ -3,8 +3,8 @@
 namespace App\Modules\Ledger\Actions;
 
 use App\Enums\PostingDirection;
-use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionSource;
+use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Ledger;
 use App\Models\Posting;

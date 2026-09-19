@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Enums\AccountType;
-use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionSource;
+use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Ledger;
