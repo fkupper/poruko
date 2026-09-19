@@ -65,6 +65,21 @@ final readonly class RecordMidCycleSettlementTransferAction
             }
 
             $period = $this->settlementCycleService->resolvePeriodForPeriodEnd($ledger, $periodEnd);
+            $timezone = $ledger->settlement_timezone ?? 'UTC';
+            $recordedAt = CarbonImmutable::now($timezone);
+            $periodStart = CarbonImmutable::parse($period['period_start'], $timezone);
+            $resolvedPeriodEnd = CarbonImmutable::parse($period['period_end'], $timezone);
+
+            if ($recordedAt->isBefore($periodStart)) {
+                throw ValidationException::withMessages([
+                    'period_end' => ['Transfers cannot be recorded against a future cycle.'],
+                ]);
+            }
+
+            $accountingDate = $recordedAt->isAfter($resolvedPeriodEnd)
+                ? $resolvedPeriodEnd
+                : $recordedAt;
+
             $settlement = Settlement::query()
                 ->where('ledger_id', $ledger->id)
                 ->where('period_start', $period['period_start'])
@@ -104,20 +119,6 @@ final readonly class RecordMidCycleSettlementTransferAction
                 'period_end' => $period['period_end'],
                 'executed_at' => null,
             ]);
-
-            $recordedAt = CarbonImmutable::now($ledger->settlement_timezone ?? 'UTC');
-            $periodStart = CarbonImmutable::parse($period['period_start'], $ledger->settlement_timezone ?? 'UTC');
-            $resolvedPeriodEnd = CarbonImmutable::parse($period['period_end'], $ledger->settlement_timezone ?? 'UTC');
-
-            if ($recordedAt->isBefore($periodStart)) {
-                throw ValidationException::withMessages([
-                    'period_end' => ['Transfers cannot be recorded against a future cycle.'],
-                ]);
-            }
-
-            $accountingDate = $recordedAt->isAfter($resolvedPeriodEnd)
-                ? $resolvedPeriodEnd
-                : $recordedAt;
 
             $transaction = Transaction::query()->create([
                 'ledger_id' => $ledger->id,

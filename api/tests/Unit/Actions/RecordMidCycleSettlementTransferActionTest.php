@@ -226,6 +226,30 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         }
     }
 
+    public function test_rejects_transfers_for_a_future_cycle(): void
+    {
+        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+
+        try {
+            $this->action()->execute(
+                $ledger,
+                '2026-10-31',
+                $bobLiabilityAccount->id,
+                $aliceAccount->id,
+                1_000,
+                'f64968f7-4f39-4071-b376-4b25dd479040',
+            );
+            $this->fail('Expected a future-cycle validation failure.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('period_end', $exception->errors());
+        }
+
+        $this->assertDatabaseMissing('settlements', [
+            'ledger_id' => $ledger->id,
+            'period_end' => '2026-10-31',
+        ]);
+    }
+
     public function test_rejects_transfers_for_an_executed_settlement(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
