@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -128,7 +128,7 @@ describe('SettlementPage', () => {
         await user.click(screen.getByRole('button', { name: /record transfer now/i }));
 
         expect(screen.getByRole('heading', { name: /record mid-cycle transfer/i })).toBeInTheDocument();
-        expect(screen.getByText('€50.00')).toBeInTheDocument();
+        expect(within(screen.getByRole('dialog')).getByText('€50.00')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: /^record transfer$/i }));
 

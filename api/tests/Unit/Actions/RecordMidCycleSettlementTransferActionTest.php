@@ -44,7 +44,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         parent::tearDown();
     }
 
-    public function testRecordsPartialTransferAndPreservesFinalSettlementMath(): void
+    public function test_records_partial_transfer_and_preserves_final_settlement_math(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
 
@@ -88,7 +88,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         $this->assertNotNull($settlement->executed_at);
         $this->assertSame(
             5_000,
-            Transaction::query()
+            (int) Transaction::query()
                 ->where('settlement_id', $settlement->id)
                 ->where('type', TransactionType::Settlement->value)
                 ->sum('amount'),
@@ -98,7 +98,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         $this->assertSame([], $settledPreview['required_transfers']);
     }
 
-    public function testReturnsTheOriginalTransactionForAnIdempotentRetry(): void
+    public function test_returns_the_original_transaction_for_an_idempotent_retry(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
         $key = 'd2391384-b599-44c2-a1dc-63f31a2805bd';
@@ -128,7 +128,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         $this->assertCount(2, $second->postings);
     }
 
-    public function testRejectsAnAmountAboveTheRemainingSuggestion(): void
+    public function test_rejects_an_amount_above_the_remaining_suggestion(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
 
@@ -156,7 +156,31 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         ]);
     }
 
-    public function testRejectsReusingAKeyForDifferentTransferData(): void
+    public function test_rejects_a_non_positive_amount_when_called_directly(): void
+    {
+        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+
+        try {
+            $this->action()->execute(
+                $ledger,
+                '2026-09-30',
+                $bobLiabilityAccount->id,
+                $aliceAccount->id,
+                0,
+                'a24b89b2-b214-445c-bdfb-a0799bf70a2a',
+            );
+            $this->fail('Expected a non-positive amount validation failure.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('amount', $exception->errors());
+        }
+
+        $this->assertDatabaseMissing('transactions', [
+            'ledger_id' => $ledger->id,
+            'type' => TransactionType::Settlement->value,
+        ]);
+    }
+
+    public function test_rejects_reusing_a_key_for_different_transfer_data(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
         $key = '19fd2de9-90db-4791-a765-8eff7ac8acbb';
@@ -182,7 +206,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         );
     }
 
-    public function testRejectsAccountsOutsideTheCurrentSuggestion(): void
+    public function test_rejects_accounts_outside_the_current_suggestion(): void
     {
         [$ledger, $aliceAccount] = $this->seedPendingTransfer();
         $foreignAccount = Account::factory()->create();
@@ -202,7 +226,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         }
     }
 
-    public function testRejectsTransfersForAnExecutedSettlement(): void
+    public function test_rejects_transfers_for_an_executed_settlement(): void
     {
         [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
         Settlement::factory()->create([

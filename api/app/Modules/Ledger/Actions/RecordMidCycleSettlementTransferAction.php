@@ -30,6 +30,12 @@ final readonly class RecordMidCycleSettlementTransferAction
         int $amount,
         string $idempotencyKey,
     ): Transaction {
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => ['The transfer amount must be greater than zero.'],
+            ]);
+        }
+
         return DB::transaction(function () use (
             $ledger,
             $periodEnd,
@@ -78,7 +84,7 @@ final readonly class RecordMidCycleSettlementTransferAction
                     && (int) $transfer['to_account_id'] === $toAccountId,
             );
 
-            if (!is_array($suggestedTransfer)) {
+            if (! is_array($suggestedTransfer)) {
                 throw ValidationException::withMessages([
                     'from_account_id' => ['This transfer is not currently required for the selected cycle.'],
                 ]);

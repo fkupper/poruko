@@ -307,7 +307,7 @@ export default function SettlementPage() {
                                                 <div>
                                                     <CardTitle>{tx.instruction}</CardTitle>
                                                     <CardDescription>
-                                                        From Account #{tx.from_account_id} to Joint Account #
+                                                        From Account #{tx.from_account_id} to Account #
                                                         {tx.to_account_id}
                                                     </CardDescription>
                                                 </div>
