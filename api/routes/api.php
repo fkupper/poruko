@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\LedgerAccountController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use App\Http\Controllers\Api\LedgerUserController;
+use App\Http\Controllers\Api\McpActionLogController;
+use App\Http\Controllers\Api\McpSettingsController;
 use App\Http\Controllers\Api\PendingTransactionController;
 use App\Http\Controllers\Api\RecurringTransactionController;
 use App\Http\Controllers\Api\SettlementController;
@@ -73,7 +75,12 @@ Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFa
             Route::patch('/transactions/{transaction}', [LedgerTransactionController::class, 'update'])->name('transactions.update');
             Route::delete('/transactions/{transaction}', [LedgerTransactionController::class, 'destroy'])->name('transactions.destroy');
 
+            Route::get('/mcp-settings', [McpSettingsController::class, 'show'])->name('mcp-settings.show');
+            Route::put('/mcp-settings', [McpSettingsController::class, 'update'])->name('mcp-settings.update');
+            Route::get('/mcp-action-logs', [McpActionLogController::class, 'index'])->name('mcp-action-logs.index');
+
             Route::get('/pending-transactions', [PendingTransactionController::class, 'index'])->name('pending-transactions.index');
+            Route::post('/pending-transactions', [PendingTransactionController::class, 'store'])->name('pending-transactions.store');
             Route::post('/pending-transactions/approve-batch', [PendingTransactionController::class, 'approveBatch'])->name('pending-transactions.approve-batch');
             Route::post('/pending-transactions/reject-batch', [PendingTransactionController::class, 'rejectBatch'])->name('pending-transactions.reject-batch');
             Route::patch('/pending-transactions/{pendingTransaction}', [PendingTransactionController::class, 'update'])->name('pending-transactions.update');

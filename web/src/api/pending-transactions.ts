@@ -14,6 +14,28 @@ export async function fetchPendingTransactions(ledgerId: number): Promise<Pendin
     return data.data;
 }
 
+export async function createPendingTransaction(
+    ledgerId: number,
+    payload: {
+        payer_account_id: number;
+        destination_account_id: number;
+        amount: number;
+        description?: string;
+        date: string;
+        split_rule: string;
+        participants?: Array<{ user_id: number; share?: number }>;
+        rationale?: string;
+        confidence?: number;
+    },
+): Promise<PendingTransaction> {
+    const { data } = await client.post<{ data: PendingTransaction }>(
+        `/ledgers/${ledgerId}/pending-transactions`,
+        payload,
+    );
+
+    return data.data;
+}
+
 export async function approvePendingTransaction(
     ledgerId: number,
     pendingTransactionId: number,
