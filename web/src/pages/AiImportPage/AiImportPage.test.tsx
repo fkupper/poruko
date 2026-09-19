@@ -185,4 +185,15 @@ describe('AiImportPage', () => {
             expect(uploadBankStatementMock).toHaveBeenCalledWith(7, file);
         });
     });
+
+    it('applies a suggested bank-account association', async () => {
+        const user = userEvent.setup();
+        renderPage();
+
+        await user.click(await screen.findByRole('button', { name: 'Use suggestion: Alice Checking' }));
+
+        await waitFor(() => {
+            expect(updateBankAccountMappingMock).toHaveBeenCalledWith(7, 4, 10);
+        });
+    });
 });

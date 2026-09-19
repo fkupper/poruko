@@ -158,6 +158,7 @@ describe('PendingApprovalTable', () => {
 
         await screen.findByText('Groceries');
         expect(screen.getByText('AI Import')).toBeInTheDocument();
+        expect(screen.getByText('95% confident')).toBeInTheDocument();
         expect(screen.getByText('MCP')).toBeInTheDocument();
         await user.click(screen.getByRole('button', { name: 'Approve Groceries' }));
 

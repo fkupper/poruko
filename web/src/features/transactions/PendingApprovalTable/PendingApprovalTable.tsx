@@ -216,15 +216,27 @@ export function PendingApprovalTable() {
                                                 <span className="font-medium">
                                                     {transaction.suggested_description || transaction.raw_description || 'Untitled proposal'}
                                                 </span>
+                                                {transaction.rationale && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {transaction.rationale}
+                                                    </span>
+                                                )}
                                                 {!ready && (
                                                     <Badge variant="outline">Needs details</Badge>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="secondary">
-                                                {sourceLabel(transaction.source)}
-                                            </Badge>
+                                            <div className="flex flex-col items-start gap-1">
+                                                <Badge variant="secondary">
+                                                    {sourceLabel(transaction.source)}
+                                                </Badge>
+                                                {typeof transaction.confidence === 'number' && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {Math.round(transaction.confidence * 100)}% confident
+                                                    </span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
                                             {transaction.payer_account_name || 'Unassigned'}

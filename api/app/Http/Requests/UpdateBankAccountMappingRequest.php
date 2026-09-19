@@ -6,6 +6,7 @@ use App\Enums\AccountType;
 use App\Models\Account;
 use App\Models\BankAccountMapping;
 use App\Models\Ledger;
+use App\Models\User;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -15,12 +16,14 @@ class UpdateBankAccountMappingRequest extends FormRequest
     {
         $ledger = $this->route('ledger');
         $mapping = $this->route('bankAccountMapping');
+        $user = $this->user();
 
         return $ledger instanceof Ledger
             && $mapping instanceof BankAccountMapping
+            && $user instanceof User
             && $mapping->ledger_id === $ledger->id
-            && $mapping->user_id === $this->user()?->id
-            && $this->user()?->can('ai_ingestion') === true;
+            && $mapping->user_id === $user->id
+            && $user->can('ai_ingestion');
     }
 
     /**

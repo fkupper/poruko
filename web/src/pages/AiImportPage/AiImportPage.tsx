@@ -110,6 +110,33 @@ export default function AiImportPage() {
         },
     });
 
+    const previousImportStatuses = React.useRef<Record<string, string>>({});
+
+    React.useEffect(() => {
+        const imports = importsQuery.data;
+        if (!imports) return;
+
+        let shouldRefreshQueue = false;
+
+        for (const item of imports) {
+            const previous = previousImportStatuses.current[item.id];
+            if (
+                previous !== undefined
+                && previous !== item.status
+                && (item.status === 'completed' || item.status === 'failed')
+            ) {
+                shouldRefreshQueue = true;
+            }
+            previousImportStatuses.current[item.id] = item.status;
+        }
+
+        if (!shouldRefreshQueue) return;
+
+        queryClient.invalidateQueries({ queryKey: ['pending-transactions', activeLedgerId] });
+        queryClient.invalidateQueries({ queryKey: ['ai-import-mappings', activeLedgerId] });
+        queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
+    }, [importsQuery.data, activeLedgerId, queryClient]);
+
     const accountsQuery = useQuery({
         queryKey: ['accounts', activeLedgerId],
         queryFn: () => fetchAccounts(activeLedgerId!),
@@ -155,6 +182,8 @@ export default function AiImportPage() {
         onSuccess: () => {
             setStatement(null);
             queryClient.invalidateQueries({ queryKey: ['statement-imports', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['ai-import-mappings', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['pending-transactions', activeLedgerId] });
         },
     });
 
@@ -208,6 +237,14 @@ export default function AiImportPage() {
                 </p>
             </div>
 
+            {settingsQuery.isError && (
+                <Alert variant="destructive">
+                    <AlertTitle>AI import is unavailable</AlertTitle>
+                    <AlertDescription>
+                        You need the AI ingestion permission in this space to configure a provider or upload statements.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">

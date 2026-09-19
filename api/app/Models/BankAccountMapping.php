@@ -61,5 +61,4 @@ class BankAccountMapping extends Model
     {
         return $this->belongsTo(Account::class, 'suggested_account_id');
     }
-
 }

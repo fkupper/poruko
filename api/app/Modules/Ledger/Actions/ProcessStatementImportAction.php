@@ -16,6 +16,7 @@ use App\Models\Transaction;
 use App\Modules\Ledger\Data\CreateAccountData;
 use App\Modules\Ledger\Data\CreatePendingTransactionData;
 use App\Modules\Ledger\Services\ByokStatementParser;
+use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -312,7 +313,7 @@ final readonly class ProcessStatementImportAction
             }
 
             $payerAccountId = $mapping->account_id;
-            $destinationAccountId = $membership->default_expense_account_id;
+            $destinationAccountId = $this->destinationAccountId($membership);
 
             if (
                 $payerAccountId !== null
@@ -373,6 +374,20 @@ final readonly class ProcessStatementImportAction
         });
     }
 
+    private function destinationAccountId(LedgerUser $membership): ?int
+    {
+        if ($membership->default_expense_account_id !== null) {
+            return $membership->default_expense_account_id;
+        }
+
+        $accountId = Account::query()
+            ->where('ledger_id', $membership->ledger_id)
+            ->where('type', AccountType::SpaceExpense)
+            ->value('id');
+
+        return is_numeric($accountId) ? (int) $accountId : null;
+    }
+
     private function existingTransaction(
         int $ledgerId,
         int $payerAccountId,
@@ -430,7 +445,7 @@ final readonly class ProcessStatementImportAction
 
     private function validDate(string $date): bool
     {
-        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
 
         return $parsed !== false && $parsed->format('Y-m-d') === $date;
     }

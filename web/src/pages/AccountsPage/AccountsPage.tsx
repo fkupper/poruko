@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { fetchAccounts, createAccount, updateAccount, deleteAccount } from '@/api/accounts';
+import { fetchBankAccountMappings } from '@/api/ingestion';
 import { fetchLedgers } from '@/api/ledgers';
 import { centsToCurrency } from '@/lib/currency';
 import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
@@ -85,6 +86,24 @@ export default function AccountsPage() {
 
     const { data: ledgers } = useQuery({ queryKey: ['ledgers'], queryFn: fetchLedgers });
 
+    const { data: bankAccountMappings = [] } = useQuery({
+        queryKey: ['ai-import-mappings', activeLedgerId],
+        queryFn: async () => {
+            try {
+                return await fetchBankAccountMappings(activeLedgerId!);
+            } catch {
+                return [];
+            }
+        },
+        enabled: !!activeLedgerId,
+        retry: false,
+    });
+    const mappedAccountIds = new Set(
+        bankAccountMappings
+            .map((mapping) => mapping.account_id)
+            .filter((accountId): accountId is number => accountId !== null),
+    );
+
     const saveMutation = useMutation({
         mutationFn: async () => {
             if (!activeLedgerId) throw new Error('No active space.');
@@ -143,15 +162,12 @@ export default function AccountsPage() {
     const activeLedger = (ledgers || []).find((l) => l.id === activeLedgerId);
     const prefs = activeLedger?.my_preferences;
 
-    const hasAiToken = !!localStorage.getItem('byok_llm_key');
-    const aiTargetId = localStorage.getItem(`ai_target_account_${activeLedgerId}`);
-
     const renderAccountCard = (acc: Account) => {
         const canEdit = acc.type !== 'split_clearing' && (acc.owner_id === user?.id || acc.owner_id === null);
 
         const isDefaultPayment = acc.id === prefs?.default_payment_account_id;
         const isDefaultExpense = acc.id === prefs?.default_expense_account_id;
-        const isAiTarget = hasAiToken && String(acc.id) === aiTargetId;
+        const isAiMapped = mappedAccountIds.has(acc.id);
 
         return (
             <Card key={acc.id} className="relative overflow-hidden">
@@ -169,7 +185,7 @@ export default function AccountsPage() {
                             )}
                             {isDefaultPayment && <Badge variant="secondary" className="text-[10px]">Default Payment</Badge>}
                             {isDefaultExpense && <Badge variant="secondary" className="text-[10px]">Default Expense</Badge>}
-                            {isAiTarget && <Badge variant="warning" className="text-[10px]">AI Target</Badge>}
+                            {isAiMapped && <Badge variant="warning" className="text-[10px]">AI mapped</Badge>}
                             <Badge variant="outline" className="capitalize text-[10px]">
                                 {acc.type.replace('_', ' ')}
                             </Badge>

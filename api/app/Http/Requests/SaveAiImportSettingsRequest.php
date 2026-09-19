@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Ledger;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -11,10 +12,12 @@ class SaveAiImportSettingsRequest extends FormRequest
     public function authorize(): bool
     {
         $ledger = $this->route('ledger');
+        $user = $this->user();
 
         return $ledger instanceof Ledger
-            && $this->user()?->can('view', $ledger) === true
-            && $this->user()?->can('ai_ingestion') === true;
+            && $user instanceof User
+            && $user->can('view', $ledger)
+            && $user->can('ai_ingestion');
     }
 
     /**

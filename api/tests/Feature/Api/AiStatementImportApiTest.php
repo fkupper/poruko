@@ -140,15 +140,7 @@ class AiStatementImportApiTest extends TestCase
             ->update(['default_expense_account_id' => $expenseAccount->id]);
 
         AiProviderSetting::factory()->create(['user_id' => $user->id]);
-        Http::fake([
-            'api.openai.com/*' => Http::response([
-                'choices' => [[
-                    'message' => [
-                        'content' => json_encode($this->parsedStatementPayload(), JSON_THROW_ON_ERROR),
-                    ],
-                ]],
-            ]),
-        ]);
+        $this->fakeParsedStatement($this->parsedStatementPayload());
 
         $firstImport = $this->createStoredImport($ledger, $user, 'first.csv');
         $this->app->make(ProcessStatementImportAction::class)->execute($firstImport);
@@ -285,6 +277,96 @@ class AiStatementImportApiTest extends TestCase
         $this->assertSame($ownAccount->id, $pending->fresh()->payer_account_id);
     }
 
+    public function testUploadRequiresConfiguredProvider(): void
+    {
+        Storage::fake('local');
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        Sanctum::actingAs($user, ['*']);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/ai-import/statements", [
+            'statement' => UploadedFile::fake()->create('statement.csv', 1, 'text/csv'),
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Configure your AI provider before uploading a statement.');
+    }
+
+    public function testMissingDefaultExpenseFallsBackToSpaceExpense(): void
+    {
+        Storage::fake('local');
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        $expenseAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', AccountType::SpaceExpense)
+            ->firstOrFail();
+        AiProviderSetting::factory()->create(['user_id' => $user->id]);
+        $this->fakeParsedStatement($this->parsedStatementPayload());
+
+        $import = $this->createStoredImport($ledger, $user, 'fallback.csv');
+        $this->app->make(ProcessStatementImportAction::class)->execute($import);
+
+        $this->assertSame(
+            $expenseAccount->id,
+            PendingTransaction::query()->firstOrFail()->destination_account_id,
+        );
+    }
+
+    public function testJointBankAccountAutoCreatesSharedPoolAccount(): void
+    {
+        Storage::fake('local');
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $user->id)
+            ->update(['ai_import_auto_create_accounts' => true]);
+        AiProviderSetting::factory()->create(['user_id' => $user->id]);
+        $this->fakeParsedStatement([
+            'bank_accounts' => [[
+                'external_id' => 'joint-1',
+                'name' => 'Household Checking',
+                'last_four' => '4444',
+                'ownership' => 'joint',
+            ]],
+            'transactions' => [[
+                'external_id' => 'joint-tx',
+                'bank_account_external_id' => 'joint-1',
+                'date' => '2026-09-11',
+                'description' => 'Groceries',
+                'raw_description' => 'MARKET',
+                'amount_cents' => 1200,
+                'transaction_type' => 'expense',
+                'confidence' => 0.9,
+                'rationale' => 'Shared card debit',
+            ]],
+        ]);
+
+        $import = $this->createStoredImport($ledger, $user, 'joint.csv');
+        $this->app->make(ProcessStatementImportAction::class)->execute($import);
+
+        $mapping = BankAccountMapping::query()->firstOrFail();
+        $account = Account::query()->findOrFail($mapping->account_id);
+
+        $this->assertSame('joint', $mapping->ownership_type);
+        $this->assertSame(AccountType::PoolAsset, $account->type);
+        $this->assertNull($account->owner_id);
+        $this->assertSame($account->id, PendingTransaction::query()->firstOrFail()->payer_account_id);
+    }
+
+    public function testCrossLedgerMappingUpdateIsNotFound(): void
+    {
+        [$ledgerA, $user] = $this->createLedgerWithAdmin();
+        [$ledgerB] = $this->createLedgerWithAdmin();
+        $mapping = BankAccountMapping::factory()->create([
+            'ledger_id' => $ledgerB->id,
+            'user_id' => $user->id,
+            'ownership_type' => 'personal',
+        ]);
+        Sanctum::actingAs($user, ['*']);
+
+        $this->patchJson("/api/ledgers/{$ledgerA->id}/ai-import/mappings/{$mapping->id}", [
+            'account_id' => null,
+        ])->assertNotFound();
+    }
+
     /**
      * @return array{Ledger, User}
      */
@@ -309,6 +391,22 @@ class AiStatementImportApiTest extends TestCase
             'user_id' => $user->id,
             'file_path' => $path,
             'original_filename' => $filename,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function fakeParsedStatement(array $payload): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode($payload, JSON_THROW_ON_ERROR),
+                    ],
+                ]],
+            ]),
         ]);
     }
 

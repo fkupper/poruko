@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AiStatementImportController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FinancialProfileController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\LedgerAccountController;
