@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Actions;
 
+use App\Enums\TransactionSource;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Ledger;
@@ -52,6 +53,11 @@ class PostRecurringTransactionActionTest extends TestCase
         $this->assertInstanceOf(Transaction::class, $transaction);
         $this->assertSame(50000, $transaction->amount);
         $this->assertSame(TransactionType::Recurring, $transaction->type);
+        $this->assertSame(TransactionSource::Blueprint, $transaction->source);
+        $this->assertSame(
+            ['recurring_transaction_id' => $blueprint->id],
+            $transaction->source_metadata,
+        );
         $this->assertSame($blueprint->id, $transaction->source_recurring_transaction_id);
         $this->assertSame('2026-03-01', $transaction->date->format('Y-m-d'));
         $this->assertCount(4, $transaction->postings);

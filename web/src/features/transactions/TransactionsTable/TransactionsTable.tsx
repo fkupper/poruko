@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { FacetedFilter } from '@/components/ui/faceted-filter';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TransactionDetailSheet } from '@/features/transactions/TransactionDetailSheet/TransactionDetailSheet';
 import {
     Empty,
     EmptyDescription,
@@ -23,7 +24,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { SearchIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, LockIcon, ArrowRightIcon, XIcon, ReceiptIcon } from 'lucide-react';
+import { SearchIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, LockIcon, ArrowRightIcon, XIcon, ReceiptIcon, EyeIcon } from 'lucide-react';
 
 interface TransactionsTableProps {
     fixedFilters?: FetchTransactionsFilters;
@@ -58,6 +59,7 @@ export function TransactionsTable({
 
     const [searchQuery, setSearchQuery] = React.useState('');
     const [deletingId, setDeletingId] = React.useState<number | null>(null);
+    const [inspectingId, setInspectingId] = React.useState<number | null>(null);
 
     // Selected Faceted Filters
     const [selectedCreators, setSelectedCreators] = React.useState<Set<string | number>>(new Set());
@@ -308,6 +310,7 @@ export function TransactionsTable({
                             <TableHead>Accounts (From → To)</TableHead>
                             <TableHead>Split Rule</TableHead>
                             <TableHead>Type</TableHead>
+                            <TableHead>Source</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
@@ -346,6 +349,11 @@ export function TransactionsTable({
                                     <TableCell className="capitalize text-xs text-muted-foreground">
                                         {tx.type}
                                     </TableCell>
+                                    <TableCell>
+                                        <Badge variant="secondary" className="capitalize text-[11px]">
+                                            {tx.source.replaceAll('_', ' ')}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell className="text-right font-mono font-semibold text-foreground">
                                         {centsToCurrency(tx.amount, currencySymbol)}
                                     </TableCell>
@@ -361,6 +369,10 @@ export function TransactionsTable({
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => setInspectingId(tx.id)}>
+                                                    <EyeIcon data-icon="inline-start" />
+                                                    Inspect
+                                                </DropdownMenuItem>
                                                 {tx.settlement_id !== null ? (
                                                     <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center">
                                                         <LockIcon className="size-3 mr-2" /> Locked (Settled)
@@ -416,6 +428,16 @@ export function TransactionsTable({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <TransactionDetailSheet
+                open={inspectingId !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setInspectingId(null);
+                    }
+                }}
+                transactionId={inspectingId}
+            />
         </div>
     );
 }

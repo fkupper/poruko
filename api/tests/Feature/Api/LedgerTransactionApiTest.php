@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\TransactionSource;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use App\Models\Account;
 use App\Models\Ledger;
@@ -68,6 +69,7 @@ class LedgerTransactionApiTest extends TestCase
         $this->getJson("/api/ledgers/{$ledger->id}/transactions/{$inLedger->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $inLedger->id)
+            ->assertJsonPath('data.source', TransactionSource::Manual->value)
             ->assertJsonPath('data.payer_account_name', $credit->name)
             ->assertJsonPath('data.destination_account_name', $inLedger->fresh()->destinationAccount?->name)
             ->assertJsonStructure(['data' => ['postings']]);
@@ -105,6 +107,8 @@ class LedgerTransactionApiTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.amount', 1000)
             ->assertJsonPath('data.split_rule', 'equal')
+            ->assertJsonPath('data.source', TransactionSource::Manual->value)
+            ->assertJsonPath('data.source_metadata', null)
             ->assertJsonCount(4, 'data.postings');
     }
 

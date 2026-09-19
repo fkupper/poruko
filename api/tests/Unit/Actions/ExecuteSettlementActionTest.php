@@ -3,6 +3,7 @@
 namespace Tests\Unit\Actions;
 
 use App\Enums\AccountType;
+use App\Enums\TransactionSource;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\FinancialProfile;
@@ -100,6 +101,9 @@ class ExecuteSettlementActionTest extends TestCase
 
         $this->assertNotNull($settlementTransaction);
         $this->assertSame($settlement->id, $settlementTransaction?->settlement_id);
+        $this->assertSame(TransactionSource::System, $settlementTransaction?->source);
+        $this->assertSame('settlement', $settlementTransaction?->source_metadata['operation']);
+        $this->assertSame('2026-03-31', $settlementTransaction?->source_metadata['period_end']);
     }
 
     public function testExecuteIsIdempotentForSamePeriod(): void

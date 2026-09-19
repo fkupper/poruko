@@ -2,10 +2,13 @@
 
 namespace App\Modules\Ledger\Data;
 
+use App\Enums\TransactionSource;
+
 final readonly class PostManualTransactionData
 {
     /**
      * @param list<array{user_id:int, share?:int}> $participants
+     * @param array<string, mixed>|null $sourceMetadata
      */
     public function __construct(
         public int $ledgerId,
@@ -17,6 +20,8 @@ final readonly class PostManualTransactionData
         public string $date,
         public ?string $description = null,
         public string $type = 'manual',
+        public string $source = TransactionSource::Manual->value,
+        public ?array $sourceMetadata = null,
     ) {}
 
     /**
@@ -37,6 +42,8 @@ final readonly class PostManualTransactionData
             date: (string) $payload['date'],
             description: $payload['description'] !== null ? (string) $payload['description'] : null,
             type: (string) ($payload['type'] ?? 'manual'),
+            source: (string) ($payload['source'] ?? TransactionSource::Manual->value),
+            sourceMetadata: is_array($payload['source_metadata'] ?? null) ? $payload['source_metadata'] : null,
         );
     }
 }
