@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\LedgerAccountController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use App\Http\Controllers\Api\LedgerUserController;
+use App\Http\Controllers\Api\PendingTransactionController;
 use App\Http\Controllers\Api\RecurringTransactionController;
 use App\Http\Controllers\Api\SettlementController;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +71,12 @@ Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFa
             Route::get('/transactions/{transaction}', [LedgerTransactionController::class, 'show'])->name('transactions.show');
             Route::patch('/transactions/{transaction}', [LedgerTransactionController::class, 'update'])->name('transactions.update');
             Route::delete('/transactions/{transaction}', [LedgerTransactionController::class, 'destroy'])->name('transactions.destroy');
+
+            Route::get('/pending-transactions', [PendingTransactionController::class, 'index'])->name('pending-transactions.index');
+            Route::post('/pending-transactions/approve-batch', [PendingTransactionController::class, 'approveBatch'])->name('pending-transactions.approve-batch');
+            Route::post('/pending-transactions/reject-batch', [PendingTransactionController::class, 'rejectBatch'])->name('pending-transactions.reject-batch');
+            Route::post('/pending-transactions/{pendingTransaction}/approve', [PendingTransactionController::class, 'approve'])->name('pending-transactions.approve');
+            Route::post('/pending-transactions/{pendingTransaction}/reject', [PendingTransactionController::class, 'reject'])->name('pending-transactions.reject');
 
             Route::get('/recurring-transactions', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
             Route::post('/recurring-transactions', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');
