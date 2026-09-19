@@ -1,16 +1,30 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { fetchSettlementPreview, fetchSettlementPeriods, executeSettlement } from '@/api/settlements';
+import {
+    fetchSettlementPreview,
+    fetchSettlementPeriods,
+    executeSettlement,
+    recordMidCycleSettlementTransfer,
+} from '@/api/settlements';
+import type { SettlementTransferInstruction } from '@/api/types';
 import { centsToCurrency, formatPercent } from '@/lib/currency';
 import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 import { TransactionsTable } from '@/features/transactions/TransactionsTable/TransactionsTable';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Empty,
     EmptyDescription,
@@ -30,6 +44,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter,
@@ -44,6 +59,7 @@ import {
     ChevronUpIcon,
     HandCoinsIcon,
     LockIcon,
+    SendIcon,
 } from 'lucide-react';
 
 export default function SettlementPage() {
@@ -57,6 +73,9 @@ export default function SettlementPage() {
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [showMathBreakdown, setShowMathBreakdown] = React.useState(true);
     const [confirmText, setConfirmText] = React.useState('');
+    const [selectedTransfer, setSelectedTransfer] = React.useState<
+        (SettlementTransferInstruction & { idempotencyKey: string }) | null
+    >(null);
 
     const { data: periods = [] } = useQuery({
         queryKey: ['settlement-periods', activeLedgerId],
@@ -89,6 +108,37 @@ export default function SettlementPage() {
             setConfirmText('');
         },
     });
+
+    const transferMutation = useMutation({
+        mutationFn: async () => {
+            if (!activeLedgerId || !settlement || !selectedTransfer) {
+                throw new Error('No mid-cycle transfer selected.');
+            }
+
+            return recordMidCycleSettlementTransfer(activeLedgerId, {
+                period_end: settlement.period_end,
+                from_account_id: selectedTransfer.from_account_id,
+                to_account_id: selectedTransfer.to_account_id,
+                amount: selectedTransfer.amount,
+                idempotency_key: selectedTransfer.idempotencyKey,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['settlement-preview', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['settlement-periods', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['transactions', activeLedgerId] });
+            queryClient.invalidateQueries({ queryKey: ['accounts', activeLedgerId] });
+            setSelectedTransfer(null);
+        },
+    });
+
+    const openTransferDialog = (transfer: SettlementTransferInstruction) => {
+        transferMutation.reset();
+        setSelectedTransfer({
+            ...transfer,
+            idempotencyKey: globalThis.crypto.randomUUID(),
+        });
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -249,25 +299,44 @@ export default function SettlementPage() {
                             <div className="grid gap-3">
                                 {settlement.required_transfers.map((tx, idx) => (
                                     <Card key={idx} className="border-l-4 border-l-inflow">
-                                        <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                                        <CardHeader>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex size-10 items-center justify-center rounded-full bg-inflow/15 text-inflow">
                                                     <ArrowRightIcon className="size-5" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-base font-semibold text-foreground">
-                                                        {tx.instruction}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <CardTitle>{tx.instruction}</CardTitle>
+                                                    <CardDescription>
                                                         From Account #{tx.from_account_id} to Joint Account #
                                                         {tx.to_account_id}
-                                                    </p>
+                                                    </CardDescription>
                                                 </div>
                                             </div>
-                                            <div className="font-mono text-xl font-bold text-inflow">
+                                        </CardHeader>
+                                        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                            <div className="flex flex-col gap-2">
+                                                {!settlement.is_settled && (
+                                                    <Badge variant="secondary" className="w-fit">
+                                                        Available as a mid-cycle transfer
+                                                    </Badge>
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    Recording this now applies it to the cycle ending{' '}
+                                                    {settlement.period_end} and reduces the final true-up.
+                                                </p>
+                                            </div>
+                                            <div className="shrink-0 font-mono text-xl font-bold text-inflow">
                                                 {centsToCurrency(tx.amount, currencySymbol)}
                                             </div>
                                         </CardContent>
+                                        {!settlement.is_settled && (
+                                            <CardFooter className="justify-end">
+                                                <Button onClick={() => openTransferDialog(tx)}>
+                                                    <SendIcon data-icon="inline-start" />
+                                                    Record transfer now
+                                                </Button>
+                                            </CardFooter>
+                                        )}
                                     </Card>
                                 ))}
                             </div>
@@ -406,6 +475,64 @@ export default function SettlementPage() {
                             onClick={() => mutation.mutate()}
                         >
                             Execute Settlement & Lock
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={selectedTransfer !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedTransfer(null);
+                        transferMutation.reset();
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Record mid-cycle transfer</DialogTitle>
+                        <DialogDescription>
+                            Apply this payment to the open cycle now instead of waiting for final settlement.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedTransfer && settlement && (
+                        <Card size="sm">
+                            <CardHeader>
+                                <CardTitle>{selectedTransfer.instruction}</CardTitle>
+                                <CardDescription>
+                                    Cycle {settlement.period_start} to {settlement.period_end}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex items-end justify-between gap-4">
+                                <p className="text-xs text-muted-foreground">
+                                    Account #{selectedTransfer.from_account_id} to Account #
+                                    {selectedTransfer.to_account_id}
+                                </p>
+                                <p className="shrink-0 font-mono text-xl font-bold text-inflow">
+                                    {centsToCurrency(selectedTransfer.amount, currencySymbol)}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {transferMutation.isError && (
+                        <p className="text-xs text-destructive">
+                            {(transferMutation.error as Error)?.message || 'Failed to record the transfer.'}
+                        </p>
+                    )}
+
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setSelectedTransfer(null)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            disabled={!selectedTransfer || transferMutation.isPending}
+                            onClick={() => transferMutation.mutate()}
+                        >
+                            {transferMutation.isPending && <Spinner data-icon="inline-start" />}
+                            Record transfer
                         </Button>
                     </DialogFooter>
                 </DialogContent>

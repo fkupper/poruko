@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFa
             Route::get('/settlements/periods', [SettlementController::class, 'periods'])->name('settlements.periods');
             Route::get('/settlements', [SettlementController::class, 'index'])->name('settlements.index');
             Route::post('/settlements/{cycle}/confirm', [SettlementController::class, 'confirm'])->name('settlements.confirm');
+            Route::post('/settlements/{cycle}/transfers', [SettlementController::class, 'recordTransfer'])->name('settlements.transfers.store');
             Route::patch('/cycle-config', [SettlementController::class, 'updateCycleConfig'])->name('cycle-config.update');
         });
 });

@@ -51,10 +51,12 @@ readonly class ExecuteSettlementAction
             }
         }
 
-        $preview = $this->previewSettlementAction->executeForPeriodEnd($ledger, $periodEnd);
-        $transferInstructions = $preview['required_transfers'];
+        return DB::transaction(function () use ($ledger, $period): Settlement {
+            Ledger::query()
+                ->whereKey($ledger->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        return DB::transaction(function () use ($ledger, $period, $transferInstructions): Settlement {
             /** @var Settlement $settlement */
             $settlement = Settlement::query()->firstOrCreate(
                 [
@@ -70,6 +72,9 @@ readonly class ExecuteSettlementAction
             if ($settlement->executed_at !== null) {
                 return $settlement;
             }
+
+            $preview = $this->previewSettlementAction->executeForPeriod($ledger, $period);
+            $transferInstructions = $preview['required_transfers'];
 
             foreach ($transferInstructions as $instruction) {
                 $fromAccountId = (int) $instruction['from_account_id'];
