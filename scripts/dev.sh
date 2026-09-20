@@ -60,8 +60,9 @@ shift || true
 ensure_api_vendor() {
   # ./api is bind-mounted, but vendor lives in the poruko-api-vendor volume
   # (see docker-compose.dev.yml). Populate that volume before api/queue start.
+  # Bypass entrypoint: --no-deps means db is not up, and composer does not need it.
   echo "Ensuring PHP dependencies are installed..."
-  compose run --rm --no-deps api composer install --prefer-dist --no-interaction
+  compose run --rm --no-deps --entrypoint composer api install --prefer-dist --no-interaction
 }
 
 case "$cmd" in

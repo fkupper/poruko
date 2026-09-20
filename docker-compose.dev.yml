@@ -17,6 +17,9 @@ services:
     environment:
       RUN_MIGRATIONS: "false"
       SKIP_CONFIG_CACHE: "true"
+    # artisan serve strips OS env unless --no-reload, so .dev.env (DB_HOST=db)
+    # would be ignored and Laravel would use api/.env (127.0.0.1).
+    command: php artisan serve --host=0.0.0.0 --port=8000 --no-reload
     ports:
       - "8000:8000"
     volumes:
@@ -78,6 +81,9 @@ services:
       - "6379:6379"
 
   web:
+    # Drop the release Dockerfile inherited from docker-compose.yml so
+    # `compose build` does not tag the PHP/nginx image as node:22-alpine.
+    build: !reset null
     image: node:22-alpine
     container_name: poruko-web-dev
     working_dir: /app
