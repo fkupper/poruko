@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\LedgerUserController;
 use App\Http\Controllers\Api\McpA2uiController;
 use App\Http\Controllers\Api\McpActionLogController;
 use App\Http\Controllers\Api\McpSettingsController;
+use App\Http\Controllers\Api\McpTokenController;
 use App\Http\Controllers\Api\PendingTransactionController;
 use App\Http\Controllers\Api\RecurringTransactionController;
 use App\Http\Controllers\Api\SettlementController;
@@ -38,6 +39,11 @@ Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFa
     Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
     Route::put('/auth/me/appearance', [AuthController::class, 'updateAppearance'])->name('auth.appearance.update');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+
+    Route::get('/mcp-tokens', [McpTokenController::class, 'index'])->name('mcp-tokens.index');
+    Route::post('/mcp-tokens', [McpTokenController::class, 'store'])->name('mcp-tokens.store');
+    Route::delete('/mcp-tokens/{mcpToken}', [McpTokenController::class, 'destroy'])->name('mcp-tokens.destroy');
+    Route::post('/mcp-tokens/{mcpToken}/signed-url', [McpTokenController::class, 'signedUrl'])->name('mcp-tokens.signed-url');
 
     Route::get('/currencies', [App\Http\Controllers\Api\CurrenciesController::class, 'index'])->name('currencies.index');
 

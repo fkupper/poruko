@@ -14,6 +14,13 @@ const updateMcpSettingsMock = vi.fn();
 vi.mock('@/api/mcp', () => ({
     fetchMcpSettings: (...args: unknown[]) => fetchMcpSettingsMock(...args),
     updateMcpSettings: (...args: unknown[]) => updateMcpSettingsMock(...args),
+    fetchMcpTokens: () => Promise.resolve({
+        data: [],
+        meta: { mcp_url: 'http://localhost:8000/mcp/poruko', authorization_header: 'Authorization' },
+    }),
+    createMcpToken: vi.fn(),
+    revokeMcpToken: vi.fn(),
+    createMcpSignedUrl: vi.fn(),
 }));
 
 vi.mock('@/features/mcp/webmcp/getModelContext', () => ({

@@ -7,7 +7,9 @@ use App\Observers\LedgerUserObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         LedgerUser::observe(LedgerUserObserver::class);
+
+        Route::bind('mcpToken', function (string $value): PersonalAccessToken {
+            $token = PersonalAccessToken::query()->find($value);
+
+            if (!$token instanceof PersonalAccessToken) {
+                abort(404, 'MCP key not found.');
+            }
+
+            return $token;
+        });
 
         RateLimiter::for('api', function (Request $request): Limit {
             return $this->app->environment('testing')

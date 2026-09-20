@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { McpKeysCard } from '@/features/mcp/McpKeysCard/McpKeysCard';
 import { getModelContext } from '@/features/mcp/webmcp/getModelContext';
 import { useLedgerStore } from '@/stores/ledgerStore';
 
@@ -139,6 +140,7 @@ export function McpOperationSettings() {
     });
 
     return (
+        <div className="flex flex-col gap-6">
         <form
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
             className="flex flex-col gap-6"
@@ -299,7 +301,7 @@ export function McpOperationSettings() {
                 <CardHeader className="border-b">
                     <CardTitle>Browser agent</CardTitle>
                     <CardDescription>
-                        In-browser WebMCP tools use your session and these same settings. External agents connect to the Laravel MCP server.
+                        In-browser WebMCP tools use your session and these same settings. External agents should use an MCP key from the card below — not your browser login token.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
@@ -331,5 +333,7 @@ export function McpOperationSettings() {
                 </Button>
             </div>
         </form>
+        <McpKeysCard />
+        </div>
     );
 }
