@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Transaction } from '@/api/types';
 import { AddExpenseModal } from '@/features/transactions/AddExpenseModal/AddExpenseModal';
+import { PendingApprovalTable } from '@/features/transactions/PendingApprovalTable/PendingApprovalTable';
 import { TransactionsTable } from '@/features/transactions/TransactionsTable/TransactionsTable';
 import { Button } from '@/components/ui/button';
 import { ArrowLeftRightIcon, PlusIcon } from 'lucide-react';
@@ -37,6 +38,8 @@ export default function TransactionsPage() {
                     Log Expense
                 </Button>
             </div>
+
+            <PendingApprovalTable />
 
             <TransactionsTable
                 initialAccountId={initialAccountId}

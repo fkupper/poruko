@@ -60,6 +60,12 @@ class Ledger extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    /** @return HasMany<PendingTransaction, $this> */
+    public function pendingTransactions(): HasMany
+    {
+        return $this->hasMany(PendingTransaction::class);
+    }
+
     /** @return BelongsToMany<User, $this, LedgerUser> */
     public function users(): BelongsToMany
     {

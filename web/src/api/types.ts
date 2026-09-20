@@ -185,15 +185,28 @@ export interface SettlementPreview {
 
 export interface PendingTransaction {
     id: number;
-    date: string;
-    raw_description: string;
-    suggested_description: string;
-    suggested_amount: number;
-    suggested_split_rule: SplitRule;
+    ledger_id: number;
+    proposed_by_user_id: number;
+    proposed_by_user_name?: string;
+    payer_account_id: number | null;
+    payer_account_name?: string | null;
+    destination_account_id: number | null;
+    destination_account_name?: string | null;
+    raw_data: Record<string, unknown>;
+    date: string | null;
+    raw_description?: string | null;
+    suggested_description: string | null;
+    suggested_amount: number | null;
+    suggested_split_rule: SplitRule | null;
     suggested_participants?: ParticipantShare[];
+    source: TransactionSource;
     status: 'pending' | 'approved' | 'rejected';
     confidence?: number;
     rationale?: string;
+    reviewed_by_user_id?: number | null;
+    reviewed_at?: string | null;
+    rejection_reason?: string | null;
+    committed_transaction_id?: number | null;
 }
 
 export interface ApprovePendingItem {

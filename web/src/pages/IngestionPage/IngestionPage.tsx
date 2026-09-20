@@ -275,7 +275,9 @@ export default function IngestionPage() {
                                         {item.rationale || 'High-confidence AI categorization based on payee keywords.'}
                                     </TableCell>
                                     <TableCell className="text-right font-mono font-semibold text-foreground">
-                                        {centsToCurrency(item.suggested_amount, currencySymbol)}
+                                        {item.suggested_amount === null
+                                            ? '—'
+                                            : centsToCurrency(item.suggested_amount, currencySymbol)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button
@@ -285,9 +287,9 @@ export default function IngestionPage() {
                                                 approveMutation.mutate([
                                                     {
                                                         pending_transaction_id: item.id,
-                                                        description: item.suggested_description,
-                                                        amount: item.suggested_amount,
-                                                        split_rule: item.suggested_split_rule,
+                                                        description: item.suggested_description ?? undefined,
+                                                        amount: item.suggested_amount ?? undefined,
+                                                        split_rule: item.suggested_split_rule ?? undefined,
                                                     },
                                                 ])
                                             }
