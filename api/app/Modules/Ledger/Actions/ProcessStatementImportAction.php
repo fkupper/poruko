@@ -157,7 +157,7 @@ final readonly class ProcessStatementImportAction
                     'user_id' => $import->user_id,
                     'external_account_fingerprint' => $identity->fingerprint,
                     'external_account_name' => $identity->displayName,
-                    'masked_identifier' => $identity->lastFour === null ? null : '•••• '.$identity->lastFour,
+                    'masked_identifier' => $identity->lastFour === null ? null : '•••• ' . $identity->lastFour,
                     'ownership_type' => $ownership,
                 ]);
             }
@@ -175,7 +175,7 @@ final readonly class ProcessStatementImportAction
 
             $updates = [
                 'external_account_name' => $identity->displayName,
-                'masked_identifier' => $identity->lastFour === null ? null : '•••• '.$identity->lastFour,
+                'masked_identifier' => $identity->lastFour === null ? null : '•••• ' . $identity->lastFour,
                 'suggested_account_id' => $alreadyLinked ? null : $candidate?->id,
             ];
 
@@ -436,7 +436,7 @@ final readonly class ProcessStatementImportAction
      */
     private function suggestedSplit(array $parsedTransaction, int $userId): array
     {
-        $sharingType = strtolower($this->optionalString($parsedTransaction, 'sharing_type') ?? 'shared');
+        $sharingType = mb_strtolower($this->optionalString($parsedTransaction, 'sharing_type') ?? 'shared');
 
         if (in_array($sharingType, ['individual', 'personal'], true)) {
             return [

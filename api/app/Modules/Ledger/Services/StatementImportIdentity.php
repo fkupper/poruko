@@ -28,7 +28,7 @@ final readonly class StatementImportIdentity
             $lastFour = self::lastFour($digits);
         }
 
-        $fingerprintKey = strlen($digits) >= 4 ? $digits : self::normalize($name);
+        $fingerprintKey = mb_strlen($digits) >= 4 ? $digits : self::normalize($name);
 
         return new self(
             displayName: $name,
@@ -56,10 +56,10 @@ final readonly class StatementImportIdentity
             return $left !== '' && $left === $right;
         }
 
-        $shorter = strlen($left) <= strlen($right) ? $left : $right;
+        $shorter = mb_strlen($left) <= mb_strlen($right) ? $left : $right;
         $longer = $shorter === $left ? $right : $left;
 
-        return strlen($shorter) >= 4 && str_ends_with($longer, $shorter);
+        return mb_strlen($shorter) >= 4 && str_ends_with($longer, $shorter);
     }
 
     public static function preferredDigits(?string ...$values): string
@@ -69,7 +69,7 @@ final readonly class StatementImportIdentity
         foreach ($values as $value) {
             $digits = preg_replace('/\D+/', '', $value ?? '') ?? '';
 
-            if (strlen($digits) > strlen($best)) {
+            if (mb_strlen($digits) > mb_strlen($best)) {
                 $best = $digits;
             }
         }
@@ -83,12 +83,12 @@ final readonly class StatementImportIdentity
         int $amount,
         string $rawDescription,
     ): string {
-        return hash('sha256', $accountFingerprint.'|'.self::contentKey($date, $amount, $rawDescription));
+        return hash('sha256', $accountFingerprint . '|' . self::contentKey($date, $amount, $rawDescription));
     }
 
     public static function contentKey(string $date, int $amount, string $rawDescription): string
     {
-        return $date.'|'.$amount.'|'.self::normalize($rawDescription);
+        return $date . '|' . $amount . '|' . self::normalize($rawDescription);
     }
 
     public static function normalize(?string $value): string
@@ -104,11 +104,11 @@ final readonly class StatementImportIdentity
     {
         $digits = preg_replace('/\D+/', '', $value ?? '') ?? '';
 
-        if (strlen($digits) < 4) {
+        if (mb_strlen($digits) < 4) {
             return null;
         }
 
-        return substr($digits, -4);
+        return mb_substr($digits, -4);
     }
 
     /**

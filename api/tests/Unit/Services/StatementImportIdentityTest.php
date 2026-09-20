@@ -95,7 +95,7 @@ class StatementImportIdentityTest extends TestCase
         );
         $this->assertSame(
             StatementImportIdentity::contentKey('2026-08-20', 400, $raw),
-            StatementImportIdentity::contentKey('2026-08-20', 400, strtoupper($raw)),
+            StatementImportIdentity::contentKey('2026-08-20', 400, mb_strtoupper($raw)),
         );
     }
 
