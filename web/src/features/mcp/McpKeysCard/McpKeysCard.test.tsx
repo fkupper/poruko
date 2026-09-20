@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -73,6 +73,16 @@ const createdResponse = {
     },
 };
 
+const writeTextMock = vi.fn().mockResolvedValue(undefined);
+
+function stubClipboard(): void {
+    writeTextMock.mockReset().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: writeTextMock },
+    });
+}
+
 describe('McpKeysCard', () => {
     beforeEach(() => {
         fetchMcpTokensMock.mockReset();
@@ -85,10 +95,6 @@ describe('McpKeysCard', () => {
                 mcp_url: 'http://localhost:8000/mcp/poruko',
                 authorization_header: 'Authorization',
             },
-        });
-        Object.defineProperty(navigator, 'clipboard', {
-            configurable: true,
-            value: { writeText: vi.fn().mockResolvedValue(undefined) },
         });
     });
 
@@ -105,7 +111,7 @@ describe('McpKeysCard', () => {
     });
 
     it('creates a key and shows copy-paste agent config once', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ writeToClipboard: false });
         createMcpTokenMock.mockResolvedValue(createdResponse);
         renderCard();
 
@@ -127,8 +133,9 @@ describe('McpKeysCard', () => {
             createdResponse.meta.signed_url.url,
         );
 
-        await user.click(screen.getByRole('button', { name: 'Copy Cursor MCP config' }));
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        stubClipboard();
+        fireEvent.click(screen.getByRole('button', { name: 'Copy Cursor MCP config' }));
+        expect(writeTextMock).toHaveBeenCalledWith(
             JSON.stringify(createdResponse.meta.client_config.cursor, null, 2),
         );
     });
