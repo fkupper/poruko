@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller, type UseFormSetError } from 'react-hook-form';
+import { useForm, Controller, useWatch, type UseFormSetError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
@@ -92,6 +92,8 @@ export function McpOperationSettings() {
         },
     });
     const { setError, clearErrors, formState: { errors } } = form;
+    const allowDestructive = useWatch({ control: form.control, name: 'allow_destructive' });
+    const destructiveAcknowledged = useWatch({ control: form.control, name: 'destructive_ack' });
 
     React.useEffect(() => {
         if (!settings) {
@@ -255,7 +257,7 @@ export function McpOperationSettings() {
                                         id="mcp-destructive"
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
-                                        disabled={(!form.watch('destructive_ack') && !field.value) || isLoading || mutation.isPending}
+                                        disabled={(!destructiveAcknowledged && !field.value) || isLoading || mutation.isPending}
                                         aria-label="Allow destructive operations"
                                     />
                                     <label htmlFor="mcp-destructive" className="cursor-pointer">
@@ -267,7 +269,7 @@ export function McpOperationSettings() {
                                 </Field>
                             )}
                         />
-                        {!form.watch('allow_destructive') && (
+                        {!allowDestructive && (
                             <Controller
                                 control={form.control}
                                 name="destructive_ack"
