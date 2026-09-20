@@ -21,6 +21,13 @@ export async function fetchTransactions(ledgerId: number, filters?: FetchTransac
     return data.data;
 }
 
+export async function fetchTransaction(ledgerId: number, transactionId: number): Promise<Transaction> {
+    const { data } = await client.get<{ data: Transaction }>(
+        `/ledgers/${ledgerId}/transactions/${transactionId}`,
+    );
+    return data.data;
+}
+
 export async function createTransaction(ledgerId: number, payload: CreateTransactionPayload): Promise<Transaction> {
     const { data } = await client.post<{ data: Transaction }>(`/ledgers/${ledgerId}/transactions`, payload);
     return data.data;

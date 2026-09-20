@@ -76,6 +76,8 @@ final readonly class PostManualTransactionAction
                 'destination_account_id' => $payload->destinationAccountId,
                 'amount' => $payload->amount,
                 'type' => $payload->type,
+                'source' => $payload->source,
+                'source_metadata' => $payload->sourceMetadata,
                 'split_rule' => $payload->splitRule,
                 'participants' => $payload->participants,
                 'description' => $payload->description,
@@ -142,7 +144,7 @@ final readonly class PostManualTransactionAction
 
             Posting::query()->insert($postings);
 
-            return $transaction->load(['payerAccount', 'postings']);
+            return $transaction->load(['payerAccount', 'destinationAccount', 'postings.account']);
         });
     }
 

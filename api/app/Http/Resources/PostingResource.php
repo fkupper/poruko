@@ -22,6 +22,7 @@ class PostingResource extends JsonResource
             'id' => $this->id,
             'transaction_id' => $this->transaction_id,
             'account_id' => $this->account_id,
+            'account_name' => $this->whenLoaded('account', fn () => $this->account->name),
             'direction' => $this->direction,
             'amount' => $this->amount,
             'created_at' => $this->created_at?->toISOString(),

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Ledger\Actions;
 
+use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\RecurringTransaction;
@@ -38,13 +39,17 @@ final readonly class PostRecurringTransactionAction
             'description' => $blueprint->description,
             'date' => $data->periodStart,
             'type' => TransactionType::Recurring->value,
+            'source' => TransactionSource::Blueprint->value,
+            'source_metadata' => [
+                'recurring_transaction_id' => $blueprint->id,
+            ],
         ]);
 
         return DB::transaction(function () use ($postData, $blueprint): Transaction {
             $transaction = $this->postManualTransactionAction->execute($postData);
             $transaction->update(['source_recurring_transaction_id' => $blueprint->id]);
 
-            return $transaction->fresh(['payerAccount', 'postings']);
+            return $transaction->fresh(['payerAccount', 'destinationAccount', 'postings.account']);
         });
     }
 }

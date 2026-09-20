@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $destination_account_id
  * @property int $amount
  * @property TransactionType $type
+ * @property TransactionSource $source
+ * @property array<string, mixed>|null $source_metadata
  * @property TransactionSplitRule $split_rule
  * @property array<int, array{user_id: int, share?: int|float}> $participants
  * @property string|null $description
@@ -42,6 +45,8 @@ class Transaction extends Model
         'destination_account_id',
         'amount',
         'type',
+        'source',
+        'source_metadata',
         'split_rule',
         'participants',
         'description',
@@ -56,6 +61,8 @@ class Transaction extends Model
         return [
             'amount' => 'integer',
             'type' => TransactionType::class,
+            'source' => TransactionSource::class,
+            'source_metadata' => 'array',
             'split_rule' => TransactionSplitRule::class,
             'participants' => 'array',
             'date' => 'date',

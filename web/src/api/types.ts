@@ -38,6 +38,7 @@ export interface Ledger {
 
 export type SplitRule = 'proportional' | 'equal' | 'individual' | 'manual';
 export type TransactionType = 'manual' | 'recurring' | 'settlement' | 'reversal';
+export type TransactionSource = 'manual' | 'blueprint' | 'mcp' | 'ai_import' | 'system';
 
 export interface ParticipantShare {
     user_id: number;
@@ -58,9 +59,20 @@ export interface Transaction {
     description: string;
     date: string;
     type: TransactionType;
+    source: TransactionSource;
+    source_metadata?: Record<string, unknown> | null;
+    source_recurring_transaction_id?: number | null;
     split_rule: SplitRule;
     participants?: ParticipantShare[];
+    postings?: Array<{
+        id: number;
+        account_id: number;
+        account_name?: string;
+        amount: number;
+        direction: 'debit' | 'credit';
+    }>;
     created_at: string;
+    updated_at?: string;
 }
 
 export interface CreateTransactionPayload {

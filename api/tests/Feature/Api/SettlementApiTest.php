@@ -102,7 +102,7 @@ class SettlementApiTest extends TestCase
         $payerAccount = Account::query()->findOrFail(
             DB::table('ledger_user')->where('ledger_id', $ledger->id)->where('user_id', $user->id)->value('main_personal_account_id'),
         );
-        $spaceExpenseAccount = Account::factory()->create([
+        $destinationAccount = Account::factory()->create([
             'ledger_id' => $ledger->id,
             'type' => AccountType::PoolAsset->value,
             'owner_id' => null,
@@ -111,6 +111,7 @@ class SettlementApiTest extends TestCase
             'ledger_id' => $ledger->id,
             'settlement_id' => $settlement->id,
             'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $destinationAccount->id,
             'amount' => 1200,
             'type' => TransactionType::Settlement->value,
             'split_rule' => TransactionSplitRule::Individual->value,
@@ -127,7 +128,8 @@ class SettlementApiTest extends TestCase
             ->assertJsonPath('data.0.ledger_id', $ledger->id)
             ->assertJsonPath('data.0.confirmation_required', true)
             ->assertJsonPath('data.0.transactions.0.settlement_id', $settlement->id)
-            ->assertJsonPath('data.0.transactions.0.payer_account_name', $payerAccount->name);
+            ->assertJsonPath('data.0.transactions.0.payer_account_name', $payerAccount->name)
+            ->assertJsonPath('data.0.transactions.0.destination_account_name', $destinationAccount->name);
     }
 
     public function testAdminCanConfirmCycleWhenSafetyGateBlocksAutoExecution(): void

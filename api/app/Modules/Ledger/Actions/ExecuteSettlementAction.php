@@ -3,6 +3,7 @@
 namespace App\Modules\Ledger\Actions;
 
 use App\Enums\PostingDirection;
+use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Ledger;
@@ -83,8 +84,14 @@ readonly class ExecuteSettlementAction
                     'ledger_id' => $ledger->id,
                     'settlement_id' => $settlement->id,
                     'payer_account_id' => $fromAccountId,
+                    'destination_account_id' => $toAccountId,
                     'amount' => $amount,
                     'type' => TransactionType::Settlement->value,
+                    'source' => TransactionSource::System->value,
+                    'source_metadata' => [
+                        'operation' => 'settlement',
+                        'period_end' => $period['period_end'],
+                    ],
                     'split_rule' => TransactionSplitRule::Individual->value,
                     'participants' => [],
                     'description' => "Settlement transfer for {$period['period_end']}",

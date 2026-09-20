@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\AccountType;
+use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Models\Account;
@@ -32,6 +33,8 @@ class TransactionFactory extends Factory
             ])->id,
             'amount' => fake()->numberBetween(100, 100_000),
             'type' => TransactionType::Manual->value,
+            'source' => TransactionSource::Manual->value,
+            'source_metadata' => null,
             'split_rule' => fake()->randomElement([
                 TransactionSplitRule::Equal->value,
                 TransactionSplitRule::Individual->value,

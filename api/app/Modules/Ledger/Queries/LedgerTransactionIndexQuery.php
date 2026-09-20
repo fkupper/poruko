@@ -24,7 +24,7 @@ class LedgerTransactionIndexQuery
         )));
 
         return $this->transaction->newQuery()
-            ->with(['payerAccount', 'destinationAccount', 'postings'])
+            ->with(['payerAccount', 'destinationAccount', 'postings.account'])
             ->forLedger($ledger->id)
             ->betweenDates($filters->fromDate, $filters->toDate)
             ->when(
