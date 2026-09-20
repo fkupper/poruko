@@ -31,9 +31,9 @@ class McpTokenApiTest extends TestCase
         $this->assertIsString($plain);
         $this->assertNotSame('', $plain);
         $this->assertStringContainsString('/mcp/poruko', (string) $create->json('meta.mcp_url'));
-        $this->assertStringStartsWith('Bearer '.$plain, (string) $create->json('meta.client_config.headers.Authorization'));
+        $this->assertStringStartsWith('Bearer ' . $plain, (string) $create->json('meta.client_config.headers.Authorization'));
         $this->assertSame(
-            'Bearer '.$plain,
+            'Bearer ' . $plain,
             $create->json('meta.client_config.cursor.mcpServers.poruko.headers.Authorization'),
         );
         $this->assertSame(
@@ -107,7 +107,7 @@ class McpTokenApiTest extends TestCase
             ->assertJsonPath('data.expires_in_hours', 2)
             ->assertJsonStructure(['data' => ['url', 'expires_at', 'expires_in_hours']]);
 
-        $this->assertStringContainsString('mcp_token='.$token->id, (string) $this->postJson(
+        $this->assertStringContainsString('mcp_token=' . $token->id, (string) $this->postJson(
             "/api/mcp-tokens/{$token->id}/signed-url",
         )->json('data.url'));
     }

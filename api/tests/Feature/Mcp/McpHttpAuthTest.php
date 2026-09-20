@@ -4,7 +4,6 @@ namespace Tests\Feature\Mcp;
 
 use App\Enums\McpTokenAbility;
 use App\Http\Middleware\AuthenticateMcp;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
@@ -103,7 +102,7 @@ class McpHttpAuthTest extends TestCase
         [, $user] = $this->createMcpLedger();
         $token = $user->createToken('Inspector', [McpTokenAbility::Mcp->value])->accessToken;
 
-        $this->postJson('/mcp/poruko?mcp_token='.$token->id, $this->initializePayload())
+        $this->postJson('/mcp/poruko?mcp_token=' . $token->id, $this->initializePayload())
             ->assertUnauthorized();
     }
 }

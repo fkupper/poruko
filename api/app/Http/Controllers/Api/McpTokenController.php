@@ -15,7 +15,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class McpTokenController extends Controller
 {
-    public function __construct(private readonly McpTokenService $tokens) {}
+    public function __construct(
+        private readonly McpTokenService $tokens
+    ) {}
 
     public function index(): JsonResponse
     {

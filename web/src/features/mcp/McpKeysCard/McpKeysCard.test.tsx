@@ -86,8 +86,9 @@ describe('McpKeysCard', () => {
                 authorization_header: 'Authorization',
             },
         });
-        Object.assign(navigator, {
-            clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText: vi.fn().mockResolvedValue(undefined) },
         });
     });
 
@@ -122,7 +123,9 @@ describe('McpKeysCard', () => {
         expect(screen.getByLabelText('Cursor MCP config')).toHaveValue(
             JSON.stringify(createdResponse.meta.client_config.cursor, null, 2),
         );
-        expect(screen.getByLabelText(/Signed URL/)).toHaveValue(createdResponse.meta.signed_url.url);
+        expect(screen.getByLabelText('Signed URL (expires in 24h)')).toHaveValue(
+            createdResponse.meta.signed_url.url,
+        );
 
         await user.click(screen.getByRole('button', { name: 'Copy Cursor MCP config' }));
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
