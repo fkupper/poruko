@@ -182,6 +182,45 @@
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-DELETEapi-ledgers--ledger_id--transactions--id-">
                                 <a href="#endpoints-DELETEapi-ledgers--ledger_id--transactions--id-">DELETE api/ledgers/{ledger_id}/transactions/{id}</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-ledgers--ledger_id--pending-transactions">
+                                <a href="#endpoints-GETapi-ledgers--ledger_id--pending-transactions">GET api/ledgers/{ledger_id}/pending-transactions</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch">
+                                <a href="#endpoints-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch">POST api/ledgers/{ledger_id}/pending-transactions/approve-batch</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch">
+                                <a href="#endpoints-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch">POST api/ledgers/{ledger_id}/pending-transactions/reject-batch</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-">
+                                <a href="#endpoints-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-">PATCH api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve">
+                                <a href="#endpoints-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve">POST api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/approve</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject">
+                                <a href="#endpoints-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject">POST api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/reject</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-ledgers--ledger_id--ai-import-settings">
+                                <a href="#endpoints-GETapi-ledgers--ledger_id--ai-import-settings">GET api/ledgers/{ledger_id}/ai-import/settings</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PUTapi-ledgers--ledger_id--ai-import-settings">
+                                <a href="#endpoints-PUTapi-ledgers--ledger_id--ai-import-settings">PUT api/ledgers/{ledger_id}/ai-import/settings</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-DELETEapi-ledgers--ledger_id--ai-import-settings">
+                                <a href="#endpoints-DELETEapi-ledgers--ledger_id--ai-import-settings">DELETE api/ledgers/{ledger_id}/ai-import/settings</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-ledgers--ledger_id--ai-import-mappings">
+                                <a href="#endpoints-GETapi-ledgers--ledger_id--ai-import-mappings">GET api/ledgers/{ledger_id}/ai-import/mappings</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-">
+                                <a href="#endpoints-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-">PATCH api/ledgers/{ledger_id}/ai-import/mappings/{bankAccountMapping_id}</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-ledgers--ledger_id--ai-import-statements">
+                                <a href="#endpoints-POSTapi-ledgers--ledger_id--ai-import-statements">POST api/ledgers/{ledger_id}/ai-import/statements</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-ledgers--ledger_id--ai-import-statements">
+                                <a href="#endpoints-GETapi-ledgers--ledger_id--ai-import-statements">GET api/ledgers/{ledger_id}/ai-import/statements</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-ledgers--ledger_id--recurring-transactions">
                                 <a href="#endpoints-GETapi-ledgers--ledger_id--recurring-transactions">GET api/ledgers/{ledger_id}/recurring-transactions</a>
                             </li>
@@ -257,7 +296,7 @@ Simple readiness endpoint.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: August 12, 2026</li>
+        <li>Last updated: September 20, 2026</li>
     </ul>
 </div>
 
@@ -2725,7 +2764,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"theme\": \"neon-tokyo\",
-    \"color_mode\": \"system\"
+    \"color_mode\": \"light\"
 }"
 </code></pre></div>
 
@@ -2742,7 +2781,7 @@ const headers = {
 
 let body = {
     "theme": "neon-tokyo",
-    "color_mode": "system"
+    "color_mode": "light"
 };
 
 fetch(url, {
@@ -2839,7 +2878,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     <br>
 <p>Example: <code>neon-tokyo</code></p>
 Must be one of:
-<ul style="list-style-type: square;"><li><code>neutral</code></li> <li><code>quiet</code></li> <li><code>neon-tokyo</code></li></ul>
+<ul style="list-style-type: square;"><li><code>poruko</code></li> <li><code>neutral</code></li> <li><code>quiet</code></li> <li><code>neon-tokyo</code></li></ul>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>color_mode</code></b>&nbsp;&nbsp;
@@ -2848,10 +2887,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="color_mode"                data-endpoint="PUTapi-auth-me-appearance"
-               value="system"
+               value="light"
                data-component="body">
     <br>
-<p>Example: <code>system</code></p>
+<p>Example: <code>light</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>light</code></li> <li><code>dark</code></li> <li><code>system</code></li></ul>
         </div>
@@ -3129,7 +3168,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"currency\": \"AUD\",
+    \"currency\": \"CAD\",
     \"settlement_mode\": \"architecto\",
     \"settlement_cutoff_day\": 2,
     \"settlement_timezone\": \"Antarctica\\/Rothera\",
@@ -3150,7 +3189,7 @@ const headers = {
 
 let body = {
     "name": "b",
-    "currency": "AUD",
+    "currency": "CAD",
     "settlement_mode": "architecto",
     "settlement_cutoff_day": 2,
     "settlement_timezone": "Antarctica\/Rothera",
@@ -3258,10 +3297,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="currency"                data-endpoint="POSTapi-ledgers"
-               value="AUD"
+               value="CAD"
                data-component="body">
     <br>
-<p>Example: <code>AUD</code></p>
+<p>Example: <code>CAD</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>EUR</code></li> <li><code>USD</code></li> <li><code>GBP</code></li> <li><code>BRL</code></li> <li><code>CAD</code></li> <li><code>AUD</code></li> <li><code>JPY</code></li></ul>
         </div>
@@ -3348,8 +3387,8 @@ Must be one of:
     \"currency_code\": \"ngz\",
     \"settlement_cutoff_day\": 1,
     \"settlement_timezone\": \"America\\/Moncton\",
-    \"settlement_cutoff_time\": \"09:28:42\",
-    \"settlement_auto_execute_enabled\": true
+    \"settlement_cutoff_time\": \"13:39:38\",
+    \"settlement_auto_execute_enabled\": false
 }"
 </code></pre></div>
 
@@ -3369,8 +3408,8 @@ let body = {
     "currency_code": "ngz",
     "settlement_cutoff_day": 1,
     "settlement_timezone": "America\/Moncton",
-    "settlement_cutoff_time": "09:28:42",
-    "settlement_auto_execute_enabled": true
+    "settlement_cutoff_time": "13:39:38",
+    "settlement_auto_execute_enabled": false
 };
 
 fetch(url, {
@@ -3523,10 +3562,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="settlement_cutoff_time"                data-endpoint="PUTapi-ledgers--ledger_id--settings"
-               value="09:28:42"
+               value="13:39:38"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>09:28:42</code></p>
+<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>13:39:38</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>settlement_auto_execute_enabled</code></b>&nbsp;&nbsp;
@@ -3548,7 +3587,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -3869,7 +3908,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"type\": \"user_liability\",
+    \"type\": \"space_expense\",
     \"owner_id\": 16,
     \"base_budget\": 39,
     \"balance\": 84,
@@ -3890,7 +3929,7 @@ const headers = {
 
 let body = {
     "name": "b",
-    "type": "user_liability",
+    "type": "space_expense",
     "owner_id": 16,
     "base_budget": 39,
     "balance": 84,
@@ -4011,10 +4050,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="POSTapi-ledgers--ledger_id--accounts"
-               value="user_liability"
+               value="space_expense"
                data-component="body">
     <br>
-<p>Example: <code>user_liability</code></p>
+<p>Example: <code>space_expense</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>pool_asset</code></li> <li><code>space_expense</code></li> <li><code>split_clearing</code></li> <li><code>user_funding</code></li> <li><code>user_liability</code></li></ul>
         </div>
@@ -4915,8 +4954,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"from_date\": \"2026-08-12T09:28:42\",
-    \"to_date\": \"2052-09-04\",
+    \"from_date\": \"2026-09-20T13:39:39\",
+    \"to_date\": \"2052-10-13\",
     \"account_id\": 16,
     \"account_ids\": [
         16
@@ -4928,7 +4967,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         \"architecto\"
     ],
     \"types\": [
-        \"manual\"
+        \"settlement\"
     ],
     \"settlement_id\": 16,
     \"per_page\": 22,
@@ -4948,8 +4987,8 @@ const headers = {
 };
 
 let body = {
-    "from_date": "2026-08-12T09:28:42",
-    "to_date": "2052-09-04",
+    "from_date": "2026-09-20T13:39:39",
+    "to_date": "2052-10-13",
     "account_id": 16,
     "account_ids": [
         16
@@ -4961,7 +5000,7 @@ let body = {
         "architecto"
     ],
     "types": [
-        "manual"
+        "settlement"
     ],
     "settlement_id": 16,
     "per_page": 22,
@@ -5086,10 +5125,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="from_date"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:39"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:39</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>to_date</code></b>&nbsp;&nbsp;
@@ -5098,10 +5137,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="to_date"                data-endpoint="GETapi-ledgers--ledger_id--transactions"
-               value="2052-09-04"
+               value="2052-10-13"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>from_date</code>. Example: <code>2052-09-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>from_date</code>. Example: <code>2052-10-13</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>account_id</code></b>&nbsp;&nbsp;
@@ -5234,9 +5273,9 @@ Must be one of:
     \"destination_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"date\": \"2026-08-12T09:28:42\",
+    \"date\": \"2026-09-20T13:39:39\",
     \"type\": \"manual\",
-    \"split_rule\": \"equal\",
+    \"split_rule\": \"proportional\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -5262,9 +5301,9 @@ let body = {
     "destination_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "date": "2026-08-12T09:28:42",
+    "date": "2026-09-20T13:39:39",
     "type": "manual",
-    "split_rule": "equal",
+    "split_rule": "proportional",
     "participants": [
         {
             "user_id": 16,
@@ -5423,10 +5462,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:39"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:39</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>type</code></b>&nbsp;&nbsp;
@@ -5449,10 +5488,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="POSTapi-ledgers--ledger_id--transactions"
-               value="equal"
+               value="proportional"
                data-component="body">
     <br>
-<p>Example: <code>equal</code></p>
+<p>Example: <code>proportional</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
         </div>
@@ -5667,9 +5706,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"destination_account_id\": 16,
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
-    \"date\": \"2026-08-12T09:28:42\",
+    \"date\": \"2026-09-20T13:39:39\",
     \"type\": \"manual\",
-    \"split_rule\": \"individual\",
+    \"split_rule\": \"manual\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -5695,9 +5734,9 @@ let body = {
     "destination_account_id": 16,
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
-    "date": "2026-08-12T09:28:42",
+    "date": "2026-09-20T13:39:39",
     "type": "manual",
-    "split_rule": "individual",
+    "split_rule": "manual",
     "participants": [
         {
             "user_id": 16,
@@ -5868,10 +5907,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="PATCHapi-ledgers--ledger_id--transactions--id-"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:39"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:39</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>type</code></b>&nbsp;&nbsp;
@@ -5894,10 +5933,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="split_rule"                data-endpoint="PATCHapi-ledgers--ledger_id--transactions--id-"
-               value="individual"
+               value="manual"
                data-component="body">
     <br>
-<p>Example: <code>individual</code></p>
+<p>Example: <code>manual</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
         </div>
@@ -6075,6 +6114,2101 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
+                    <h2 id="endpoints-GETapi-ledgers--ledger_id--pending-transactions">GET api/ledgers/{ledger_id}/pending-transactions</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-ledgers--ledger_id--pending-transactions">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/ledgers/16/pending-transactions" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/pending-transactions"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-ledgers--ledger_id--pending-transactions">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Unauthenticated.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-ledgers--ledger_id--pending-transactions" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-ledgers--ledger_id--pending-transactions"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-ledgers--ledger_id--pending-transactions"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-ledgers--ledger_id--pending-transactions" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-ledgers--ledger_id--pending-transactions">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-ledgers--ledger_id--pending-transactions" data-method="GET"
+      data-path="api/ledgers/{ledger_id}/pending-transactions"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-ledgers--ledger_id--pending-transactions', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-ledgers--ledger_id--pending-transactions"
+                    onclick="tryItOut('GETapi-ledgers--ledger_id--pending-transactions');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-ledgers--ledger_id--pending-transactions"
+                    onclick="cancelTryOut('GETapi-ledgers--ledger_id--pending-transactions');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-ledgers--ledger_id--pending-transactions"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/ledgers/{ledger_id}/pending-transactions</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-ledgers--ledger_id--pending-transactions"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-ledgers--ledger_id--pending-transactions"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--pending-transactions"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="endpoints-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch">POST api/ledgers/{ledger_id}/pending-transactions/approve-batch</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/ledgers/16/pending-transactions/approve-batch" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"pending_transaction_ids\": [
+        16
+    ],
+    \"reason\": \"n\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/pending-transactions/approve-batch"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "pending_transaction_ids": [
+        16
+    ],
+    "reason": "n"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch">
+</span>
+<span id="execution-results-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch" data-method="POST"
+      data-path="api/ledgers/{ledger_id}/pending-transactions/approve-batch"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ledgers--ledger_id--pending-transactions-approve-batch', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+                    onclick="tryItOut('POSTapi-ledgers--ledger_id--pending-transactions-approve-batch');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+                    onclick="cancelTryOut('POSTapi-ledgers--ledger_id--pending-transactions-approve-batch');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/ledgers/{ledger_id}/pending-transactions/approve-batch</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>pending_transaction_ids</code></b>&nbsp;&nbsp;
+<small>integer[]</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="pending_transaction_ids[0]"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+               data-component="body">
+        <input type="number" style="display: none"
+               name="pending_transaction_ids[1]"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+               data-component="body">
+    <br>
+<p>The <code>id</code> of an existing record in the pending_transactions table.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>reason</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="reason"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-approve-batch"
+               value="n"
+               data-component="body">
+    <br>
+<p>Must not be greater than 1000 characters. Example: <code>n</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch">POST api/ledgers/{ledger_id}/pending-transactions/reject-batch</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/ledgers/16/pending-transactions/reject-batch" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"pending_transaction_ids\": [
+        16
+    ],
+    \"reason\": \"n\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/pending-transactions/reject-batch"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "pending_transaction_ids": [
+        16
+    ],
+    "reason": "n"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch">
+</span>
+<span id="execution-results-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch" data-method="POST"
+      data-path="api/ledgers/{ledger_id}/pending-transactions/reject-batch"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ledgers--ledger_id--pending-transactions-reject-batch', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+                    onclick="tryItOut('POSTapi-ledgers--ledger_id--pending-transactions-reject-batch');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+                    onclick="cancelTryOut('POSTapi-ledgers--ledger_id--pending-transactions-reject-batch');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/ledgers/{ledger_id}/pending-transactions/reject-batch</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>pending_transaction_ids</code></b>&nbsp;&nbsp;
+<small>integer[]</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="pending_transaction_ids[0]"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+               data-component="body">
+        <input type="number" style="display: none"
+               name="pending_transaction_ids[1]"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+               data-component="body">
+    <br>
+<p>The <code>id</code> of an existing record in the pending_transactions table.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>reason</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="reason"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions-reject-batch"
+               value="n"
+               data-component="body">
+    <br>
+<p>Must not be greater than 1000 characters. Example: <code>n</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-">PATCH api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:8000/api/ledgers/16/pending-transactions/16" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"payer_account_id\": 16,
+    \"destination_account_id\": 16,
+    \"description\": \"Et animi quos velit et fugiat.\",
+    \"amount\": 26,
+    \"date\": \"2026-09-20\",
+    \"split_rule\": \"equal\",
+    \"participants\": [
+        {
+            \"user_id\": 16,
+            \"share\": 39
+        }
+    ]
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/pending-transactions/16"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "payer_account_id": 16,
+    "destination_account_id": 16,
+    "description": "Et animi quos velit et fugiat.",
+    "amount": 26,
+    "date": "2026-09-20",
+    "split_rule": "equal",
+    "participants": [
+        {
+            "user_id": 16,
+            "share": 39
+        }
+    ]
+};
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-">
+</span>
+<span id="execution-results-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-" data-method="PATCH"
+      data-path="api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+                    onclick="tryItOut('PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+                    onclick="cancelTryOut('PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>pendingTransaction_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="pendingTransaction_id"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the pendingTransaction. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>payer_account_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="payer_account_id"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="16"
+               data-component="body">
+    <br>
+<p>Example: <code>16</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>destination_account_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="destination_account_id"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="16"
+               data-component="body">
+    <br>
+<p>Example: <code>16</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>description</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="description"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="Et animi quos velit et fugiat."
+               data-component="body">
+    <br>
+<p>Must not be greater than 255 characters. Example: <code>Et animi quos velit et fugiat.</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>amount</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="amount"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="26"
+               data-component="body">
+    <br>
+<p>Must be at least 1. Example: <code>26</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>date</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="date"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="2026-09-20"
+               data-component="body">
+    <br>
+<p>Must be a valid date in the format <code>Y-m-d</code>. Example: <code>2026-09-20</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>split_rule</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="split_rule"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="equal"
+               data-component="body">
+    <br>
+<p>Example: <code>equal</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>equal</code></li> <li><code>individual</code></li> <li><code>proportional</code></li> <li><code>manual</code></li></ul>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+        <details>
+            <summary style="padding-bottom: 10px;">
+                <b style="line-height: 2;"><code>participants</code></b>&nbsp;&nbsp;
+<small>object[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+<br>
+
+            </summary>
+                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>user_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="participants.0.user_id"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="16"
+               data-component="body">
+    <br>
+<p>This field is required when <code>participants</code> is present. Example: <code>16</code></p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>share</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="participants.0.share"                data-endpoint="PATCHapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id-"
+               value="39"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Example: <code>39</code></p>
+                    </div>
+                                    </details>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve">POST api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/approve</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/ledgers/16/pending-transactions/16/approve" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/pending-transactions/16/approve"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "POST",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve">
+</span>
+<span id="execution-results-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve" data-method="POST"
+      data-path="api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/approve"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+                    onclick="tryItOut('POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+                    onclick="cancelTryOut('POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/approve</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>pendingTransaction_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="pendingTransaction_id"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--approve"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the pendingTransaction. Example: <code>16</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="endpoints-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject">POST api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/reject</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/ledgers/16/pending-transactions/16/reject" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"reason\": \"b\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/pending-transactions/16/reject"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "reason": "b"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject">
+</span>
+<span id="execution-results-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject" data-method="POST"
+      data-path="api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/reject"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+                    onclick="tryItOut('POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+                    onclick="cancelTryOut('POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/ledgers/{ledger_id}/pending-transactions/{pendingTransaction_id}/reject</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>pendingTransaction_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="pendingTransaction_id"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the pendingTransaction. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>reason</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="reason"                data-endpoint="POSTapi-ledgers--ledger_id--pending-transactions--pendingTransaction_id--reject"
+               value="b"
+               data-component="body">
+    <br>
+<p>Must not be greater than 1000 characters. Example: <code>b</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-GETapi-ledgers--ledger_id--ai-import-settings">GET api/ledgers/{ledger_id}/ai-import/settings</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-ledgers--ledger_id--ai-import-settings">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/ledgers/16/ai-import/settings" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/settings"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-ledgers--ledger_id--ai-import-settings">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Unauthenticated.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-ledgers--ledger_id--ai-import-settings" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-ledgers--ledger_id--ai-import-settings"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-ledgers--ledger_id--ai-import-settings"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-ledgers--ledger_id--ai-import-settings" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-ledgers--ledger_id--ai-import-settings">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-ledgers--ledger_id--ai-import-settings" data-method="GET"
+      data-path="api/ledgers/{ledger_id}/ai-import/settings"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-ledgers--ledger_id--ai-import-settings', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-ledgers--ledger_id--ai-import-settings"
+                    onclick="tryItOut('GETapi-ledgers--ledger_id--ai-import-settings');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-ledgers--ledger_id--ai-import-settings"
+                    onclick="cancelTryOut('GETapi-ledgers--ledger_id--ai-import-settings');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-ledgers--ledger_id--ai-import-settings"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/settings</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-settings"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="endpoints-PUTapi-ledgers--ledger_id--ai-import-settings">PUT api/ledgers/{ledger_id}/ai-import/settings</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PUTapi-ledgers--ledger_id--ai-import-settings">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:8000/api/ledgers/16/ai-import/settings" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"provider\": \"architecto\",
+    \"api_key\": \"n\",
+    \"model\": \"g\",
+    \"base_url\": \"http:\\/\\/www.okuneva.com\\/fugiat-sunt-nihil-accusantium-harum-mollitia.html\",
+    \"auto_create_accounts\": false
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/settings"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "provider": "architecto",
+    "api_key": "n",
+    "model": "g",
+    "base_url": "http:\/\/www.okuneva.com\/fugiat-sunt-nihil-accusantium-harum-mollitia.html",
+    "auto_create_accounts": false
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-ledgers--ledger_id--ai-import-settings">
+</span>
+<span id="execution-results-PUTapi-ledgers--ledger_id--ai-import-settings" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PUTapi-ledgers--ledger_id--ai-import-settings"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-ledgers--ledger_id--ai-import-settings"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-ledgers--ledger_id--ai-import-settings" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-ledgers--ledger_id--ai-import-settings">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PUTapi-ledgers--ledger_id--ai-import-settings" data-method="PUT"
+      data-path="api/ledgers/{ledger_id}/ai-import/settings"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-ledgers--ledger_id--ai-import-settings', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-ledgers--ledger_id--ai-import-settings"
+                    onclick="tryItOut('PUTapi-ledgers--ledger_id--ai-import-settings');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-ledgers--ledger_id--ai-import-settings"
+                    onclick="cancelTryOut('PUTapi-ledgers--ledger_id--ai-import-settings');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-ledgers--ledger_id--ai-import-settings"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/settings</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>provider</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="provider"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Example: <code>architecto</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>openai</code></li> <li><code>anthropic</code></li> <li><code>openai_compatible</code></li></ul>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>api_key</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="api_key"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="n"
+               data-component="body">
+    <br>
+<p>Must be at least 12 characters. Must not be greater than 500 characters. Example: <code>n</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>model</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="model"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="g"
+               data-component="body">
+    <br>
+<p>Must not be greater than 100 characters. Example: <code>g</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>base_url</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="base_url"                data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+               value="http://www.okuneva.com/fugiat-sunt-nihil-accusantium-harum-mollitia.html"
+               data-component="body">
+    <br>
+<p>Must not be greater than 2048 characters. Example: <code>http://www.okuneva.com/fugiat-sunt-nihil-accusantium-harum-mollitia.html</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>auto_create_accounts</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <label data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings" style="display: none">
+            <input type="radio" name="auto_create_accounts"
+                   value="true"
+                   data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings" style="display: none">
+            <input type="radio" name="auto_create_accounts"
+                   value="false"
+                   data-endpoint="PUTapi-ledgers--ledger_id--ai-import-settings"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>false</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-DELETEapi-ledgers--ledger_id--ai-import-settings">DELETE api/ledgers/{ledger_id}/ai-import/settings</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-DELETEapi-ledgers--ledger_id--ai-import-settings">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:8000/api/ledgers/16/ai-import/settings" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/settings"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-ledgers--ledger_id--ai-import-settings">
+</span>
+<span id="execution-results-DELETEapi-ledgers--ledger_id--ai-import-settings" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-DELETEapi-ledgers--ledger_id--ai-import-settings"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-ledgers--ledger_id--ai-import-settings"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-ledgers--ledger_id--ai-import-settings" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-ledgers--ledger_id--ai-import-settings">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-DELETEapi-ledgers--ledger_id--ai-import-settings" data-method="DELETE"
+      data-path="api/ledgers/{ledger_id}/ai-import/settings"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-ledgers--ledger_id--ai-import-settings', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-ledgers--ledger_id--ai-import-settings"
+                    onclick="tryItOut('DELETEapi-ledgers--ledger_id--ai-import-settings');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-ledgers--ledger_id--ai-import-settings"
+                    onclick="cancelTryOut('DELETEapi-ledgers--ledger_id--ai-import-settings');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-ledgers--ledger_id--ai-import-settings"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/settings</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-ledgers--ledger_id--ai-import-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-ledgers--ledger_id--ai-import-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="DELETEapi-ledgers--ledger_id--ai-import-settings"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="endpoints-GETapi-ledgers--ledger_id--ai-import-mappings">GET api/ledgers/{ledger_id}/ai-import/mappings</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-ledgers--ledger_id--ai-import-mappings">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/ledgers/16/ai-import/mappings" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/mappings"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-ledgers--ledger_id--ai-import-mappings">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Unauthenticated.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-ledgers--ledger_id--ai-import-mappings" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-ledgers--ledger_id--ai-import-mappings"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-ledgers--ledger_id--ai-import-mappings"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-ledgers--ledger_id--ai-import-mappings" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-ledgers--ledger_id--ai-import-mappings">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-ledgers--ledger_id--ai-import-mappings" data-method="GET"
+      data-path="api/ledgers/{ledger_id}/ai-import/mappings"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-ledgers--ledger_id--ai-import-mappings', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-ledgers--ledger_id--ai-import-mappings"
+                    onclick="tryItOut('GETapi-ledgers--ledger_id--ai-import-mappings');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-ledgers--ledger_id--ai-import-mappings"
+                    onclick="cancelTryOut('GETapi-ledgers--ledger_id--ai-import-mappings');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-ledgers--ledger_id--ai-import-mappings"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/mappings</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-mappings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-mappings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-mappings"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="endpoints-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-">PATCH api/ledgers/{ledger_id}/ai-import/mappings/{bankAccountMapping_id}</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:8000/api/ledgers/16/ai-import/mappings/16" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"account_id\": 16
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/mappings/16"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "account_id": 16
+};
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-">
+</span>
+<span id="execution-results-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-" data-method="PATCH"
+      data-path="api/ledgers/{ledger_id}/ai-import/mappings/{bankAccountMapping_id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+                    onclick="tryItOut('PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+                    onclick="cancelTryOut('PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/mappings/{bankAccountMapping_id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>bankAccountMapping_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="bankAccountMapping_id"                data-endpoint="PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the bankAccountMapping. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>account_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="account_id"                data-endpoint="PATCHapi-ledgers--ledger_id--ai-import-mappings--bankAccountMapping_id-"
+               value="16"
+               data-component="body">
+    <br>
+<p>Example: <code>16</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-POSTapi-ledgers--ledger_id--ai-import-statements">POST api/ledgers/{ledger_id}/ai-import/statements</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-ledgers--ledger_id--ai-import-statements">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/ledgers/16/ai-import/statements" \
+    --header "Content-Type: multipart/form-data" \
+    --header "Accept: application/json" \
+    --form "statement=@/tmp/phphIDhCI" </code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/statements"
+);
+
+const headers = {
+    "Content-Type": "multipart/form-data",
+    "Accept": "application/json",
+};
+
+const body = new FormData();
+body.append('statement', document.querySelector('input[name="statement"]').files[0]);
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-ledgers--ledger_id--ai-import-statements">
+</span>
+<span id="execution-results-POSTapi-ledgers--ledger_id--ai-import-statements" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-ledgers--ledger_id--ai-import-statements"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-ledgers--ledger_id--ai-import-statements"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-ledgers--ledger_id--ai-import-statements" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-ledgers--ledger_id--ai-import-statements">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-ledgers--ledger_id--ai-import-statements" data-method="POST"
+      data-path="api/ledgers/{ledger_id}/ai-import/statements"
+      data-authed="0"
+      data-hasfiles="1"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ledgers--ledger_id--ai-import-statements', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-ledgers--ledger_id--ai-import-statements"
+                    onclick="tryItOut('POSTapi-ledgers--ledger_id--ai-import-statements');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-ledgers--ledger_id--ai-import-statements"
+                    onclick="cancelTryOut('POSTapi-ledgers--ledger_id--ai-import-statements');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-ledgers--ledger_id--ai-import-statements"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/statements</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-ledgers--ledger_id--ai-import-statements"
+               value="multipart/form-data"
+               data-component="header">
+    <br>
+<p>Example: <code>multipart/form-data</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-ledgers--ledger_id--ai-import-statements"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="POSTapi-ledgers--ledger_id--ai-import-statements"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>statement</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="statement"                data-endpoint="POSTapi-ledgers--ledger_id--ai-import-statements"
+               value=""
+               data-component="body">
+    <br>
+<p>Must be a file. Must not be greater than 10240 kilobytes. Example: <code>/tmp/phphIDhCI</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-GETapi-ledgers--ledger_id--ai-import-statements">GET api/ledgers/{ledger_id}/ai-import/statements</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-ledgers--ledger_id--ai-import-statements">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/ledgers/16/ai-import/statements" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ledgers/16/ai-import/statements"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-ledgers--ledger_id--ai-import-statements">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Unauthenticated.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-ledgers--ledger_id--ai-import-statements" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-ledgers--ledger_id--ai-import-statements"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-ledgers--ledger_id--ai-import-statements"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-ledgers--ledger_id--ai-import-statements" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-ledgers--ledger_id--ai-import-statements">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-ledgers--ledger_id--ai-import-statements" data-method="GET"
+      data-path="api/ledgers/{ledger_id}/ai-import/statements"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-ledgers--ledger_id--ai-import-statements', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-ledgers--ledger_id--ai-import-statements"
+                    onclick="tryItOut('GETapi-ledgers--ledger_id--ai-import-statements');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-ledgers--ledger_id--ai-import-statements"
+                    onclick="cancelTryOut('GETapi-ledgers--ledger_id--ai-import-statements');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-ledgers--ledger_id--ai-import-statements"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/ledgers/{ledger_id}/ai-import/statements</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-statements"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-statements"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>ledger_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="ledger_id"                data-endpoint="GETapi-ledgers--ledger_id--ai-import-statements"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the ledger. Example: <code>16</code></p>
+            </div>
+                    </form>
+
                     <h2 id="endpoints-GETapi-ledgers--ledger_id--recurring-transactions">GET api/ledgers/{ledger_id}/recurring-transactions</h2>
 
 <p>
@@ -6237,8 +8371,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
     \"split_rule\": \"equal\",
-    \"start_date\": \"2026-08-12T09:28:42\",
-    \"frequency\": \"monthly\",
+    \"start_date\": \"2026-09-20T13:39:40\",
+    \"frequency\": \"weekly\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -6265,8 +8399,8 @@ let body = {
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
     "split_rule": "equal",
-    "start_date": "2026-08-12T09:28:42",
-    "frequency": "monthly",
+    "start_date": "2026-09-20T13:39:40",
+    "frequency": "weekly",
     "participants": [
         {
             "user_id": 16,
@@ -6475,10 +8609,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:40"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:40</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>frequency</code></b>&nbsp;&nbsp;
@@ -6487,10 +8621,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="frequency"                data-endpoint="POSTapi-ledgers--ledger_id--recurring-transactions"
-               value="monthly"
+               value="weekly"
                data-component="body">
     <br>
-<p>Example: <code>monthly</code></p>
+<p>Example: <code>weekly</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>weekly</code></li> <li><code>monthly</code></li> <li><code>annually</code></li></ul>
         </div>
@@ -6518,8 +8652,8 @@ Must be one of:
     \"amount\": 22,
     \"description\": \"Animi quos velit et fugiat.\",
     \"split_rule\": \"proportional\",
-    \"start_date\": \"2026-08-12T09:28:42\",
-    \"frequency\": \"annually\",
+    \"start_date\": \"2026-09-20T13:39:40\",
+    \"frequency\": \"monthly\",
     \"participants\": [
         {
             \"user_id\": 16,
@@ -6546,8 +8680,8 @@ let body = {
     "amount": 22,
     "description": "Animi quos velit et fugiat.",
     "split_rule": "proportional",
-    "start_date": "2026-08-12T09:28:42",
-    "frequency": "annually",
+    "start_date": "2026-09-20T13:39:40",
+    "frequency": "monthly",
     "participants": [
         {
             "user_id": 16,
@@ -6768,10 +8902,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:40"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:40</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>frequency</code></b>&nbsp;&nbsp;
@@ -6780,10 +8914,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="frequency"                data-endpoint="PATCHapi-ledgers--ledger_id--recurring-transactions--recurringTransaction_id-"
-               value="annually"
+               value="monthly"
                data-component="body">
     <br>
-<p>Example: <code>annually</code></p>
+<p>Example: <code>monthly</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>weekly</code></li> <li><code>monthly</code></li> <li><code>annually</code></li></ul>
         </div>
@@ -7333,7 +9467,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"date\": \"2026-08-12T09:28:42\"
+    \"date\": \"2026-09-20T13:39:40\"
 }"
 </code></pre></div>
 
@@ -7349,7 +9483,7 @@ const headers = {
 };
 
 let body = {
-    "date": "2026-08-12T09:28:42"
+    "date": "2026-09-20T13:39:40"
 };
 
 fetch(url, {
@@ -7470,10 +9604,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="date"                data-endpoint="GETapi-ledgers--ledger_id--settlements-preview"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:40"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:40</code></p>
         </div>
         </form>
 
@@ -7774,7 +9908,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"period_end\": \"2026-08-12T09:28:42\"
+    \"period_end\": \"2026-09-20T13:39:41\"
 }"
 </code></pre></div>
 
@@ -7790,7 +9924,7 @@ const headers = {
 };
 
 let body = {
-    "period_end": "2026-08-12T09:28:42"
+    "period_end": "2026-09-20T13:39:41"
 };
 
 fetch(url, {
@@ -7907,10 +10041,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="period_end"                data-endpoint="POSTapi-ledgers--ledger_id--settlements--cycle--confirm"
-               value="2026-08-12T09:28:42"
+               value="2026-09-20T13:39:41"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-12T09:28:42</code></p>
+<p>Must be a valid date. Example: <code>2026-09-20T13:39:41</code></p>
         </div>
         </form>
 
@@ -7933,8 +10067,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"settlement_timezone\": \"Asia\\/Yekaterinburg\",
     \"settlement_cutoff_day\": 2,
-    \"settlement_cutoff_time\": \"09:28:42\",
-    \"settlement_auto_execute_enabled\": false
+    \"settlement_cutoff_time\": \"13:39:41\",
+    \"settlement_auto_execute_enabled\": true
 }"
 </code></pre></div>
 
@@ -7952,8 +10086,8 @@ const headers = {
 let body = {
     "settlement_timezone": "Asia\/Yekaterinburg",
     "settlement_cutoff_day": 2,
-    "settlement_cutoff_time": "09:28:42",
-    "settlement_auto_execute_enabled": false
+    "settlement_cutoff_time": "13:39:41",
+    "settlement_auto_execute_enabled": true
 };
 
 fetch(url, {
@@ -8082,10 +10216,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="settlement_cutoff_time"                data-endpoint="PATCHapi-ledgers--ledger_id--cycle-config"
-               value="09:28:42"
+               value="13:39:41"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>09:28:42</code></p>
+<p>Must be a valid date in the format <code>H:i:s</code>. Example: <code>13:39:41</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>settlement_auto_execute_enabled</code></b>&nbsp;&nbsp;
@@ -8107,7 +10241,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
