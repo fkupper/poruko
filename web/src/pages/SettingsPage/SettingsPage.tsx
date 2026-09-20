@@ -22,6 +22,7 @@ import {
     CheckCircle2Icon,
     UserCircleIcon,
 } from 'lucide-react';
+import { McpOperationSettings } from '@/features/mcp/McpOperationSettings/McpOperationSettings';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Field, FieldLabel, FieldError, FieldGroup, FieldContent } from '@/components/ui/field';
@@ -184,7 +185,8 @@ export default function SettingsPage() {
     };
 
     return (
-        <form onSubmit={form.handleSubmit(onSettingsSubmit)} className="space-y-6 w-full">
+        <div className="flex flex-col gap-8 w-full">
+        <form onSubmit={form.handleSubmit(onSettingsSubmit)} className="flex flex-col gap-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -507,5 +509,7 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
         </form>
+        <McpOperationSettings />
+        </div>
     );
 }

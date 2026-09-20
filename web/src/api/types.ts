@@ -33,6 +33,13 @@ export interface Ledger {
         main_personal_account_id: number | null;
         default_payment_account_id: number | null;
         default_expense_account_id: number | null;
+        mcp?: {
+            enabled: boolean;
+            allow_read: boolean;
+            allow_write: boolean;
+            allow_destructive: boolean;
+            post_mode: 'direct' | 'approval_queue';
+        };
     };
 }
 

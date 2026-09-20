@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\McpPostMode;
 use App\Models\Ledger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -34,6 +35,15 @@ class LedgerResource extends JsonResource
                     'main_personal_account_id' => $this->pivot->main_personal_account_id,
                     'default_payment_account_id' => $this->pivot->default_payment_account_id,
                     'default_expense_account_id' => $this->pivot->default_expense_account_id,
+                    'mcp' => [
+                        'enabled' => (bool) $this->pivot->mcp_enabled,
+                        'allow_read' => (bool) ($this->pivot->mcp_allow_read ?? true),
+                        'allow_write' => (bool) $this->pivot->mcp_allow_write,
+                        'allow_destructive' => (bool) $this->pivot->mcp_allow_destructive,
+                        'post_mode' => $this->pivot->mcp_post_mode instanceof McpPostMode
+                            ? $this->pivot->mcp_post_mode->value
+                            : (string) ($this->pivot->mcp_post_mode ?? 'approval_queue'),
+                    ],
                 ];
             }),
             'created_at' => $this->created_at?->toISOString(),

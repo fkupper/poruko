@@ -2,21 +2,28 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\TransactionSource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BatchReviewPendingTransactionsRequest;
 use App\Http\Requests\RejectPendingTransactionRequest;
+use App\Http\Requests\StorePendingTransactionRequest;
 use App\Http\Requests\UpdatePendingTransactionRequest;
 use App\Http\Resources\PendingTransactionResource;
 use App\Http\Resources\TransactionResource;
+use App\Models\Account;
 use App\Models\Ledger;
 use App\Models\PendingTransaction;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Ledger\Actions\ApprovePendingTransactionsAction;
+use App\Modules\Ledger\Actions\CreatePendingTransactionAction;
 use App\Modules\Ledger\Actions\RejectPendingTransactionsAction;
+use App\Modules\Ledger\Data\CreatePendingTransactionData;
 use App\Modules\Ledger\Exceptions\InvalidLedgerPostingException;
 use App\Modules\Ledger\Exceptions\PendingTransactionReviewException;
 use App\Modules\Ledger\Queries\PendingTransactionIndexQuery;
+use App\Modules\Mcp\Exceptions\McpAuthorizationException;
+use App\Modules\Mcp\Services\ActorAccountAuthorizationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -31,6 +38,47 @@ class PendingTransactionController extends Controller
         $this->authorize('viewAny', [PendingTransaction::class, $ledger]);
 
         return PendingTransactionResource::collection($query->execute($ledger));
+    }
+
+    public function store(
+        StorePendingTransactionRequest $request,
+        Ledger $ledger,
+        CreatePendingTransactionAction $action,
+        ActorAccountAuthorizationService $accountAuthorization,
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $request->user();
+        $validated = $request->validated();
+        $payer = Account::query()->findOrFail((int) $validated['payer_account_id']);
+
+        try {
+            $accountAuthorization->assertMayUsePayerAccount($user, $payer);
+            $pending = $action->execute(CreatePendingTransactionData::fromArray([
+                ...$validated,
+                'ledger_id' => $ledger->id,
+                'user_id' => $user->id,
+                'description' => $validated['description'] ?? null,
+                'source' => TransactionSource::Mcp->value,
+                'raw_data' => [
+                    'description' => $validated['description'] ?? null,
+                    'origin' => 'mcp',
+                ],
+            ]));
+        } catch (InvalidLedgerPostingException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (McpAuthorizationException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        return PendingTransactionResource::make(
+            $pending->load(['proposer', 'payerAccount', 'destinationAccount']),
+        )
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function update(

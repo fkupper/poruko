@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { useWebMcpTools } from '@/features/mcp/webmcp/useWebMcpTools';
+import { useLedgerStore } from '@/stores/ledgerStore';
 
 const ROUTE_LABELS: Record<string, string> = {
     '/': 'Overview',
@@ -17,8 +19,10 @@ const ROUTE_LABELS: Record<string, string> = {
     '/accounts': 'Accounts',
     '/recurring': 'Recurring',
     '/my-finance': 'My Finance',
+    '/ai-import': 'AI Import',
     '/account': 'Account',
     '/settings': 'Settings',
+    '/settings/mcp-log': 'MCP action log',
     '/members': 'Members',
 };
 
@@ -29,6 +33,8 @@ function breadcrumbLabel(pathname: string): string {
 export default function DashboardLayout() {
     const { pathname } = useLocation();
     const label = breadcrumbLabel(pathname);
+    const activeLedgerId = useLedgerStore((state) => state.activeLedgerId);
+    useWebMcpTools(activeLedgerId);
 
     return (
         <SidebarProvider>

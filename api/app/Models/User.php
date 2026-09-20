@@ -95,7 +95,19 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'ai_import_auto_create_accounts', 'deleted_at')
+            ->withPivot(
+                'role',
+                'main_personal_account_id',
+                'default_payment_account_id',
+                'default_expense_account_id',
+                'ai_import_auto_create_accounts',
+                'mcp_enabled',
+                'mcp_allow_read',
+                'mcp_allow_write',
+                'mcp_allow_destructive',
+                'mcp_post_mode',
+                'deleted_at',
+            )
             ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
@@ -105,7 +117,19 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'ai_import_auto_create_accounts', 'deleted_at')
+            ->withPivot(
+                'role',
+                'main_personal_account_id',
+                'default_payment_account_id',
+                'default_expense_account_id',
+                'ai_import_auto_create_accounts',
+                'mcp_enabled',
+                'mcp_allow_read',
+                'mcp_allow_write',
+                'mcp_allow_destructive',
+                'mcp_post_mode',
+                'deleted_at',
+            )
             ->withTimestamps();
     }
 
