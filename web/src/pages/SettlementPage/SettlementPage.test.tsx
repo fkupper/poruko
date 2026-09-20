@@ -128,8 +128,10 @@ describe('SettlementPage', () => {
 
         await user.click(screen.getByRole('button', { name: /record transfer now/i }));
 
+        const dialog = screen.getByRole('dialog');
         expect(screen.getByRole('heading', { name: /record mid-cycle transfer/i })).toBeInTheDocument();
-        expect(within(screen.getByRole('dialog')).getByText('€50.00')).toBeInTheDocument();
+        expect(within(dialog).getByLabelText(/^amount$/i)).toHaveValue('50.00');
+        expect(within(dialog).getByText(/Suggested remaining €50.00/i)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: /^record transfer$/i }));
 
@@ -142,6 +144,91 @@ describe('SettlementPage', () => {
                 idempotency_key: expect.any(String),
             });
         });
+    });
+
+    it('lets the user record a smaller amount than the suggestion', async () => {
+        const user = userEvent.setup();
+        fetchSettlementPeriodsMock.mockResolvedValueOnce([]);
+        fetchSettlementPreviewMock.mockResolvedValueOnce({
+            period_start: '2026-09-01',
+            period_end: '2026-09-30',
+            settlement_mode: 'direct_p2p',
+            is_settled: false,
+            executed_at: null,
+            summary: {
+                total_shared_spend: 10_000,
+                pool_base_budget: 0,
+                pool_current_balance: 0,
+            },
+            required_transfers: [
+                {
+                    from_account_id: 22,
+                    to_account_id: 11,
+                    amount: 5_000,
+                    instruction: 'Bob transfers to Alice',
+                },
+            ],
+            user_breakdowns: [],
+        });
+        recordMidCycleSettlementTransferMock.mockResolvedValueOnce({ id: 92 });
+
+        renderSettlementPage();
+
+        await user.click(await screen.findByRole('button', { name: /record transfer now/i }));
+
+        const amountInput = screen.getByLabelText(/^amount$/i);
+        await user.clear(amountInput);
+        await user.type(amountInput, '20.00');
+
+        await user.click(screen.getByRole('button', { name: /^record transfer$/i }));
+
+        await waitFor(() => {
+            expect(recordMidCycleSettlementTransferMock).toHaveBeenCalledWith(1, {
+                period_end: '2026-09-30',
+                from_account_id: 22,
+                to_account_id: 11,
+                amount: 2_000,
+                idempotency_key: expect.any(String),
+            });
+        });
+    });
+
+    it('blocks recording more than the suggested remaining amount', async () => {
+        const user = userEvent.setup();
+        fetchSettlementPeriodsMock.mockResolvedValueOnce([]);
+        fetchSettlementPreviewMock.mockResolvedValueOnce({
+            period_start: '2026-09-01',
+            period_end: '2026-09-30',
+            settlement_mode: 'direct_p2p',
+            is_settled: false,
+            executed_at: null,
+            summary: {
+                total_shared_spend: 10_000,
+                pool_base_budget: 0,
+                pool_current_balance: 0,
+            },
+            required_transfers: [
+                {
+                    from_account_id: 22,
+                    to_account_id: 11,
+                    amount: 5_000,
+                    instruction: 'Bob transfers to Alice',
+                },
+            ],
+            user_breakdowns: [],
+        });
+
+        renderSettlementPage();
+
+        await user.click(await screen.findByRole('button', { name: /record transfer now/i }));
+
+        const amountInput = screen.getByLabelText(/^amount$/i);
+        await user.clear(amountInput);
+        await user.type(amountInput, '50.01');
+
+        expect(screen.getByText(/Enter at most the suggested remaining amount of €50.00/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^record transfer$/i })).toBeDisabled();
+        expect(recordMidCycleSettlementTransferMock).not.toHaveBeenCalled();
     });
 
     it('does not offer mid-cycle actions for a settled cycle', async () => {

@@ -22,6 +22,8 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
@@ -74,7 +76,7 @@ export default function SettlementPage() {
     const [showMathBreakdown, setShowMathBreakdown] = React.useState(true);
     const [confirmText, setConfirmText] = React.useState('');
     const [selectedTransfer, setSelectedTransfer] = React.useState<
-        (SettlementTransferInstruction & { idempotencyKey: string }) | null
+        (SettlementTransferInstruction & { idempotencyKey: string; chosenAmount: number | null }) | null
     >(null);
 
     const { data: periods = [] } = useQuery({
@@ -115,11 +117,23 @@ export default function SettlementPage() {
                 throw new Error('No mid-cycle transfer selected.');
             }
 
+            const amount = selectedTransfer.chosenAmount;
+
+            if (amount == null || amount <= 0) {
+                throw new Error('Enter a transfer amount greater than zero.');
+            }
+
+            if (amount > selectedTransfer.amount) {
+                throw new Error(
+                    `The transfer exceeds the remaining suggested amount of ${selectedTransfer.amount}.`,
+                );
+            }
+
             return recordMidCycleSettlementTransfer(activeLedgerId, {
                 period_end: settlement.period_end,
                 from_account_id: selectedTransfer.from_account_id,
                 to_account_id: selectedTransfer.to_account_id,
-                amount: selectedTransfer.amount,
+                amount,
                 idempotency_key: selectedTransfer.idempotencyKey,
             });
         },
@@ -136,9 +150,16 @@ export default function SettlementPage() {
         transferMutation.reset();
         setSelectedTransfer({
             ...transfer,
+            chosenAmount: transfer.amount,
             idempotencyKey: globalThis.crypto.randomUUID(),
         });
     };
+
+    const suggestedAmount = selectedTransfer?.amount ?? 0;
+    const chosenAmount = selectedTransfer?.chosenAmount ?? null;
+    const amountIsEmpty = chosenAmount == null || chosenAmount <= 0;
+    const amountExceedsSuggestion = chosenAmount != null && chosenAmount > suggestedAmount;
+    const amountIsInvalid = selectedTransfer !== null && (amountIsEmpty || amountExceedsSuggestion);
 
     return (
         <div className="flex flex-col gap-6">
@@ -326,8 +347,13 @@ export default function SettlementPage() {
                                                     </p>
                                                 </div>
                                             )}
-                                            <div className="shrink-0 font-mono text-xl font-bold text-inflow">
-                                                {centsToCurrency(tx.amount, currencySymbol)}
+                                            <div className="flex shrink-0 flex-col items-end gap-1">
+                                                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                                    Suggested
+                                                </span>
+                                                <div className="font-mono text-xl font-bold text-inflow">
+                                                    {centsToCurrency(tx.amount, currencySymbol)}
+                                                </div>
                                             </div>
                                         </CardContent>
                                         {!settlement.is_settled && (
@@ -499,23 +525,49 @@ export default function SettlementPage() {
                     </DialogHeader>
 
                     {selectedTransfer && settlement && (
-                        <Card size="sm">
-                            <CardHeader>
-                                <CardTitle>{selectedTransfer.instruction}</CardTitle>
-                                <CardDescription>
-                                    Cycle {settlement.period_start} to {settlement.period_end}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex items-end justify-between gap-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Account #{selectedTransfer.from_account_id} to Account #
-                                    {selectedTransfer.to_account_id}
-                                </p>
-                                <p className="shrink-0 font-mono text-xl font-bold text-inflow">
-                                    {centsToCurrency(selectedTransfer.amount, currencySymbol)}
-                                </p>
-                            </CardContent>
-                        </Card>
+                        <FieldGroup>
+                            <Card size="sm">
+                                <CardHeader>
+                                    <CardTitle>{selectedTransfer.instruction}</CardTitle>
+                                    <CardDescription>
+                                        Cycle {settlement.period_start} to {settlement.period_end}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-xs text-muted-foreground">
+                                        Account #{selectedTransfer.from_account_id} to Account #
+                                        {selectedTransfer.to_account_id}
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <Field data-invalid={amountIsInvalid || undefined}>
+                                <FieldLabel htmlFor="mid-cycle-amount">Amount</FieldLabel>
+                                <CurrencyInput
+                                    id="mid-cycle-amount"
+                                    value={selectedTransfer.chosenAmount}
+                                    onCentsChange={(cents) =>
+                                        setSelectedTransfer((current) =>
+                                            current ? { ...current, chosenAmount: cents } : current,
+                                        )
+                                    }
+                                    currencySymbol={currencySymbol}
+                                    aria-invalid={amountIsInvalid || undefined}
+                                />
+                                <FieldDescription>
+                                    Suggested remaining{' '}
+                                    {centsToCurrency(selectedTransfer.amount, currencySymbol)}. You can record a
+                                    smaller amount now.
+                                </FieldDescription>
+                                {amountIsInvalid && (
+                                    <FieldError>
+                                        {amountExceedsSuggestion
+                                            ? `Enter at most the suggested remaining amount of ${centsToCurrency(selectedTransfer.amount, currencySymbol)}.`
+                                            : 'Enter a transfer amount greater than zero.'}
+                                    </FieldError>
+                                )}
+                            </Field>
+                        </FieldGroup>
                     )}
 
                     {transferMutation.isError && (
@@ -529,7 +581,7 @@ export default function SettlementPage() {
                             Cancel
                         </Button>
                         <Button
-                            disabled={!selectedTransfer || transferMutation.isPending}
+                            disabled={!selectedTransfer || amountIsInvalid || transferMutation.isPending}
                             onClick={() => transferMutation.mutate()}
                         >
                             {transferMutation.isPending && <Spinner data-icon="inline-start" />}
