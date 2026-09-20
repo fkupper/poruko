@@ -217,9 +217,12 @@ export interface ApprovePendingItem {
     participants?: ParticipantShare[];
 }
 
+export type AiProvider = 'openai' | 'anthropic' | 'openai_compatible';
+
 export interface AiImportSettings {
     configured: boolean;
-    provider: 'openai' | 'anthropic' | null;
+    provider: AiProvider | null;
+    base_url: string | null;
     model: string | null;
     masked_api_key: string | null;
     auto_create_accounts: boolean;

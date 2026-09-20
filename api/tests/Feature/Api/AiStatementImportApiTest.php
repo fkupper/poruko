@@ -71,6 +71,116 @@ class AiStatementImportApiTest extends TestCase
             ->assertJsonMissing(['api_key' => $apiKey]);
     }
 
+    public function testUserCanStoreOpenAiCompatibleEndpointSettings(): void
+    {
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'api_key' => 'ollama',
+            'model' => 'llama3.1',
+            'base_url' => 'http://127.0.0.1:11434/v1',
+            'auto_create_accounts' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.configured', true)
+            ->assertJsonPath('data.provider', 'openai_compatible')
+            ->assertJsonPath('data.base_url', 'http://127.0.0.1:11434/v1')
+            ->assertJsonPath('data.model', 'llama3.1')
+            ->assertJsonPath('data.masked_api_key', '••••••••lama');
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'model' => 'llama3.1',
+            'base_url' => 'http://127.0.0.1:11434/v1/',
+            'auto_create_accounts' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.masked_api_key', '••••••••lama');
+    }
+
+    public function testCompatibleSettingsRequireModelBaseUrlAndRejectEmbeddedCredentials(): void
+    {
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'api_key' => 'local-key',
+            'auto_create_accounts' => false,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['model', 'base_url']);
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'api_key' => 'stolen-key-value',
+            'model' => 'llama3.1',
+            'base_url' => 'https://user:stolen@evil.example/v1',
+            'auto_create_accounts' => false,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['base_url']);
+    }
+
+    public function testChangingProviderOrEndpointRequiresANewApiKey(): void
+    {
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        AiProviderSetting::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'openai',
+        ]);
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'model' => 'llama3.1',
+            'base_url' => 'http://127.0.0.1:11434/v1',
+            'auto_create_accounts' => false,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['api_key']);
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'api_key' => 'local-key',
+            'model' => 'llama3.1',
+            'base_url' => 'http://127.0.0.1:11434/v1',
+            'auto_create_accounts' => false,
+        ])->assertOk();
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai_compatible',
+            'model' => 'llama3.1',
+            'base_url' => 'http://localhost:8080/v1',
+            'auto_create_accounts' => false,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Enter an API key when changing AI providers or endpoints.');
+    }
+
+    public function testOfficialProvidersIgnoreSubmittedBaseUrl(): void
+    {
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson("/api/ledgers/{$ledger->id}/ai-import/settings", [
+            'provider' => 'openai',
+            'api_key' => 'sk-test-super-secret-value',
+            'model' => 'gpt-test',
+            'base_url' => 'http://127.0.0.1:9999/v1',
+            'auto_create_accounts' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.provider', 'openai')
+            ->assertJsonPath('data.base_url', null);
+
+        $this->assertNull(
+            AiProviderSetting::query()->where('user_id', $user->id)->firstOrFail()->base_url,
+        );
+    }
+
     public function testStatementUploadIsPrivateAndQueued(): void
     {
         Storage::fake('local');

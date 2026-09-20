@@ -1,6 +1,7 @@
 import client from '@/api/client';
 import type {
     AiImportSettings,
+    AiProvider,
     BankAccountMapping,
     StatementImport,
 } from '@/api/types';
@@ -16,9 +17,10 @@ export async function fetchAiImportSettings(ledgerId: number): Promise<AiImportS
 export async function saveAiImportSettings(
     ledgerId: number,
     payload: {
-        provider: 'openai' | 'anthropic';
+        provider: AiProvider;
         api_key?: string;
         model?: string;
+        base_url?: string;
         auto_create_accounts: boolean;
     },
 ): Promise<AiImportSettings> {

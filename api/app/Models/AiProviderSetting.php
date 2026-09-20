@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AiProvider;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $user_id
- * @property string $provider
+ * @property AiProvider $provider
+ * @property string|null $base_url
  * @property string $api_key
  * @property string $api_key_last_four
  * @property string|null $model
@@ -24,6 +26,7 @@ class AiProviderSetting extends Model
     protected $fillable = [
         'user_id',
         'provider',
+        'base_url',
         'api_key',
         'api_key_last_four',
         'model',
@@ -40,6 +43,7 @@ class AiProviderSetting extends Model
     protected function casts(): array
     {
         return [
+            'provider' => AiProvider::class,
             'api_key' => 'encrypted',
         ];
     }

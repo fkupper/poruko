@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
+    AlertTriangleIcon,
     ArrowRightIcon,
     BotIcon,
     CheckCircle2Icon,
@@ -21,7 +22,7 @@ import {
     updateBankAccountMapping,
     uploadBankStatement,
 } from '@/api/ingestion';
-import type { BankAccountMapping } from '@/api/types';
+import type { AiProvider, BankAccountMapping } from '@/api/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,8 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
+    SelectLabel,
+    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -76,12 +79,44 @@ function importStatusVariant(status: string): 'default' | 'secondary' | 'destruc
     return 'outline';
 }
 
+function isAiProvider(value: string): value is AiProvider {
+    return value === 'openai' || value === 'anthropic' || value === 'openai_compatible';
+}
+
+function modelPlaceholder(provider: AiProvider): string {
+    if (provider === 'anthropic') return 'claude-haiku-4-5';
+    if (provider === 'openai_compatible') return 'llama3.1';
+    return 'gpt-4.1-mini';
+}
+
+function apiKeyHelp(options: {
+    keyRequired: boolean;
+    configured: boolean;
+    isCompatible: boolean;
+    maskedSuffix?: string;
+}): string {
+    if (options.keyRequired && options.configured) {
+        return 'Enter an API key for the new provider or endpoint. Existing keys are never reused on a different host.';
+    }
+
+    if (options.keyRequired && options.isCompatible) {
+        return 'Required. Local servers can use a short dummy key if they do not authenticate.';
+    }
+
+    if (options.keyRequired) {
+        return 'Required before a statement can be uploaded.';
+    }
+
+    return `A key ending in ${options.maskedSuffix ?? ''} is configured. Leave blank to keep it.`;
+}
+
 export default function AiImportPage() {
     const activeLedgerId = useLedgerStore((state) => state.activeLedgerId);
     const user = useAuthStore((state) => state.user);
     const queryClient = useQueryClient();
-    const [provider, setProvider] = React.useState<'openai' | 'anthropic'>('openai');
+    const [provider, setProvider] = React.useState<AiProvider>('openai');
     const [model, setModel] = React.useState('');
+    const [baseUrl, setBaseUrl] = React.useState('');
     const [apiKey, setApiKey] = React.useState('');
     const [autoCreateAccounts, setAutoCreateAccounts] = React.useState(false);
     const [statement, setStatement] = React.useState<File | null>(null);
@@ -150,6 +185,7 @@ export default function AiImportPage() {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate editable fields from server state
         setProvider(settings.provider ?? 'openai');
         setModel(settings.model ?? '');
+        setBaseUrl(settings.base_url ?? '');
         setAutoCreateAccounts(settings.auto_create_accounts);
         setApiKey('');
     }, [settingsQuery.data]);
@@ -163,6 +199,7 @@ export default function AiImportPage() {
                 model: model || undefined,
                 api_key: apiKey || undefined,
                 auto_create_accounts: autoCreateAccounts,
+                ...(provider === 'openai_compatible' ? { base_url: baseUrl } : {}),
             });
         },
         onSuccess: (settings) => {
@@ -224,6 +261,15 @@ export default function AiImportPage() {
     const mappings = mappingsQuery.data ?? [];
     const imports = importsQuery.data ?? [];
     const settings = settingsQuery.data;
+    const isCompatible = provider === 'openai_compatible';
+    const providerChanged = settings?.configured === true && settings.provider !== provider;
+    const endpointChanged = isCompatible
+        && settings?.configured === true
+        && (settings.base_url ?? '') !== baseUrl.trim();
+    const keyRequired = settings?.configured !== true || providerChanged || endpointChanged;
+    const minKeyLength = isCompatible ? 4 : 12;
+    const canSave = (!keyRequired || apiKey.length >= minKeyLength)
+        && (!isCompatible || (baseUrl.trim() !== '' && model.trim() !== ''));
 
     return (
         <div className="flex w-full flex-col gap-6">
@@ -252,7 +298,7 @@ export default function AiImportPage() {
                         Your AI provider
                     </CardTitle>
                     <CardDescription>
-                        The key is encrypted on the server and is never returned to this browser.
+                        Keys are encrypted on the server, sent only to the host you configure, and never returned to this browser.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -261,32 +307,91 @@ export default function AiImportPage() {
                             <FieldLabel>Provider</FieldLabel>
                             <Select
                                 value={provider}
-                                onValueChange={(value) => setProvider(value as 'openai' | 'anthropic')}
+                                onValueChange={(value) => {
+                                    if (!isAiProvider(value)) return;
+
+                                    setProvider(value);
+                                    setApiKey('');
+
+                                    if (value === settings?.provider) {
+                                        setModel(settings.model ?? '');
+                                        setBaseUrl(settings.base_url ?? '');
+                                        return;
+                                    }
+
+                                    setModel('');
+                                    setBaseUrl('');
+                                }}
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger className="w-full" aria-label="Provider">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
+                                        <SelectLabel>Cloud</SelectLabel>
                                         <SelectItem value="openai">OpenAI</SelectItem>
                                         <SelectItem value="anthropic">Anthropic</SelectItem>
                                     </SelectGroup>
+                                    <SelectSeparator />
+                                    <SelectGroup>
+                                        <SelectLabel>Custom</SelectLabel>
+                                        <SelectItem value="openai_compatible">
+                                            OpenAI-compatible / self-hosted
+                                        </SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
+                            <FieldDescription>
+                                OpenAI is the Chat Completions protocol. Anthropic stays on its own Messages API.
+                            </FieldDescription>
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="ai-model">Model override</FieldLabel>
+                            <FieldLabel htmlFor="ai-model">
+                                {isCompatible ? 'Model' : 'Model override'}
+                            </FieldLabel>
                             <Input
                                 id="ai-model"
                                 value={model}
                                 onChange={(event) => setModel(event.target.value)}
-                                placeholder={provider === 'openai' ? 'gpt-4.1-mini' : 'claude-haiku-4-5'}
+                                placeholder={modelPlaceholder(provider)}
                             />
-                            <FieldDescription>Optional. Leave blank to use the recommended model.</FieldDescription>
+                            <FieldDescription>
+                                {isCompatible
+                                    ? 'Required. Use the model name your endpoint expects.'
+                                    : 'Optional. Leave blank to use the recommended model.'}
+                            </FieldDescription>
                         </Field>
+                        {isCompatible && (
+                            <Field className="md:col-span-2">
+                                <FieldLabel htmlFor="ai-base-url">Base URL</FieldLabel>
+                                <Input
+                                    id="ai-base-url"
+                                    value={baseUrl}
+                                    onChange={(event) => setBaseUrl(event.target.value)}
+                                    placeholder="https://api.deepseek.com/v1"
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                />
+                                <FieldDescription>
+                                    OpenAI-compatible Chat Completions root, including /v1 when your server uses that path.
+                                    Localhost and private networks are allowed, for example http://127.0.0.1:11434/v1.
+                                </FieldDescription>
+                            </Field>
+                        )}
+                        {isCompatible && (
+                            <Alert className="md:col-span-2">
+                                <AlertTriangleIcon />
+                                <AlertTitle>Third-party compatibility is not guaranteed</AlertTitle>
+                                <AlertDescription>
+                                    Cloud clones and self-hosted servers (DeepSeek, Groq, Ollama, vLLM, and others) differ in
+                                    JSON mode, timeouts, and authentication. Your API key is sent only to this base URL,
+                                    never to OpenAI or Anthropic.
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <Field className="md:col-span-2">
                             <FieldLabel htmlFor="ai-api-key">
-                                {settings?.configured ? 'Replace API key' : 'API key'}
+                                {settings?.configured && !keyRequired ? 'Replace API key' : 'API key'}
                             </FieldLabel>
                             <Input
                                 id="ai-api-key"
@@ -294,12 +399,17 @@ export default function AiImportPage() {
                                 autoComplete="off"
                                 value={apiKey}
                                 onChange={(event) => setApiKey(event.target.value)}
-                                placeholder={settings?.masked_api_key ?? 'Enter your provider API key'}
+                                placeholder={settings?.masked_api_key && !keyRequired
+                                    ? settings.masked_api_key
+                                    : 'Enter your provider API key'}
                             />
                             <FieldDescription>
-                                {settings?.configured
-                                    ? `A key ending in ${settings.masked_api_key?.slice(-4)} is configured. Leave blank to keep it.`
-                                    : 'Required before a statement can be uploaded.'}
+                                {apiKeyHelp({
+                                    keyRequired,
+                                    configured: settings?.configured === true,
+                                    isCompatible,
+                                    maskedSuffix: settings?.masked_api_key?.slice(-4),
+                                })}
                             </FieldDescription>
                         </Field>
                         <Field orientation="horizontal" className="md:col-span-2">
@@ -329,7 +439,7 @@ export default function AiImportPage() {
                 <CardFooter className="justify-end">
                     <Button
                         onClick={() => saveMutation.mutate()}
-                        disabled={saveMutation.isPending || (!settings?.configured && apiKey.length < 12)}
+                        disabled={saveMutation.isPending || !canSave}
                     >
                         {saveMutation.isPending ? <Spinner data-icon="inline-start" /> : <CheckCircle2Icon data-icon="inline-start" />}
                         Save provider settings

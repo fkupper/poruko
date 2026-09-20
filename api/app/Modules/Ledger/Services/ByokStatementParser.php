@@ -2,9 +2,14 @@
 
 namespace App\Modules\Ledger\Services;
 
+use App\Enums\AiProvider;
 use App\Models\AiProviderSetting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
 
@@ -21,9 +26,9 @@ final class ByokStatementParser
         $prompt = $this->prompt($contents, $mimeType);
 
         $content = match ($setting->provider) {
-            'openai' => $this->parseWithOpenAi($setting, $prompt),
-            'anthropic' => $this->parseWithAnthropic($setting, $prompt),
-            default => throw new RuntimeException('The configured AI provider is not supported.'),
+            AiProvider::OpenAi => $this->parseWithOpenAi($setting, $prompt),
+            AiProvider::Anthropic => $this->parseWithAnthropic($setting, $prompt),
+            AiProvider::OpenAiCompatible => $this->parseWithOpenAiCompatible($setting, $prompt),
         };
 
         $content = preg_replace('/\A```(?:json)?\s*|\s*```\z/i', '', trim($content)) ?? $content;
@@ -53,26 +58,78 @@ final class ByokStatementParser
 
     private function parseWithOpenAi(AiProviderSetting $setting, string $prompt): string
     {
-        $response = $this->request()
-            ->withToken($setting->api_key)
-            ->post('https://api.openai.com/v1/chat/completions', [
-                'model' => $setting->model ?: 'gpt-4.1-mini',
-                'temperature' => 0,
-                'response_format' => ['type' => 'json_object'],
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => 'You extract bank statements into strict JSON. Never invent transactions.',
-                    ],
-                    ['role' => 'user', 'content' => $prompt],
+        return $this->parseOpenAiProtocol(
+            $setting,
+            $prompt,
+            'https://api.openai.com/v1/chat/completions',
+            $setting->model ?: 'gpt-4.1-mini',
+            forceJsonObject: true,
+            emptyMessage: 'OpenAI returned an empty statement response.',
+        );
+    }
+
+    private function parseWithOpenAiCompatible(AiProviderSetting $setting, string $prompt): string
+    {
+        if (!is_string($setting->base_url) || $setting->base_url === '') {
+            throw new RuntimeException('Configure a base URL for the OpenAI-compatible endpoint.');
+        }
+
+        $model = $setting->model;
+
+        if (!is_string($model) || $model === '') {
+            throw new RuntimeException('Configure a model for the OpenAI-compatible endpoint.');
+        }
+
+        try {
+            $url = OpenAiCompatibleEndpoint::completionsUrl($setting->base_url);
+        } catch (InvalidArgumentException $exception) {
+            throw new RuntimeException($exception->getMessage(), previous: $exception);
+        }
+
+        return $this->parseOpenAiProtocol(
+            $setting,
+            $prompt,
+            $url,
+            $model,
+            forceJsonObject: false,
+            emptyMessage: 'The OpenAI-compatible provider returned an empty statement response.',
+        );
+    }
+
+    private function parseOpenAiProtocol(
+        AiProviderSetting $setting,
+        string $prompt,
+        string $url,
+        string $model,
+        bool $forceJsonObject,
+        string $emptyMessage,
+    ): string {
+        $payload = [
+            'model' => $model,
+            'temperature' => 0,
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => 'You extract bank statements into strict JSON. Never invent transactions.',
                 ],
-            ])
-            ->throw();
+                ['role' => 'user', 'content' => $prompt],
+            ],
+        ];
+
+        if ($forceJsonObject) {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
+
+        $response = $this->send(
+            fn (): Response => $this->request($setting->provider)
+                ->withToken($setting->api_key)
+                ->post($url, $payload),
+        );
 
         $content = $response->json('choices.0.message.content');
 
         if (!is_string($content) || $content === '') {
-            throw new RuntimeException('OpenAI returned an empty statement response.');
+            throw new RuntimeException($emptyMessage);
         }
 
         return $content;
@@ -80,21 +137,22 @@ final class ByokStatementParser
 
     private function parseWithAnthropic(AiProviderSetting $setting, string $prompt): string
     {
-        $response = $this->request()
-            ->withHeaders([
-                'x-api-key' => $setting->api_key,
-                'anthropic-version' => '2023-06-01',
-            ])
-            ->post('https://api.anthropic.com/v1/messages', [
-                'model' => $setting->model ?: 'claude-haiku-4-5',
-                'max_tokens' => 8192,
-                'temperature' => 0,
-                'system' => 'You extract bank statements into strict JSON. Never invent transactions.',
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-            ])
-            ->throw();
+        $response = $this->send(
+            fn (): Response => $this->request($setting->provider)
+                ->withHeaders([
+                    'x-api-key' => $setting->api_key,
+                    'anthropic-version' => '2023-06-01',
+                ])
+                ->post('https://api.anthropic.com/v1/messages', [
+                    'model' => $setting->model ?: 'claude-haiku-4-5',
+                    'max_tokens' => 8192,
+                    'temperature' => 0,
+                    'system' => 'You extract bank statements into strict JSON. Never invent transactions.',
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                ]),
+        );
 
         $blocks = $response->json('content');
 
@@ -115,12 +173,42 @@ final class ByokStatementParser
         return $content;
     }
 
-    private function request(): PendingRequest
+    private function request(AiProvider $provider): PendingRequest
     {
-        return Http::acceptJson()
+        $request = Http::acceptJson()
             ->asJson()
             ->timeout(120)
-            ->retry(2, 500, throw: false);
+            ->withOptions(['allow_redirects' => false]);
+
+        if ($provider === AiProvider::OpenAiCompatible) {
+            return $request
+                ->connectTimeout(10)
+                ->retry(1, 500, throw: false);
+        }
+
+        return $request->retry(2, 500, throw: false);
+    }
+
+    /**
+     * @param callable(): Response $send
+     */
+    private function send(callable $send): Response
+    {
+        try {
+            return $send()->throw();
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException(
+                'Could not reach the configured AI endpoint. Check the base URL and that the server is running.',
+                previous: $exception,
+            );
+        } catch (RequestException $exception) {
+            $status = $exception->response->status();
+
+            throw new RuntimeException(
+                "The AI provider rejected the request (HTTP {$status}).",
+                previous: $exception,
+            );
+        }
     }
 
     private function prompt(string $contents, string $mimeType): string

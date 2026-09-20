@@ -75,6 +75,7 @@ describe('AiImportPage', () => {
             configured: true,
             provider: 'openai',
             model: 'gpt-4.1-mini',
+            base_url: null,
             masked_api_key: '••••••••1234',
             auto_create_accounts: false,
         });
@@ -121,6 +122,7 @@ describe('AiImportPage', () => {
             configured: true,
             provider: 'openai',
             model: 'gpt-4.1-mini',
+            base_url: null,
             masked_api_key: '••••••••5678',
             auto_create_accounts: false,
         });
@@ -170,6 +172,40 @@ describe('AiImportPage', () => {
         });
         expect(storageSpy).not.toHaveBeenCalled();
         storageSpy.mockRestore();
+    });
+
+    it('collects a base URL, model, and key for an OpenAI-compatible endpoint', async () => {
+        fetchAiImportSettingsMock.mockResolvedValue({
+            configured: true,
+            provider: 'openai_compatible',
+            model: 'llama3.1',
+            base_url: 'http://127.0.0.1:11434/v1',
+            masked_api_key: '••••••••lkey',
+            auto_create_accounts: false,
+        });
+
+        const user = userEvent.setup();
+        renderPage();
+
+        expect(await screen.findByText(/third-party compatibility is not guaranteed/i)).toBeInTheDocument();
+        expect(screen.getByLabelText('Base URL')).toHaveValue('http://127.0.0.1:11434/v1');
+        expect(screen.getByLabelText('Model')).toHaveValue('llama3.1');
+
+        const baseUrl = screen.getByLabelText('Base URL');
+        await user.clear(baseUrl);
+        await user.type(baseUrl, 'http://localhost:8080/v1');
+        await user.type(screen.getByLabelText('API key'), 'new-local-key');
+        await user.click(screen.getByRole('button', { name: 'Save provider settings' }));
+
+        await waitFor(() => {
+            expect(saveAiImportSettingsMock).toHaveBeenCalledWith(7, {
+                provider: 'openai_compatible',
+                model: 'llama3.1',
+                api_key: 'new-local-key',
+                auto_create_accounts: false,
+                base_url: 'http://localhost:8080/v1',
+            });
+        });
     });
 
     it('queues the selected statement without committing transactions', async () => {
