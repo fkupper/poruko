@@ -10,7 +10,6 @@ import { SpaceSwitcher, type SpaceSwitcherItem } from '@/components/SpaceSwitche
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import {
     ArrowLeftRightIcon,
-    BotIcon,
     BugIcon,
     HandCoinsIcon,
     LayoutDashboardIcon,
