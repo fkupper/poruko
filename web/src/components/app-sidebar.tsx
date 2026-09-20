@@ -17,6 +17,7 @@ import {
     LifeBuoyIcon,
     RepeatIcon,
     SettingsIcon,
+    SparklesIcon,
     UserIcon,
     UsersIcon,
     WalletIcon,
@@ -77,9 +78,15 @@ const data = {
             icon: <UserIcon />,
         },
         {
+        {
             title: 'AI Import',
             url: '/ai-import',
             icon: <BotIcon />,
+        },
+        {
+            title: 'Agent Access',
+            url: '/agent-access',
+            icon: <SparklesIcon />,
         },
         {
             title: 'Settings',

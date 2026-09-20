@@ -27,6 +27,18 @@ export interface McpActionLog {
     created_at: string | null;
 }
 
+export interface A2uiMessage {
+    version: 'v0.9' | 'v0.9.1';
+    [key: string]: unknown;
+}
+
+export interface A2uiSurfaceResponse {
+    protocol: 'a2ui';
+    version: 'v0.9';
+    surface_id: string;
+    messages: A2uiMessage[];
+}
+
 export async function fetchMcpSettings(ledgerId: number): Promise<McpSettings> {
     const { data } = await client.get<{ data: McpSettings }>(`/ledgers/${ledgerId}/mcp-settings`);
     return data.data;
@@ -50,4 +62,14 @@ export async function fetchMcpActionLogs(
     }>(`/ledgers/${ledgerId}/mcp-action-logs`, { params });
 
     return data;
+}
+
+export async function fetchPendingApprovalsA2ui(
+    ledgerId: number,
+): Promise<A2uiSurfaceResponse> {
+    const { data } = await client.get<{ data: A2uiSurfaceResponse }>(
+        `/ledgers/${ledgerId}/mcp-a2ui/pending-approvals`,
+    );
+
+    return data.data;
 }
