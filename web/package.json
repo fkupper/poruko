@@ -57,5 +57,10 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.0",
     "vitest": "^4.1.0"
+  },
+  "overrides": {
+    "@a2ui/markdown-it": {
+      "dompurify": "^3.4.15"
+    }
   }
 }
