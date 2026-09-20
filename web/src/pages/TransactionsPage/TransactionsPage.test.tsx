@@ -9,6 +9,10 @@ vi.mock('@/features/transactions/TransactionsTable/TransactionsTable', () => ({
     TransactionsTable: () => <div>Transactions table</div>,
 }));
 
+vi.mock('@/features/transactions/PendingApprovalTable/PendingApprovalTable', () => ({
+    PendingApprovalTable: () => null,
+}));
+
 vi.mock('@/features/transactions/AddExpenseModal/AddExpenseModal', () => ({
     AddExpenseModal: ({ open }: { open: boolean }) => (open ? <div>Log New Expense</div> : null),
 }));
