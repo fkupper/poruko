@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\AccountType;
+use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
 use App\Http\Controllers\Api\SettlementController;
@@ -12,6 +13,8 @@ use App\Models\Ledger;
 use App\Models\Settlement;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Modules\Ledger\Actions\PostManualTransactionAction;
+use App\Modules\Ledger\Data\PostManualTransactionData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
@@ -174,7 +177,7 @@ class SettlementApiTest extends TestCase
             'deductions' => [],
         ]);
 
-        app(\App\Modules\Ledger\Actions\PostManualTransactionAction::class)->execute(\App\Modules\Ledger\Data\PostManualTransactionData::fromArray([
+        app(PostManualTransactionAction::class)->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
             'payer_account_id' => $adminAccount->id,
             'destination_account_id' => $externalAccount->id,
@@ -236,6 +239,147 @@ class SettlementApiTest extends TestCase
         $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/confirm", [
             'period_end' => '2026-03-31',
         ])->assertForbidden();
+    }
+
+    public function testAdminCanRecordAnIdempotentMidCycleTransfer(): void
+    {
+        [$ledger, $admin, , $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer(payer: 'member');
+        Sanctum::actingAs($admin, ['*']);
+        $payload = [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 5_000,
+            'idempotency_key' => '33f2f725-2380-4aad-96dc-0b88299aaf4a',
+        ];
+
+        $firstId = $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.type', TransactionType::Settlement->value)
+            ->assertJsonPath('data.source', TransactionSource::System->value)
+            ->assertJsonPath('data.source_metadata.operation', 'mid_cycle_settlement_transfer')
+            ->assertJsonPath('data.destination_account_id', $toAccount->id)
+            ->json('data.id');
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", $payload)
+            ->assertOk()
+            ->assertJsonPath('data.id', $firstId);
+
+        $this->assertSame(
+            1,
+            Transaction::query()
+                ->where('ledger_id', $ledger->id)
+                ->where('settlement_transfer_key', $payload['idempotency_key'])
+                ->count(),
+        );
+    }
+
+    public function testMemberCannotRecordMidCycleTransfer(): void
+    {
+        [$ledger, , $member, $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer(payer: 'admin');
+        Sanctum::actingAs($member, ['*']);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 5_000,
+            'idempotency_key' => '256f0249-d575-412c-9d97-b5eecd36c28d',
+        ])->assertForbidden();
+    }
+
+    public function testAdminCannotRecordTransferFromAnotherMembersAccount(): void
+    {
+        [$ledger, $admin, $member, $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer(payer: 'admin');
+        Sanctum::actingAs($admin, ['*']);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 5_000,
+            'idempotency_key' => '9a1c2d3e-4f56-7890-abcd-ef1234567890',
+        ])->assertForbidden()
+            ->assertJsonPath('message', 'You cannot record a mid-cycle transfer from another member\'s account.');
+
+        $this->assertSame($member->id, $fromAccount->owner_id);
+        $this->assertDatabaseMissing('transactions', [
+            'ledger_id' => $ledger->id,
+            'type' => TransactionType::Settlement->value,
+        ]);
+    }
+
+    public function testPreviewMarksOnlyOwnSourceTransfersAsRecordable(): void
+    {
+        [$ledger, $admin, $member, $fromAccount] = $this->createLedgerWithPendingTransfer(payer: 'admin');
+
+        Sanctum::actingAs($admin, ['*']);
+        $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-03-31")
+            ->assertOk()
+            ->assertJsonPath('data.required_transfers.0.from_account_id', $fromAccount->id)
+            ->assertJsonPath('data.required_transfers.0.from_account_owner_id', $member->id)
+            ->assertJsonPath('data.required_transfers.0.can_record', false);
+
+        Sanctum::actingAs($member, ['*']);
+        $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-03-31")
+            ->assertOk()
+            ->assertJsonPath('data.required_transfers.0.from_account_id', $fromAccount->id)
+            ->assertJsonPath('data.required_transfers.0.can_record', false);
+
+        [$ownLedger, $ownAdmin, , $ownFromAccount] = $this->createLedgerWithPendingTransfer(payer: 'member');
+        Sanctum::actingAs($ownAdmin, ['*']);
+        $this->getJson("/api/ledgers/{$ownLedger->id}/settlements/preview?date=2026-03-31")
+            ->assertOk()
+            ->assertJsonPath('data.required_transfers.0.from_account_id', $ownFromAccount->id)
+            ->assertJsonPath('data.required_transfers.0.from_account_owner_id', $ownAdmin->id)
+            ->assertJsonPath('data.required_transfers.0.can_record', true);
+    }
+
+    public function testMidCycleTransferRejectsForeignAccountsAndMalformedKeys(): void
+    {
+        [$ledger, $admin, , , $toAccount] = $this->createLedgerWithPendingTransfer();
+        $foreignAccount = Account::factory()->create();
+        Sanctum::actingAs($admin, ['*']);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $foreignAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 1_000,
+            'idempotency_key' => 'not-a-uuid',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['idempotency_key']);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $foreignAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 1_000,
+            'idempotency_key' => 'b28ea143-ed09-4d8f-b3d3-8eec4c01107e',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['from_account_id']);
+    }
+
+    public function testAdminCannotRecordTransferForSettledCycle(): void
+    {
+        [$ledger, $admin, , $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer();
+        Sanctum::actingAs($admin, ['*']);
+
+        Settlement::factory()->create([
+            'ledger_id' => $ledger->id,
+            'period_start' => '2026-03-01',
+            'period_end' => '2026-03-31',
+            'executed_at' => '2026-04-01 00:00:00',
+        ]);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 5_000,
+            'idempotency_key' => '7d4c1e2a-9b83-4f51-8c0d-2a6e5f9b1c70',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['period_end']);
     }
 
     public function testConfirmReturnsValidationErrorWhenCycleDoesNotRequireManualConfirmation(): void
@@ -353,5 +497,75 @@ class SettlementApiTest extends TestCase
         $admin->assignRole('Admin');
 
         return [$ledger, $admin];
+    }
+
+    /**
+     * @return array{Ledger, User, User, Account, Account}
+     */
+    private function createLedgerWithPendingTransfer(string $payer = 'admin'): array
+    {
+        [$ledger, $admin] = $this->createLedgerWithAdmin([
+            'settlement_mode' => 'direct_p2p',
+        ]);
+        $member = User::factory()->create(['name' => 'Member B']);
+        $ledger->users()->attach($member->id, ['role' => 'member']);
+        setPermissionsTeamId($ledger->id);
+        $member->assignRole('Member');
+
+        $adminAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $admin->id)
+                ->value('main_personal_account_id'),
+        );
+        $memberAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $member->id)
+                ->value('main_personal_account_id'),
+        );
+        $adminLiabilityAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('owner_id', $admin->id)
+            ->where('type', AccountType::UserLiability->value)
+            ->firstOrFail();
+        $memberLiabilityAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('owner_id', $member->id)
+            ->where('type', AccountType::UserLiability->value)
+            ->firstOrFail();
+        $expenseAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'owner_id' => null,
+            'type' => AccountType::SpaceExpense->value,
+        ]);
+
+        foreach ([$admin, $member] as $user) {
+            FinancialProfile::factory()->create([
+                'ledger_id' => $ledger->id,
+                'user_id' => $user->id,
+                'valid_from' => '2026-01-01',
+                'incomes' => [['description' => 'Income', 'amount' => 100_000]],
+                'deductions' => [],
+            ]);
+        }
+
+        $payerAccount = $payer === 'member' ? $memberAccount : $adminAccount;
+        $fromAccount = $payer === 'member' ? $adminLiabilityAccount : $memberLiabilityAccount;
+        $toAccount = $payer === 'member' ? $memberAccount : $adminAccount;
+
+        app(PostManualTransactionAction::class)->execute(PostManualTransactionData::fromArray([
+            'ledger_id' => $ledger->id,
+            'payer_account_id' => $payerAccount->id,
+            'destination_account_id' => $expenseAccount->id,
+            'amount' => 10_000,
+            'type' => TransactionType::Manual->value,
+            'split_rule' => TransactionSplitRule::Equal->value,
+            'participants' => [],
+            'description' => 'Shared groceries',
+            'date' => '2026-03-15',
+        ]));
+
+        return [$ledger, $admin, $member, $fromAccount, $toAccount];
     }
 }

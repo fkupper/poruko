@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property TransactionType $type
  * @property TransactionSource $source
  * @property array<string, mixed>|null $source_metadata
+ * @property string|null $settlement_transfer_key
  * @property TransactionSplitRule $split_rule
  * @property array<int, array{user_id: int, share?: int|float}> $participants
  * @property string|null $description
@@ -47,6 +48,7 @@ class Transaction extends Model
         'type',
         'source',
         'source_metadata',
+        'settlement_transfer_key',
         'split_rule',
         'participants',
         'description',

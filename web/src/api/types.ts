@@ -160,8 +160,10 @@ export interface SettlementUserBreakdown {
 export interface SettlementTransferInstruction {
     from_account_id: number;
     to_account_id: number;
+    from_account_owner_id?: number | null;
     amount: number;
     instruction: string;
+    can_record?: boolean;
 }
 
 export interface SettlementPeriod {

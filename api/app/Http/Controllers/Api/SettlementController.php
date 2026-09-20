@@ -5,14 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ConfirmSettlementCycleRequest;
 use App\Http\Requests\PreviewSettlementRequest;
+use App\Http\Requests\RecordMidCycleSettlementTransferRequest;
 use App\Http\Requests\UpdateLedgerCycleConfigRequest;
 use App\Http\Resources\LedgerResource;
 use App\Http\Resources\SettlementResource;
+use App\Http\Resources\TransactionResource;
 use App\Models\Ledger;
+use App\Models\User;
 use App\Modules\Ledger\Actions\ConfirmSettlementAction;
 use App\Modules\Ledger\Actions\PreviewSettlementAction;
+use App\Modules\Ledger\Actions\RecordMidCycleSettlementTransferAction;
 use App\Modules\Ledger\Exceptions\CannotSettlePeriodWithEarlierOpenPeriodsException;
 use App\Modules\Ledger\Queries\SettlementIndexQuery;
+use App\Modules\Ledger\Services\MidCycleTransferAuthorization;
 use App\Modules\Ledger\Services\SettlementCycleService;
 use App\Modules\Ledger\Services\SettlementSafetyGateService;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +28,7 @@ class SettlementController extends Controller
 {
     public function __construct(
         private readonly SettlementSafetyGateService $settlementSafetyGateService,
+        private readonly MidCycleTransferAuthorization $midCycleTransferAuthorization,
     ) {}
 
     public function preview(PreviewSettlementRequest $request, Ledger $ledger, PreviewSettlementAction $action, SettlementCycleService $cycleService): Response
@@ -37,6 +43,15 @@ class SettlementController extends Controller
 
         $preview = $action->executeForPeriod($ledger, $period);
         $gate = $this->settlementSafetyGateService->evaluate($ledger, $preview);
+        $actor = $request->user();
+
+        if ($actor instanceof User) {
+            $preview['required_transfers'] = $this->midCycleTransferAuthorization->annotate(
+                $actor,
+                $ledger,
+                $preview['required_transfers'],
+            );
+        }
 
         return response([
             'data' => [
@@ -84,5 +99,28 @@ class SettlementController extends Controller
                 'message' => $exception->getMessage(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+    }
+
+    public function recordTransfer(
+        RecordMidCycleSettlementTransferRequest $request,
+        Ledger $ledger,
+        string $cycle,
+        RecordMidCycleSettlementTransferAction $action,
+    ): TransactionResource {
+        $data = $request->validated();
+        /** @var User $actor */
+        $actor = $request->user();
+
+        $transaction = $action->execute(
+            $ledger,
+            $actor,
+            (string) ($data['period_end'] ?? $cycle),
+            (int) $data['from_account_id'],
+            (int) $data['to_account_id'],
+            (int) $data['amount'],
+            (string) $data['idempotency_key'],
+        );
+
+        return new TransactionResource($transaction);
     }
 }
