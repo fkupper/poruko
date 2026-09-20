@@ -19,7 +19,7 @@ class McpA2uiApiTest extends TestCase
     use CreatesMcpLedger;
     use RefreshDatabase;
 
-    public function test_member_can_render_official_a2ui_pending_approval_surface(): void
+    public function testMemberCanRenderOfficialA2uiPendingApprovalSurface(): void
     {
         [$ledger, $user, $payer, $destination] = $this->createMcpLedger();
         PendingTransaction::factory()->create([
@@ -51,7 +51,7 @@ class McpA2uiApiTest extends TestCase
         ]);
     }
 
-    public function test_read_setting_and_membership_protect_a2ui_surface(): void
+    public function testReadSettingAndMembershipProtectA2uiSurface(): void
     {
         [$ledger, $user] = $this->createMcpLedger(['read' => false]);
         Sanctum::actingAs($user, ['*']);
@@ -71,7 +71,7 @@ class McpA2uiApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_unauthenticated_user_cannot_render_a2ui_surface(): void
+    public function testUnauthenticatedUserCannotRenderA2uiSurface(): void
     {
         [$ledger] = $this->createMcpLedger();
 

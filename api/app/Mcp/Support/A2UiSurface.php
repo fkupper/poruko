@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 final class A2UiSurface
 {
     /**
-     * @param  Collection<int, PendingTransaction>  $pending
+     * @param Collection<int, PendingTransaction> $pending
      * @return array<string, mixed>
      */
     public static function pendingApprovals(Collection $pending): array
@@ -138,7 +138,7 @@ final class A2UiSurface
             [
                 'id' => 'transaction-date',
                 'component' => 'Text',
-                'text' => 'Date: '.(string) ($data['date'] ?? 'unknown'),
+                'text' => 'Date: ' . (string) ($data['date'] ?? 'unknown'),
                 'variant' => 'caption',
             ],
             [
@@ -176,7 +176,7 @@ final class A2UiSurface
     }
 
     /**
-     * @param  list<array<string, mixed>>  $components
+     * @param list<array<string, mixed>> $components
      * @return array<string, mixed>
      */
     private static function surface(string $surfaceId, array $components): array
