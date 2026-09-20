@@ -48,6 +48,11 @@ class LedgerTransactionApiTest extends TestCase
             'participants' => [],
             'date' => '2026-03-10',
         ]);
+        $posting = $inLedger->postings()->create([
+            'account_id' => $credit->id,
+            'amount' => 1000,
+            'direction' => 'credit',
+        ]);
 
         Transaction::factory()->create([
             'ledger_id' => $otherLedger->id,
@@ -64,7 +69,8 @@ class LedgerTransactionApiTest extends TestCase
         $this->getJson("/api/ledgers/{$ledger->id}/transactions")
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $inLedger->id);
+            ->assertJsonPath('data.0.id', $inLedger->id)
+            ->assertJsonPath('data.0.postings.0.account_name', $credit->name);
 
         $this->getJson("/api/ledgers/{$ledger->id}/transactions/{$inLedger->id}")
             ->assertOk()
@@ -72,6 +78,9 @@ class LedgerTransactionApiTest extends TestCase
             ->assertJsonPath('data.source', TransactionSource::Manual->value)
             ->assertJsonPath('data.payer_account_name', $credit->name)
             ->assertJsonPath('data.destination_account_name', $inLedger->fresh()->destinationAccount?->name)
+            ->assertJsonPath('data.postings.0.id', $posting->id)
+            ->assertJsonPath('data.postings.0.account_id', $credit->id)
+            ->assertJsonPath('data.postings.0.account_name', $credit->name)
             ->assertJsonStructure(['data' => ['postings']]);
     }
 
@@ -109,6 +118,8 @@ class LedgerTransactionApiTest extends TestCase
             ->assertJsonPath('data.split_rule', 'equal')
             ->assertJsonPath('data.source', TransactionSource::Manual->value)
             ->assertJsonPath('data.source_metadata', null)
+            ->assertJsonPath('data.destination_account_name', $spaceExpenseAccount->name)
+            ->assertJsonPath('data.postings.0.account_name', $payerAccount->name)
             ->assertJsonCount(4, 'data.postings');
     }
 

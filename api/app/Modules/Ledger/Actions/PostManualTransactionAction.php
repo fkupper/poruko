@@ -144,7 +144,7 @@ final readonly class PostManualTransactionAction
 
             Posting::query()->insert($postings);
 
-            return $transaction->load(['payerAccount', 'postings']);
+            return $transaction->load(['payerAccount', 'destinationAccount', 'postings.account']);
         });
     }
 

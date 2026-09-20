@@ -84,6 +84,7 @@ readonly class ExecuteSettlementAction
                     'ledger_id' => $ledger->id,
                     'settlement_id' => $settlement->id,
                     'payer_account_id' => $fromAccountId,
+                    'destination_account_id' => $toAccountId,
                     'amount' => $amount,
                     'type' => TransactionType::Settlement->value,
                     'source' => TransactionSource::System->value,

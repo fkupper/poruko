@@ -146,7 +146,7 @@ final readonly class UpdateTransactionAction
 
             Posting::query()->insert($postings);
 
-            return $transaction->load(['payerAccount', 'postings']);
+            return $transaction->load(['payerAccount', 'destinationAccount', 'postings.account']);
         });
     }
 

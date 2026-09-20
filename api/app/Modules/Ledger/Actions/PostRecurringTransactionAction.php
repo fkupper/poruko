@@ -49,7 +49,7 @@ final readonly class PostRecurringTransactionAction
             $transaction = $this->postManualTransactionAction->execute($postData);
             $transaction->update(['source_recurring_transaction_id' => $blueprint->id]);
 
-            return $transaction->fresh(['payerAccount', 'postings']);
+            return $transaction->fresh(['payerAccount', 'destinationAccount', 'postings.account']);
         });
     }
 }

@@ -57,8 +57,20 @@ describe('TransactionDetailSheet', () => {
             source_metadata: { recurring_transaction_id: 9 },
             split_rule: 'equal',
             postings: [
-                { id: 1, account_id: 10, amount: 1250, direction: 'credit' },
-                { id: 2, account_id: 20, amount: 1250, direction: 'debit' },
+                {
+                    id: 1,
+                    account_id: 10,
+                    account_name: 'Alice Checking',
+                    amount: 1250,
+                    direction: 'credit',
+                },
+                {
+                    id: 2,
+                    account_id: 20,
+                    account_name: 'Household',
+                    amount: 1250,
+                    direction: 'debit',
+                },
             ],
             created_at: '2026-09-19T12:00:00Z',
         });
@@ -69,6 +81,10 @@ describe('TransactionDetailSheet', () => {
         expect(screen.getByText('Blueprint')).toBeInTheDocument();
         expect(screen.getByText('recurring transaction id')).toBeInTheDocument();
         expect(screen.getByText('9')).toBeInTheDocument();
+        expect(screen.getAllByText('Alice Checking')).toHaveLength(2);
+        expect(screen.getAllByText('Household')).toHaveLength(2);
+        expect(screen.getByText('Account #10')).toBeInTheDocument();
+        expect(screen.getByText('Account #20')).toBeInTheDocument();
         expect(fetchTransactionMock).toHaveBeenCalledWith(7, 42);
     });
 });

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Actions;
 
 use App\Enums\AccountType;
+use App\Enums\PostingDirection;
 use App\Enums\TransactionSource;
 use App\Enums\TransactionType;
 use App\Models\Account;
@@ -101,6 +102,13 @@ class ExecuteSettlementActionTest extends TestCase
 
         $this->assertNotNull($settlementTransaction);
         $this->assertSame($settlement->id, $settlementTransaction?->settlement_id);
+        $this->assertNotNull($settlementTransaction?->destination_account_id);
+        $this->assertSame(
+            $settlementTransaction?->postings()
+                ->where('direction', PostingDirection::Debit->value)
+                ->value('account_id'),
+            $settlementTransaction?->destination_account_id,
+        );
         $this->assertSame(TransactionSource::System, $settlementTransaction?->source);
         $this->assertSame('settlement', $settlementTransaction?->source_metadata['operation']);
         $this->assertSame('2026-03-31', $settlementTransaction?->source_metadata['period_end']);

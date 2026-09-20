@@ -18,7 +18,7 @@ class SettlementIndexQuery
             ->where('ledger_id', $ledger->id)
             ->with(['transactions' => function ($query): void {
                 $query->where('type', TransactionType::Settlement->value)
-                    ->with(['payerAccount'])
+                    ->with(['payerAccount', 'destinationAccount'])
                     ->orderBy('date')
                     ->orderBy('id');
             },

@@ -67,6 +67,7 @@ export interface Transaction {
     postings?: Array<{
         id: number;
         account_id: number;
+        account_name?: string;
         amount: number;
         direction: 'debit' | 'credit';
     }>;

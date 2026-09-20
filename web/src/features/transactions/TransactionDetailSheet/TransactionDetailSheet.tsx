@@ -135,7 +135,18 @@ export function TransactionDetailSheet({
                                 <TableBody>
                                     {(transaction.postings ?? []).map((posting) => (
                                         <TableRow key={posting.id}>
-                                            <TableCell className="font-mono">#{posting.account_id}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="font-medium">
+                                                        {posting.account_name || `Account #${posting.account_id}`}
+                                                    </span>
+                                                    {posting.account_name && (
+                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                            Account #{posting.account_id}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="capitalize">{posting.direction}</TableCell>
                                             <TableCell className="text-right font-mono">
                                                 {centsToCurrency(posting.amount, currencySymbol)}
