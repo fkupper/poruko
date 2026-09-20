@@ -18,6 +18,19 @@ class AccountPolicy
         return $user->ledgers()->whereKey($account->ledger_id)->exists();
     }
 
+    /**
+     * Space/shared accounts (no owner) may be used by any ledger member.
+     * Personally owned accounts may be used only by their owner.
+     */
+    public function useAsSource(User $user, Account $account): bool
+    {
+        if (!$this->view($user, $account)) {
+            return false;
+        }
+
+        return $account->owner_id === null || $account->owner_id === $user->id;
+    }
+
     public function create(User $user, Ledger $ledger): bool
     {
         return $ledger->users()->whereKey($user->id)->exists();

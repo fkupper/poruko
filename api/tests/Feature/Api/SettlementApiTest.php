@@ -243,7 +243,7 @@ class SettlementApiTest extends TestCase
 
     public function testAdminCanRecordAnIdempotentMidCycleTransfer(): void
     {
-        [$ledger, $admin, , $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer();
+        [$ledger, $admin, , $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer(payer: 'member');
         Sanctum::actingAs($admin, ['*']);
         $payload = [
             'period_end' => '2026-03-31',
@@ -276,7 +276,7 @@ class SettlementApiTest extends TestCase
 
     public function testMemberCannotRecordMidCycleTransfer(): void
     {
-        [$ledger, , $member, $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer();
+        [$ledger, , $member, $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer(payer: 'admin');
         Sanctum::actingAs($member, ['*']);
 
         $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
@@ -286,6 +286,53 @@ class SettlementApiTest extends TestCase
             'amount' => 5_000,
             'idempotency_key' => '256f0249-d575-412c-9d97-b5eecd36c28d',
         ])->assertForbidden();
+    }
+
+    public function testAdminCannotRecordTransferFromAnotherMembersAccount(): void
+    {
+        [$ledger, $admin, $member, $fromAccount, $toAccount] = $this->createLedgerWithPendingTransfer(payer: 'admin');
+        Sanctum::actingAs($admin, ['*']);
+
+        $this->postJson("/api/ledgers/{$ledger->id}/settlements/2026-03-31/transfers", [
+            'period_end' => '2026-03-31',
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 5_000,
+            'idempotency_key' => '9a1c2d3e-4f56-7890-abcd-ef1234567890',
+        ])->assertForbidden()
+            ->assertJsonPath('message', 'You cannot record a mid-cycle transfer from another member\'s account.');
+
+        $this->assertSame($member->id, $fromAccount->owner_id);
+        $this->assertDatabaseMissing('transactions', [
+            'ledger_id' => $ledger->id,
+            'type' => TransactionType::Settlement->value,
+        ]);
+    }
+
+    public function testPreviewMarksOnlyOwnSourceTransfersAsRecordable(): void
+    {
+        [$ledger, $admin, $member, $fromAccount] = $this->createLedgerWithPendingTransfer(payer: 'admin');
+
+        Sanctum::actingAs($admin, ['*']);
+        $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-03-31")
+            ->assertOk()
+            ->assertJsonPath('data.required_transfers.0.from_account_id', $fromAccount->id)
+            ->assertJsonPath('data.required_transfers.0.from_account_owner_id', $member->id)
+            ->assertJsonPath('data.required_transfers.0.can_record', false);
+
+        Sanctum::actingAs($member, ['*']);
+        $this->getJson("/api/ledgers/{$ledger->id}/settlements/preview?date=2026-03-31")
+            ->assertOk()
+            ->assertJsonPath('data.required_transfers.0.from_account_id', $fromAccount->id)
+            ->assertJsonPath('data.required_transfers.0.can_record', false);
+
+        [$ownLedger, $ownAdmin, , $ownFromAccount] = $this->createLedgerWithPendingTransfer(payer: 'member');
+        Sanctum::actingAs($ownAdmin, ['*']);
+        $this->getJson("/api/ledgers/{$ownLedger->id}/settlements/preview?date=2026-03-31")
+            ->assertOk()
+            ->assertJsonPath('data.required_transfers.0.from_account_id', $ownFromAccount->id)
+            ->assertJsonPath('data.required_transfers.0.from_account_owner_id', $ownAdmin->id)
+            ->assertJsonPath('data.required_transfers.0.can_record', true);
     }
 
     public function testMidCycleTransferRejectsForeignAccountsAndMalformedKeys(): void
@@ -455,7 +502,7 @@ class SettlementApiTest extends TestCase
     /**
      * @return array{Ledger, User, User, Account, Account}
      */
-    private function createLedgerWithPendingTransfer(): array
+    private function createLedgerWithPendingTransfer(string $payer = 'admin'): array
     {
         [$ledger, $admin] = $this->createLedgerWithAdmin([
             'settlement_mode' => 'direct_p2p',
@@ -471,6 +518,17 @@ class SettlementApiTest extends TestCase
                 ->where('user_id', $admin->id)
                 ->value('main_personal_account_id'),
         );
+        $memberAccount = Account::query()->findOrFail(
+            DB::table('ledger_user')
+                ->where('ledger_id', $ledger->id)
+                ->where('user_id', $member->id)
+                ->value('main_personal_account_id'),
+        );
+        $adminLiabilityAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('owner_id', $admin->id)
+            ->where('type', AccountType::UserLiability->value)
+            ->firstOrFail();
         $memberLiabilityAccount = Account::query()
             ->where('ledger_id', $ledger->id)
             ->where('owner_id', $member->id)
@@ -492,9 +550,13 @@ class SettlementApiTest extends TestCase
             ]);
         }
 
+        $payerAccount = $payer === 'member' ? $memberAccount : $adminAccount;
+        $fromAccount = $payer === 'member' ? $adminLiabilityAccount : $memberLiabilityAccount;
+        $toAccount = $payer === 'member' ? $memberAccount : $adminAccount;
+
         app(PostManualTransactionAction::class)->execute(PostManualTransactionData::fromArray([
             'ledger_id' => $ledger->id,
-            'payer_account_id' => $adminAccount->id,
+            'payer_account_id' => $payerAccount->id,
             'destination_account_id' => $expenseAccount->id,
             'amount' => 10_000,
             'type' => TransactionType::Manual->value,
@@ -504,6 +566,6 @@ class SettlementApiTest extends TestCase
             'date' => '2026-03-15',
         ]));
 
-        return [$ledger, $admin, $member, $memberLiabilityAccount, $adminAccount];
+        return [$ledger, $admin, $member, $fromAccount, $toAccount];
     }
 }

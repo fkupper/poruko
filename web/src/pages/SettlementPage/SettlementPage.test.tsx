@@ -111,8 +111,10 @@ describe('SettlementPage', () => {
                 {
                     from_account_id: 22,
                     to_account_id: 11,
+                    from_account_owner_id: 2,
                     amount: 5_000,
                     instruction: 'Bob transfers to Alice',
+                    can_record: true,
                 },
             ],
             user_breakdowns: [],
@@ -164,8 +166,10 @@ describe('SettlementPage', () => {
                 {
                     from_account_id: 22,
                     to_account_id: 11,
+                    from_account_owner_id: 2,
                     amount: 5_000,
                     instruction: 'Bob transfers to Alice',
+                    can_record: true,
                 },
             ],
             user_breakdowns: [],
@@ -211,8 +215,10 @@ describe('SettlementPage', () => {
                 {
                     from_account_id: 22,
                     to_account_id: 11,
+                    from_account_owner_id: 2,
                     amount: 5_000,
                     instruction: 'Bob transfers to Alice',
+                    can_record: true,
                 },
             ],
             user_breakdowns: [],
@@ -229,6 +235,55 @@ describe('SettlementPage', () => {
         expect(screen.getByText(/Enter at most the suggested remaining amount of €50.00/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /^record transfer$/i })).toBeDisabled();
         expect(recordMidCycleSettlementTransferMock).not.toHaveBeenCalled();
+    });
+
+    it('does not offer recording a transfer from another member’s account', async () => {
+        fetchSettlementPeriodsMock.mockResolvedValueOnce([]);
+        fetchSettlementPreviewMock.mockResolvedValueOnce({
+            period_start: '2026-09-01',
+            period_end: '2026-09-30',
+            settlement_mode: 'direct_p2p',
+            is_settled: false,
+            executed_at: null,
+            summary: {
+                total_shared_spend: 10_000,
+                pool_base_budget: 0,
+                pool_current_balance: 0,
+            },
+            required_transfers: [
+                {
+                    from_account_id: 22,
+                    to_account_id: 11,
+                    from_account_owner_id: 2,
+                    amount: 5_000,
+                    instruction: 'Bob transfers to Alice',
+                    can_record: true,
+                },
+                {
+                    from_account_id: 44,
+                    to_account_id: 11,
+                    from_account_owner_id: 4,
+                    amount: 5_700,
+                    instruction: 'Clara transfers to Alice',
+                    can_record: false,
+                },
+            ],
+            user_breakdowns: [],
+        });
+
+        renderSettlementPage();
+
+        expect(await screen.findByText('Bob transfers to Alice')).toBeInTheDocument();
+        expect(screen.getByText('Clara transfers to Alice')).toBeInTheDocument();
+        expect(screen.getByText('€57.00')).toBeInTheDocument();
+
+        const recordButtons = screen.getAllByRole('button', { name: /record transfer now/i });
+        expect(recordButtons).toHaveLength(1);
+
+        const claraCard = screen.getByText('Clara transfers to Alice').closest('[data-slot="card"]');
+        expect(claraCard).not.toBeNull();
+        expect(within(claraCard as HTMLElement).queryByRole('button', { name: /record transfer now/i })).not.toBeInTheDocument();
+        expect(within(claraCard as HTMLElement).queryByText('Available as a mid-cycle transfer')).not.toBeInTheDocument();
     });
 
     it('does not offer mid-cycle actions for a settled cycle', async () => {
@@ -248,8 +303,10 @@ describe('SettlementPage', () => {
                 {
                     from_account_id: 22,
                     to_account_id: 11,
+                    from_account_owner_id: 2,
                     amount: 5_000,
                     instruction: 'Bob transfers to Alice',
+                    can_record: true,
                 },
             ],
             user_breakdowns: [],

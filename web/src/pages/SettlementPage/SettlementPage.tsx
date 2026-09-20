@@ -335,7 +335,7 @@ export default function SettlementPage() {
                                             </div>
                                         </CardHeader>
                                         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                                            {!settlement.is_settled && (
+                                            {!settlement.is_settled && tx.can_record && (
                                                 <div className="flex flex-col gap-2">
                                                     <Badge variant="secondary" className="w-fit">
                                                         Available as a mid-cycle transfer
@@ -356,7 +356,7 @@ export default function SettlementPage() {
                                                 </div>
                                             </div>
                                         </CardContent>
-                                        {!settlement.is_settled && (
+                                        {!settlement.is_settled && tx.can_record && (
                                             <CardFooter className="justify-end">
                                                 <Button onClick={() => openTransferDialog(tx)}>
                                                     <SendIcon data-icon="inline-start" />

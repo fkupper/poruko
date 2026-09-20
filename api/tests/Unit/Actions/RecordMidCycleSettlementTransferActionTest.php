@@ -19,6 +19,7 @@ use App\Modules\Ledger\Actions\PreviewSettlementAction;
 use App\Modules\Ledger\Actions\RecordMidCycleSettlementTransferAction;
 use App\Modules\Ledger\Data\PostManualTransactionData;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -46,10 +47,11 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRecordsPartialTransferAndPreservesFinalSettlementMath(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
 
         $transaction = $this->action()->execute(
             $ledger,
+            $bob,
             '2026-09-30',
             $bobLiabilityAccount->id,
             $aliceAccount->id,
@@ -100,11 +102,12 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testReturnsTheOriginalTransactionForAnIdempotentRetry(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
         $key = 'd2391384-b599-44c2-a1dc-63f31a2805bd';
 
         $first = $this->action()->execute(
             $ledger,
+            $bob,
             '2026-09-30',
             $bobLiabilityAccount->id,
             $aliceAccount->id,
@@ -113,6 +116,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         );
         $second = $this->action()->execute(
             $ledger,
+            $bob,
             '2026-09-30',
             $bobLiabilityAccount->id,
             $aliceAccount->id,
@@ -130,11 +134,12 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRejectsAnAmountAboveTheRemainingSuggestion(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
 
         try {
             $this->action()->execute(
                 $ledger,
+                $bob,
                 '2026-09-30',
                 $bobLiabilityAccount->id,
                 $aliceAccount->id,
@@ -158,11 +163,12 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRejectsANonPositiveAmountWhenCalledDirectly(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
 
         try {
             $this->action()->execute(
                 $ledger,
+                $bob,
                 '2026-09-30',
                 $bobLiabilityAccount->id,
                 $aliceAccount->id,
@@ -182,11 +188,12 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRejectsReusingAKeyForDifferentTransferData(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
         $key = '19fd2de9-90db-4791-a765-8eff7ac8acbb';
 
         $this->action()->execute(
             $ledger,
+            $bob,
             '2026-09-30',
             $bobLiabilityAccount->id,
             $aliceAccount->id,
@@ -198,6 +205,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
         $this->action()->execute(
             $ledger,
+            $bob,
             '2026-09-30',
             $bobLiabilityAccount->id,
             $aliceAccount->id,
@@ -208,12 +216,13 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRejectsAccountsOutsideTheCurrentSuggestion(): void
     {
-        [$ledger, $aliceAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
         $foreignAccount = Account::factory()->create();
 
         try {
             $this->action()->execute(
                 $ledger,
+                $bob,
                 '2026-09-30',
                 $foreignAccount->id,
                 $aliceAccount->id,
@@ -228,11 +237,12 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRejectsTransfersForAFutureCycle(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
 
         try {
             $this->action()->execute(
                 $ledger,
+                $bob,
                 '2026-10-31',
                 $bobLiabilityAccount->id,
                 $aliceAccount->id,
@@ -252,7 +262,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
 
     public function testRejectsTransfersForAnExecutedSettlement(): void
     {
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob] = $this->seedPendingTransfer();
         Settlement::factory()->create([
             'ledger_id' => $ledger->id,
             'period_start' => '2026-09-01',
@@ -263,6 +273,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         try {
             $this->action()->execute(
                 $ledger,
+                $bob,
                 '2026-09-30',
                 $bobLiabilityAccount->id,
                 $aliceAccount->id,
@@ -275,23 +286,25 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         }
     }
 
-    public function testRejectsTransfersForAFutureCycle(): void
+    public function testRejectsRecordingATransferFromAnotherMembersAccount(): void
     {
-        CarbonImmutable::setTestNow('2026-08-19 12:00:00');
-        [$ledger, $aliceAccount, $bobLiabilityAccount] = $this->seedPendingTransfer();
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob, $alice] = $this->seedPendingTransfer();
+
+        $this->assertNotSame($alice->id, $bob->id);
 
         try {
             $this->action()->execute(
                 $ledger,
+                $alice,
                 '2026-09-30',
                 $bobLiabilityAccount->id,
                 $aliceAccount->id,
-                5_000,
-                '6c0b2a5e-7d41-4a6f-9c2e-1f8a0b3d4e5f',
+                2_000,
+                '6c3d1f2a-8e91-4b70-9c4d-1a2b3c4d5e6f',
             );
-            $this->fail('Expected a future-cycle validation failure.');
-        } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('period_end', $exception->errors());
+            $this->fail('Expected an authorization failure when recording from another member account.');
+        } catch (AuthorizationException $exception) {
+            $this->assertStringContainsString('another member', $exception->getMessage());
         }
 
         $this->assertDatabaseMissing('transactions', [
@@ -300,13 +313,41 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
         ]);
     }
 
+    public function testRejectsIdempotentRetryFromADifferentMember(): void
+    {
+        [$ledger, $aliceAccount, $bobLiabilityAccount, $bob, $alice] = $this->seedPendingTransfer();
+        $key = 'c8a1b2d3-4e5f-6789-abcd-ef0123456789';
+
+        $this->action()->execute(
+            $ledger,
+            $bob,
+            '2026-09-30',
+            $bobLiabilityAccount->id,
+            $aliceAccount->id,
+            2_000,
+            $key,
+        );
+
+        $this->expectException(AuthorizationException::class);
+
+        $this->action()->execute(
+            $ledger,
+            $alice,
+            '2026-09-30',
+            $bobLiabilityAccount->id,
+            $aliceAccount->id,
+            2_000,
+            $key,
+        );
+    }
+
     private function action(): RecordMidCycleSettlementTransferAction
     {
         return app(RecordMidCycleSettlementTransferAction::class);
     }
 
     /**
-     * @return array{Ledger, Account, Account}
+     * @return array{Ledger, Account, Account, User, User}
      */
     private function seedPendingTransfer(): array
     {
@@ -360,7 +401,7 @@ class RecordMidCycleSettlementTransferActionTest extends TestCase
             'date' => '2026-09-10',
         ]));
 
-        return [$ledger, $aliceAccount, $bobLiabilityAccount];
+        return [$ledger, $aliceAccount, $bobLiabilityAccount, $bob, $alice];
     }
 
     private function mainAccount(Ledger $ledger, User $user): Account

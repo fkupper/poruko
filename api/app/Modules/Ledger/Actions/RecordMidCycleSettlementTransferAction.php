@@ -6,10 +6,13 @@ use App\Enums\PostingDirection;
 use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Enums\TransactionType;
+use App\Models\Account;
 use App\Models\Ledger;
 use App\Models\Posting;
 use App\Models\Settlement;
 use App\Models\Transaction;
+use App\Models\User;
+use App\Modules\Ledger\Services\MidCycleTransferAuthorization;
 use App\Modules\Ledger\Services\SettlementCycleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -20,10 +23,12 @@ final readonly class RecordMidCycleSettlementTransferAction
     public function __construct(
         private PreviewSettlementAction $previewSettlementAction,
         private SettlementCycleService $settlementCycleService,
+        private MidCycleTransferAuthorization $midCycleTransferAuthorization,
     ) {}
 
     public function execute(
         Ledger $ledger,
+        User $actor,
         string $periodEnd,
         int $fromAccountId,
         int $toAccountId,
@@ -38,6 +43,7 @@ final readonly class RecordMidCycleSettlementTransferAction
 
         return DB::transaction(function () use (
             $ledger,
+            $actor,
             $periodEnd,
             $fromAccountId,
             $toAccountId,
@@ -55,6 +61,8 @@ final readonly class RecordMidCycleSettlementTransferAction
                 ->first();
 
             if ($existing instanceof Transaction) {
+                $this->assertActorMayUseSource($actor, $fromAccountId);
+
                 return $this->resolveIdempotentRetry(
                     $existing,
                     $periodEnd,
@@ -104,6 +112,8 @@ final readonly class RecordMidCycleSettlementTransferAction
                     'from_account_id' => ['This transfer is not currently required for the selected cycle.'],
                 ]);
             }
+
+            $this->assertActorMayUseSource($actor, $fromAccountId);
 
             $suggestedAmount = (int) $suggestedTransfer['amount'];
 
@@ -186,5 +196,11 @@ final readonly class RecordMidCycleSettlementTransferAction
         }
 
         return $transaction->load(['payerAccount', 'destinationAccount', 'postings']);
+    }
+
+    private function assertActorMayUseSource(User $actor, int $fromAccountId): void
+    {
+        $fromAccount = Account::query()->findOrFail($fromAccountId);
+        $this->midCycleTransferAuthorization->assertCanUseSource($actor, $fromAccount);
     }
 }
