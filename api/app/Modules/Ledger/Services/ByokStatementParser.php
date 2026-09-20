@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
+use Throwable;
 
 final class ByokStatementParser
 {
@@ -121,7 +122,7 @@ final class ByokStatementParser
         }
 
         $response = $this->send(
-            fn (): Response => $this->request($setting->provider)
+            fn (): Response => $this->request()
                 ->withToken($setting->api_key)
                 ->post($url, $payload),
         );
@@ -138,7 +139,7 @@ final class ByokStatementParser
     private function parseWithAnthropic(AiProviderSetting $setting, string $prompt): string
     {
         $response = $this->send(
-            fn (): Response => $this->request($setting->provider)
+            fn (): Response => $this->request()
                 ->withHeaders([
                     'x-api-key' => $setting->api_key,
                     'anthropic-version' => '2023-06-01',
@@ -173,20 +174,29 @@ final class ByokStatementParser
         return $content;
     }
 
-    private function request(AiProvider $provider): PendingRequest
+    private function request(): PendingRequest
     {
-        $request = Http::acceptJson()
+        return Http::acceptJson()
             ->asJson()
-            ->timeout(120)
-            ->withOptions(['allow_redirects' => false]);
+            ->timeout(StatementImportLimits::HTTP_TIMEOUT_SECONDS)
+            ->connectTimeout(StatementImportLimits::HTTP_CONNECT_TIMEOUT_SECONDS)
+            ->withOptions(['allow_redirects' => false])
+            ->retry(2, 500, $this->shouldRetry(...), throw: false);
+    }
 
-        if ($provider === AiProvider::OpenAiCompatible) {
-            return $request
-                ->connectTimeout(10)
-                ->retry(1, 500, throw: false);
+    private function shouldRetry(Throwable $exception): bool
+    {
+        if ($exception instanceof RequestException) {
+            $status = $exception->response->status();
+
+            return $status === 429 || $exception->response->serverError();
         }
 
-        return $request->retry(2, 500, throw: false);
+        if (!$exception instanceof ConnectionException) {
+            return false;
+        }
+
+        return !str_contains(mb_strtolower($exception->getMessage()), 'operation timed out');
     }
 
     /**
@@ -219,9 +229,9 @@ Return one JSON object and no markdown using exactly this shape:
 {
   "bank_accounts": [
     {
-      "external_id": "stable account identifier from the statement, or a deterministic label",
-      "name": "bank account display name",
-      "last_four": "last four digits when available, otherwise null",
+      "external_id": "account number digits only, stable across statements",
+      "name": "bank or product name without an Account prefix",
+      "last_four": "exactly four digits from the account number when available, otherwise null",
       "ownership": "personal or joint"
     }
   ],
@@ -234,12 +244,16 @@ Return one JSON object and no markdown using exactly this shape:
       "raw_description": "verbatim statement description",
       "amount_cents": 1234,
       "transaction_type": "expense or income",
+      "sharing_type": "individual or shared",
       "confidence": 0.95,
       "rationale": "short explanation"
     }
   ]
 }
 Amounts must be positive integer minor currency units. Use expense for debits and income for credits.
+external_id for bank accounts must be the account number digits, never a display label such as Account 1234.
+Reuse the same account number when the same account appears again, even if the bank name is written differently.
+sharing_type is individual when the expense belongs to one person and shared when it should be split with the household.
 Keep low-confidence rows instead of omitting them when their date and amount are legible.
 PROMPT
             . "\n\nMIME type: {$mimeType}\n\nSTATEMENT:\n"

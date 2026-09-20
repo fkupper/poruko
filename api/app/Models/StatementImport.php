@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $ledger_id
  * @property int $user_id
  * @property string $status
+ * @property string $stage
  * @property string $file_path
  * @property string $original_filename
  * @property string $mime_type
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $pending_count
  * @property int $duplicate_count
  * @property int $failed_count
+ * @property int $progress_current
+ * @property int $progress_total
  * @property string|null $error_message
  * @property \Illuminate\Support\Carbon|null $processed_at
  * @property-read Ledger $ledger
@@ -37,6 +40,7 @@ class StatementImport extends Model
         'ledger_id',
         'user_id',
         'status',
+        'stage',
         'file_path',
         'original_filename',
         'mime_type',
@@ -45,6 +49,8 @@ class StatementImport extends Model
         'pending_count',
         'duplicate_count',
         'failed_count',
+        'progress_current',
+        'progress_total',
         'error_message',
         'processed_at',
     ];
@@ -60,6 +66,8 @@ class StatementImport extends Model
             'pending_count' => 'integer',
             'duplicate_count' => 'integer',
             'failed_count' => 'integer',
+            'progress_current' => 'integer',
+            'progress_total' => 'integer',
             'processed_at' => 'datetime',
         ];
     }

@@ -19,9 +19,18 @@ interface AccountSelectorProps {
     label: string;
     usage: 'payer' | 'destination';
     id?: string;
+    autoSelect?: boolean;
 }
 
-export function AccountSelector({ accounts, value, onChange, label, usage, id }: AccountSelectorProps) {
+export function AccountSelector({
+    accounts,
+    value,
+    onChange,
+    label,
+    usage,
+    id,
+    autoSelect = true,
+}: AccountSelectorProps) {
     const currencySymbol = useLedgerCurrencySymbol();
     const fieldId = id ?? `account-${usage}`;
 
@@ -36,12 +45,12 @@ export function AccountSelector({ accounts, value, onChange, label, usage, id }:
         return accounts;
     }, [accounts, usage]);
 
-    // Auto-select first account if not set
     React.useEffect(() => {
+        if (!autoSelect) return;
         if (filteredAccounts.length > 0 && value === null) {
             onChange(filteredAccounts[0].id);
         }
-    }, [filteredAccounts, value, onChange]);
+    }, [autoSelect, filteredAccounts, value, onChange]);
 
     return (
         <Field>

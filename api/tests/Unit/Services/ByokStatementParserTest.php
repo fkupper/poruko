@@ -162,4 +162,48 @@ JSON,
             Http::assertNothingSent();
         }
     }
+
+    public function testRequestTimeoutsAreNotRetried(): void
+    {
+        $setting = AiProviderSetting::factory()->openaiCompatible()->create();
+        $attempts = 0;
+        Http::fake(static function () use (&$attempts): never {
+            $attempts++;
+            throw new ConnectionException(
+                'cURL error 28: Operation timed out after 150000 milliseconds with 0 bytes received',
+            );
+        });
+
+        try {
+            $this->app->make(ByokStatementParser::class)
+                ->parse($setting, 'statement contents', 'text/csv');
+            $this->fail('Expected the request timeout to surface.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('Could not reach the configured AI endpoint', $exception->getMessage());
+        }
+
+        $this->assertSame(1, $attempts);
+    }
+
+    public function testTransientConnectionFailuresAreRetried(): void
+    {
+        $setting = AiProviderSetting::factory()->openaiCompatible()->create();
+        $attempts = 0;
+        Http::fake(function () use (&$attempts) {
+            $attempts++;
+
+            if ($attempts === 1) {
+                throw new ConnectionException('cURL error 7: Failed to connect to 127.0.0.1 port 11434');
+            }
+
+            return Http::response([
+                'choices' => [['message' => ['content' => '{"bank_accounts":[],"transactions":[]}']]],
+            ]);
+        });
+
+        $this->app->make(ByokStatementParser::class)
+            ->parse($setting, 'statement contents', 'text/csv');
+
+        $this->assertSame(2, $attempts);
+    }
 }

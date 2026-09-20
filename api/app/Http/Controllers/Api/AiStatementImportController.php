@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\AiProvider;
 use App\Enums\PendingTransactionStatus;
+use App\Enums\StatementImportStage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveAiImportSettingsRequest;
 use App\Http\Requests\UpdateBankAccountMappingRequest;
@@ -165,6 +166,7 @@ class AiStatementImportController extends Controller
             'ledger_id' => $ledger->id,
             'user_id' => $user->id,
             'status' => 'queued',
+            'stage' => StatementImportStage::Queued->value,
             'file_path' => $path,
             'original_filename' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType() ?: 'text/plain',

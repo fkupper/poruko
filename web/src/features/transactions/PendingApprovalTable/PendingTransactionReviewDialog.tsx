@@ -6,6 +6,7 @@ import { createAccount, fetchAccounts } from '@/api/accounts';
 import { updateBankAccountMapping } from '@/api/ingestion';
 import { updatePendingTransaction } from '@/api/pending-transactions';
 import type { PendingTransaction } from '@/api/types';
+import { AccountSelector } from '@/components/ui/account-selector';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -31,6 +32,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { ExpenseSplitFields } from '@/features/transactions/ExpenseSplitFields/ExpenseSplitFields';
+import { useExpenseSplit } from '@/features/transactions/ExpenseSplitFields/useExpenseSplit';
 import { useLedgerStore } from '@/stores/ledgerStore';
 
 interface PendingTransactionReviewDialogProps {
@@ -61,6 +64,19 @@ export function PendingTransactionReviewDialog({
     const [createFor, setCreateFor] = React.useState<'payer' | 'destination'>('payer');
     const [newAccountName, setNewAccountName] = React.useState('');
 
+    const split = useExpenseSplit({
+        open: open && transaction !== null,
+        date: transaction?.date,
+        amountCents: transaction?.suggested_amount ?? null,
+        resetToken: transaction?.id ?? 'review',
+        seed: transaction
+            ? {
+                splitRule: transaction.suggested_split_rule ?? 'proportional',
+                participants: transaction.suggested_participants,
+            }
+            : null,
+    });
+
     const accountsQuery = useQuery({
         queryKey: ['accounts', activeLedgerId],
         queryFn: () => fetchAccounts(activeLedgerId!),
@@ -84,6 +100,12 @@ export function PendingTransactionReviewDialog({
     const saveMutation = useMutation({
         mutationFn: async () => {
             if (!transaction || activeLedgerId === null) throw new Error('No proposal selected.');
+            if (!split.splitValid) {
+                if (split.splitRule === 'individual') {
+                    throw new Error('Select exactly one person for an individual expense.');
+                }
+                throw new Error('Select at least one participant and enter a weight greater than zero for each.');
+            }
 
             const mappingId = rawNumber(transaction, 'bank_account_mapping_id');
             if (mappingId !== null && payerAccountId !== null) {
@@ -93,6 +115,8 @@ export function PendingTransactionReviewDialog({
             return updatePendingTransaction(activeLedgerId, transaction.id, {
                 payer_account_id: payerAccountId,
                 destination_account_id: destinationAccountId,
+                split_rule: split.splitRule,
+                participants: split.payloadParticipants,
             });
         },
         onSuccess: () => {
@@ -132,76 +156,56 @@ export function PendingTransactionReviewDialog({
         },
     });
 
-    const accounts = accountsQuery.data ?? [];
-    const payerAccounts = accounts.filter((account) => (
-        account.type === 'pool_asset' || account.type === 'user_funding'
-    ));
-    const expenseAccounts = accounts.filter((account) => account.type === 'space_expense');
     const suggestedAccountId = transaction ? rawNumber(transaction, 'suggested_account_id') : null;
+    const canSave = payerAccountId !== null
+        && destinationAccountId !== null
+        && split.splitValid
+        && !split.isLoadingMembers;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Review transaction accounts</DialogTitle>
+                    <DialogTitle>Review transaction</DialogTitle>
                     <DialogDescription>
-                        Assign the source bank account and expense category before approving this proposal.
+                        Confirm accounts and sharing type before this proposal can be approved.
                     </DialogDescription>
                 </DialogHeader>
 
                 {transaction && (
                     <FieldGroup>
-                        <Field>
-                            <FieldLabel>Payment account</FieldLabel>
-                            <Select
-                                value={payerAccountId ? String(payerAccountId) : undefined}
-                                onValueChange={(value) => setPayerAccountId(Number(value))}
+                        <AccountSelector
+                            label="Payment account"
+                            usage="payer"
+                            accounts={accountsQuery.data}
+                            value={payerAccountId}
+                            onChange={setPayerAccountId}
+                            autoSelect={false}
+                        />
+                        {suggestedAccountId !== null && payerAccountId === null && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPayerAccountId(suggestedAccountId)}
                             >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select a payment account" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {payerAccounts.map((account) => (
-                                            <SelectItem key={account.id} value={String(account.id)}>
-                                                {account.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            {suggestedAccountId !== null && payerAccountId === null && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPayerAccountId(suggestedAccountId)}
-                                >
-                                    Use suggested account
-                                </Button>
-                            )}
-                        </Field>
+                                Use suggested account
+                            </Button>
+                        )}
 
-                        <Field>
-                            <FieldLabel>Expense category</FieldLabel>
-                            <Select
-                                value={destinationAccountId ? String(destinationAccountId) : undefined}
-                                onValueChange={(value) => setDestinationAccountId(Number(value))}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select an expense category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {expenseAccounts.map((account) => (
-                                            <SelectItem key={account.id} value={String(account.id)}>
-                                                {account.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </Field>
+                        <AccountSelector
+                            label="Expense category"
+                            usage="destination"
+                            accounts={accountsQuery.data}
+                            value={destinationAccountId}
+                            onChange={setDestinationAccountId}
+                            autoSelect={false}
+                        />
+
+                        <ExpenseSplitFields
+                            split={split}
+                            radioGroupName="review-individual-participant"
+                        />
 
                         <Field>
                             <FieldLabel>Create a Poruko account</FieldLabel>
@@ -253,7 +257,7 @@ export function PendingTransactionReviewDialog({
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button
-                        disabled={!payerAccountId || !destinationAccountId || saveMutation.isPending}
+                        disabled={!canSave || saveMutation.isPending}
                         onClick={() => saveMutation.mutate()}
                     >
                         {saveMutation.isPending

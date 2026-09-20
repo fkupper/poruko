@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Enums\AccountType;
 use App\Enums\TransactionSource;
+use App\Enums\TransactionSplitRule;
 use App\Http\Controllers\Api\AiStatementImportController;
 use App\Jobs\ProcessBankStatementImportJob;
 use App\Models\Account;
@@ -16,8 +17,10 @@ use App\Models\StatementImport;
 use App\Models\StatementImportEntry;
 use App\Models\User;
 use App\Modules\Ledger\Actions\ProcessStatementImportAction;
+use Illuminate\Bus\UniqueLock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -185,6 +188,11 @@ class AiStatementImportApiTest extends TestCase
     {
         Storage::fake('local');
         Queue::fake();
+        Cache::flush();
+
+        foreach (range(1, 25) as $importId) {
+            cache()->lock(UniqueLock::getKey(new ProcessBankStatementImportJob($importId)))->forceRelease();
+        }
         [$ledger, $user] = $this->createLedgerWithAdmin();
         AiProviderSetting::factory()->create(['user_id' => $user->id]);
         Sanctum::actingAs($user, ['*']);
@@ -198,6 +206,7 @@ class AiStatementImportApiTest extends TestCase
 
         $response->assertAccepted()
             ->assertJsonPath('data.status', 'queued')
+            ->assertJsonPath('data.stage', 'queued')
             ->assertJsonPath('data.filename', 'checking.csv');
 
         $import = StatementImport::query()->firstOrFail();
@@ -264,8 +273,10 @@ class AiStatementImportApiTest extends TestCase
         $this->assertSame($expenseAccount->id, $pending->destination_account_id);
         $this->assertSame(TransactionSource::AiImport, $pending->source);
         $this->assertSame('completed', $firstImport->fresh()->status);
+        $this->assertSame('completed', $firstImport->fresh()->stage);
         $this->assertSame(1, $firstImport->fresh()->pending_count);
         $this->assertSame(1, $firstImport->fresh()->failed_count);
+        $this->assertSame($firstImport->fresh()->progress_total, $firstImport->fresh()->progress_current);
 
         $secondImport = $this->createStoredImport($ledger, $user, 'second.csv');
         $this->app->make(ProcessStatementImportAction::class)->execute($secondImport);
@@ -274,6 +285,107 @@ class AiStatementImportApiTest extends TestCase
         $this->assertSame(1, $secondImport->fresh()->failed_count);
         $this->assertDatabaseCount('pending_transactions', 1);
         $this->assertDatabaseCount('statement_import_entries', 1);
+    }
+
+    public function testReimportReusesAccountNumberMappingsAndDeduplicatesContent(): void
+    {
+        Storage::fake('local');
+        [$ledger, $user] = $this->createLedgerWithAdmin();
+        $paymentAccount = Account::factory()->create([
+            'ledger_id' => $ledger->id,
+            'owner_id' => $user->id,
+            'type' => AccountType::UserFunding,
+            'name' => "Bob's Funding Account",
+        ]);
+        $expenseAccount = Account::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('type', AccountType::SpaceExpense)
+            ->firstOrFail();
+        LedgerUser::query()
+            ->where('ledger_id', $ledger->id)
+            ->where('user_id', $user->id)
+            ->update(['default_expense_account_id' => $expenseAccount->id]);
+        AiProviderSetting::factory()->create(['user_id' => $user->id]);
+
+        $rawDescription = '/TRTP/SEPA Incasso algemeen doorlopend/CSID/NL39ZZ';
+        Http::fake([
+            'api.openai.com/*' => Http::sequence()
+                ->push([
+                    'choices' => [[
+                        'message' => [
+                            'content' => json_encode([
+                                'bank_accounts' => [[
+                                    'external_id' => '248016970',
+                                    'name' => 'Account 248016970',
+                                    'last_four' => '6970',
+                                    'ownership' => 'personal',
+                                ]],
+                                'transactions' => [[
+                                    'external_id' => null,
+                                    'bank_account_external_id' => '248016970',
+                                    'date' => '2026-08-20',
+                                    'description' => 'Nederlandse Loterij - Eurojackpot',
+                                    'raw_description' => $rawDescription,
+                                    'amount_cents' => 400,
+                                    'transaction_type' => 'expense',
+                                    'sharing_type' => 'individual',
+                                    'confidence' => 0.9,
+                                    'rationale' => 'Debit',
+                                ]],
+                            ], JSON_THROW_ON_ERROR),
+                        ],
+                    ]],
+                ])
+                ->push([
+                    'choices' => [[
+                        'message' => [
+                            'content' => json_encode([
+                                'bank_accounts' => [[
+                                    'external_id' => '248016970',
+                                    'name' => 'ABN AMRO Bank N.V. 248016970',
+                                    'last_four' => '6970',
+                                    'ownership' => 'personal',
+                                ]],
+                                'transactions' => [[
+                                    'external_id' => null,
+                                    'bank_account_external_id' => '248016970',
+                                    'date' => '2026-08-20',
+                                    'description' => 'NEDERLANDSE LOTERIJ BY BUCKAROO',
+                                    'raw_description' => $rawDescription,
+                                    'amount_cents' => 400,
+                                    'transaction_type' => 'expense',
+                                    'sharing_type' => 'shared',
+                                    'confidence' => 0.9,
+                                    'rationale' => 'Debit',
+                                ]],
+                            ], JSON_THROW_ON_ERROR),
+                        ],
+                    ]],
+                ]),
+        ]);
+
+        $firstImport = $this->createStoredImport($ledger, $user, 'first.txt');
+        $this->app->make(ProcessStatementImportAction::class)->execute($firstImport);
+
+        $mapping = BankAccountMapping::query()->firstOrFail();
+        $mapping->update(['account_id' => $paymentAccount->id, 'suggested_account_id' => null]);
+        PendingTransaction::query()->firstOrFail()->update(['payer_account_id' => $paymentAccount->id]);
+
+        $secondImport = $this->createStoredImport($ledger, $user, 'second.txt');
+        $this->app->make(ProcessStatementImportAction::class)->execute($secondImport);
+
+        $this->assertDatabaseCount('bank_account_mappings', 1);
+        $this->assertSame($paymentAccount->id, $mapping->fresh()->account_id);
+        $this->assertSame('ABN AMRO Bank N.V. 248016970', $mapping->fresh()->external_account_name);
+        $this->assertSame(0, $secondImport->fresh()->pending_count);
+        $this->assertSame(1, $secondImport->fresh()->duplicate_count);
+        $this->assertDatabaseCount('pending_transactions', 1);
+        $pending = PendingTransaction::query()->firstOrFail();
+        $this->assertSame(
+            TransactionSplitRule::Individual->value,
+            $pending->suggested_split_rule->value,
+        );
+        $this->assertSame([['user_id' => $user->id]], $pending->suggested_participants);
     }
 
     public function testAutoCreateMapsNewAccountsAndApprovalKeepsImportProvenance(): void

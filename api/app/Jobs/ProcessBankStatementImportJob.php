@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Enums\StatementImportStage;
 use App\Models\StatementImport;
 use App\Modules\Ledger\Actions\ProcessStatementImportAction;
+use App\Modules\Ledger\Services\StatementImportLimits;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,6 +24,10 @@ class ProcessBankStatementImportJob implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 3;
 
+    public int $timeout = StatementImportLimits::JOB_TIMEOUT_SECONDS;
+
+    public int $uniqueFor = StatementImportLimits::UNIQUE_LOCK_SECONDS;
+
     /** @var list<int> */
     public array $backoff = [30, 120, 300];
 
@@ -37,7 +43,13 @@ class ProcessBankStatementImportJob implements ShouldBeUnique, ShouldQueue
     public function handle(ProcessStatementImportAction $action): void
     {
         $import = StatementImport::query()->findOrFail($this->statementImportId);
-        $import->update(['status' => 'processing', 'error_message' => null]);
+        $import->update([
+            'status' => 'processing',
+            'stage' => StatementImportStage::Parsing->value,
+            'progress_current' => 0,
+            'progress_total' => 0,
+            'error_message' => null,
+        ]);
 
         $action->execute($import);
         Storage::disk('local')->delete($import->file_path);
@@ -53,6 +65,7 @@ class ProcessBankStatementImportJob implements ShouldBeUnique, ShouldQueue
 
         $import->update([
             'status' => 'failed',
+            'stage' => StatementImportStage::Failed->value,
             'error_message' => mb_substr($exception->getMessage(), 0, 2000),
             'processed_at' => now(),
         ]);

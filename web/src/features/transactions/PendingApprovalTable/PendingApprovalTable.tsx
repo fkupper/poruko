@@ -45,11 +45,26 @@ interface ReviewRequest {
 }
 
 function isReadyForApproval(transaction: PendingTransaction): boolean {
+    const hasSplitDetails = transaction.suggested_split_rule !== null
+        && (
+            transaction.suggested_split_rule !== 'individual'
+            || (transaction.suggested_participants?.length ?? 0) === 1
+        );
+
     return transaction.payer_account_id !== null
         && transaction.destination_account_id !== null
         && transaction.suggested_amount !== null
-        && transaction.suggested_split_rule !== null
+        && hasSplitDetails
         && transaction.date !== null;
+}
+
+function splitRuleLabel(rule: PendingTransaction['suggested_split_rule']): string {
+    if (rule === 'individual') return 'Individual';
+    if (rule === 'equal') return 'Equal';
+    if (rule === 'manual') return 'Manual';
+    if (rule === 'proportional') return 'Proportional';
+
+    return 'Needs sharing';
 }
 
 function sourceLabel(source: PendingTransaction['source']): string {
@@ -188,6 +203,7 @@ export function PendingApprovalTable() {
                                 <TableHead>Date</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Source</TableHead>
+                                <TableHead>Sharing</TableHead>
                                 <TableHead>Accounts</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -237,6 +253,11 @@ export function PendingApprovalTable() {
                                                     </span>
                                                 )}
                                             </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline">
+                                                {splitRuleLabel(transaction.suggested_split_rule)}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
                                             {transaction.payer_account_name || 'Unassigned'}

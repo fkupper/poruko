@@ -3,6 +3,8 @@
 namespace App\Modules\Ledger\Actions;
 
 use App\Enums\AccountType;
+use App\Enums\PendingTransactionStatus;
+use App\Enums\StatementImportStage;
 use App\Enums\TransactionSource;
 use App\Enums\TransactionSplitRule;
 use App\Models\Account;
@@ -10,16 +12,16 @@ use App\Models\AiProviderSetting;
 use App\Models\BankAccountMapping;
 use App\Models\Ledger;
 use App\Models\LedgerUser;
+use App\Models\PendingTransaction;
 use App\Models\StatementImport;
 use App\Models\StatementImportEntry;
-use App\Models\Transaction;
 use App\Modules\Ledger\Data\CreateAccountData;
 use App\Modules\Ledger\Data\CreatePendingTransactionData;
 use App\Modules\Ledger\Services\ByokStatementParser;
+use App\Modules\Ledger\Services\StatementImportIdentity;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
@@ -39,15 +41,23 @@ final readonly class ProcessStatementImportAction
             throw new RuntimeException('Configure an AI provider before processing statements.');
         }
 
+        $this->markStage($import, StatementImportStage::Parsing);
+
         $contents = Storage::disk('local')->get($import->file_path);
         $parsed = $this->parser->parse($setting, $contents, $import->mime_type);
 
+        $accountCount = count($parsed['bank_accounts']);
+        $transactionCount = count($parsed['transactions']);
+
         $import->update([
             'status' => 'processing',
-            'parsed_count' => count($parsed['transactions']),
+            'stage' => StatementImportStage::MappingAccounts->value,
+            'parsed_count' => $transactionCount,
             'pending_count' => 0,
             'duplicate_count' => 0,
             'failed_count' => 0,
+            'progress_current' => 0,
+            'progress_total' => $accountCount + $transactionCount,
             'error_message' => null,
         ]);
 
@@ -73,8 +83,12 @@ final readonly class ProcessStatementImportAction
                 $mappings[$externalId] = $mapping;
             } catch (Throwable) {
                 continue;
+            } finally {
+                $this->advanceProgress($import);
             }
         }
+
+        $this->markStage($import, StatementImportStage::ProcessingTransactions);
 
         $pendingCount = 0;
         $duplicateCount = 0;
@@ -98,14 +112,18 @@ final readonly class ProcessStatementImportAction
                 }
             } catch (Throwable) {
                 $failedCount++;
+            } finally {
+                $this->advanceProgress($import);
             }
         }
 
         $import->update([
             'status' => 'completed',
+            'stage' => StatementImportStage::Completed->value,
             'pending_count' => $pendingCount,
             'duplicate_count' => $duplicateCount,
             'failed_count' => $failedCount,
+            'progress_current' => $import->progress_total,
             'processed_at' => now(),
         ]);
     }
@@ -119,53 +137,58 @@ final readonly class ProcessStatementImportAction
         array $parsedAccount,
         bool $autoCreateAccounts,
     ): BankAccountMapping {
-        $externalId = $this->requiredString($parsedAccount, 'external_id');
-        $name = $this->requiredString($parsedAccount, 'name');
-        $lastFour = $this->optionalString($parsedAccount, 'last_four');
+        $identity = StatementImportIdentity::fromParsedAccount($parsedAccount);
         $ownership = $this->optionalString($parsedAccount, 'ownership') === 'joint'
             ? 'joint'
             : 'personal';
-        $fingerprint = hash('sha256', $this->normalize($externalId . '|' . $name . '|' . $lastFour));
 
         return DB::transaction(function () use (
             $ledger,
             $import,
-            $name,
-            $lastFour,
+            $identity,
             $ownership,
-            $fingerprint,
             $autoCreateAccounts,
         ): BankAccountMapping {
-            $mapping = BankAccountMapping::query()->firstOrCreate(
-                [
+            $mapping = $this->findExistingMapping($ledger->id, $import->user_id, $identity);
+
+            if (!$mapping instanceof BankAccountMapping) {
+                $mapping = BankAccountMapping::query()->create([
                     'ledger_id' => $ledger->id,
                     'user_id' => $import->user_id,
-                    'external_account_fingerprint' => $fingerprint,
-                ],
-                [
-                    'external_account_name' => $name,
-                    'masked_identifier' => $lastFour === null ? null : '•••• ' . $lastFour,
+                    'external_account_fingerprint' => $identity->fingerprint,
+                    'external_account_name' => $identity->displayName,
+                    'masked_identifier' => $identity->lastFour === null ? null : '•••• '.$identity->lastFour,
                     'ownership_type' => $ownership,
-                ],
-            );
+                ]);
+            }
 
-            $candidate = $mapping->account_id === null
-                ? $this->findMatchingAccount($ledger, $import->user_id, $name, $lastFour, $ownership)
-                : null;
+            $alreadyLinked = $mapping->account_id !== null;
+            $candidate = $alreadyLinked
+                ? null
+                : $this->findMatchingAccount(
+                    $ledger,
+                    $import->user_id,
+                    $identity->displayName,
+                    $identity->lastFour,
+                    $ownership,
+                );
 
             $updates = [
-                'external_account_name' => $name,
-                'masked_identifier' => $lastFour === null ? null : '•••• ' . $lastFour,
-                'ownership_type' => $ownership,
-                'suggested_account_id' => $mapping->account_id === null ? $candidate?->id : null,
+                'external_account_name' => $identity->displayName,
+                'masked_identifier' => $identity->lastFour === null ? null : '•••• '.$identity->lastFour,
+                'suggested_account_id' => $alreadyLinked ? null : $candidate?->id,
             ];
 
-            if ($mapping->account_id === null && $autoCreateAccounts) {
+            if (!$alreadyLinked) {
+                $updates['ownership_type'] = $ownership;
+            }
+
+            if (!$alreadyLinked && $autoCreateAccounts) {
                 $account = $candidate ?? $this->createMappedAccount(
                     $ledger,
                     $import->user_id,
-                    $name,
-                    $lastFour,
+                    $identity->displayName,
+                    $identity->lastFour,
                     $ownership,
                 );
                 $updates['account_id'] = $account->id;
@@ -176,6 +199,29 @@ final readonly class ProcessStatementImportAction
 
             return $mapping->fresh(['account', 'suggestedAccount']) ?? $mapping;
         });
+    }
+
+    private function findExistingMapping(
+        int $ledgerId,
+        int $userId,
+        StatementImportIdentity $identity,
+    ): ?BankAccountMapping {
+        $mappings = BankAccountMapping::query()
+            ->where('ledger_id', $ledgerId)
+            ->where('user_id', $userId)
+            ->get();
+
+        $byFingerprint = $mappings->firstWhere('external_account_fingerprint', $identity->fingerprint);
+
+        if ($byFingerprint instanceof BankAccountMapping) {
+            return $byFingerprint;
+        }
+
+        $byDigits = $mappings->first(
+            fn (BankAccountMapping $mapping): bool => $identity->matchesMapping($mapping),
+        );
+
+        return $byDigits instanceof BankAccountMapping ? $byDigits : null;
     }
 
     private function findMatchingAccount(
@@ -198,12 +244,12 @@ final readonly class ProcessStatementImportAction
             )
             ->get();
 
-        $normalizedName = $this->normalize($name);
+        $normalizedName = StatementImportIdentity::normalize($name);
         $bestAccount = null;
         $bestScore = 0.0;
 
         foreach ($accounts as $account) {
-            $normalizedAccountName = $this->normalize($account->name);
+            $normalizedAccountName = StatementImportIdentity::normalize($account->name);
 
             if ($normalizedName === $normalizedAccountName) {
                 return $account;
@@ -256,7 +302,7 @@ final readonly class ProcessStatementImportAction
         }
 
         $bankAccountExternalId = $this->requiredString($parsedTransaction, 'bank_account_external_id');
-        $mapping = $mappings[$bankAccountExternalId] ?? null;
+        $mapping = $this->mappingForTransaction($mappings, $bankAccountExternalId);
 
         if (!$mapping instanceof BankAccountMapping) {
             return 'failed';
@@ -276,12 +322,11 @@ final readonly class ProcessStatementImportAction
             return 'failed';
         }
 
-        $externalTransactionId = $this->optionalString($parsedTransaction, 'external_id');
-        $transactionFingerprint = hash(
-            'sha256',
-            $mapping->external_account_fingerprint
-                . '|'
-                . ($externalTransactionId ?? "{$date}|{$amount}|{$this->normalize($rawDescription)}"),
+        $transactionFingerprint = StatementImportIdentity::transactionFingerprint(
+            $mapping->external_account_fingerprint,
+            $date,
+            $amount,
+            $rawDescription,
         );
 
         return DB::transaction(function () use (
@@ -293,7 +338,6 @@ final readonly class ProcessStatementImportAction
             $description,
             $rawDescription,
             $amount,
-            $externalTransactionId,
             $transactionFingerprint,
         ): string {
             $entry = StatementImportEntry::query()->firstOrCreate(
@@ -312,21 +356,7 @@ final readonly class ProcessStatementImportAction
                 return 'duplicate';
             }
 
-            $payerAccountId = $mapping->account_id;
-            $destinationAccountId = $this->destinationAccountId($membership);
-
-            if (
-                $payerAccountId !== null
-                && $destinationAccountId !== null
-                && $this->existingTransaction(
-                    $import->ledger_id,
-                    $payerAccountId,
-                    $destinationAccountId,
-                    $date,
-                    $amount,
-                    $description,
-                )
-            ) {
+            if ($this->isDuplicateContent($import, $mapping, $entry->id, $date, $amount, $rawDescription)) {
                 $entry->update(['status' => 'duplicate']);
 
                 return 'duplicate';
@@ -336,13 +366,15 @@ final readonly class ProcessStatementImportAction
                 ? min(1, max(0, (float) $parsedTransaction['confidence']))
                 : null;
             $rationale = $this->optionalString($parsedTransaction, 'rationale');
+            $split = $this->suggestedSplit($parsedTransaction, $import->user_id);
+            $externalTransactionId = $this->optionalString($parsedTransaction, 'external_id');
 
             $pendingTransaction = $this->createPendingTransactionAction->execute(
                 new CreatePendingTransactionData(
                     ledgerId: $import->ledger_id,
                     userId: $import->user_id,
-                    payerAccountId: $payerAccountId,
-                    destinationAccountId: $destinationAccountId,
+                    payerAccountId: $mapping->account_id,
+                    destinationAccountId: $this->destinationAccountId($membership),
                     rawData: [
                         ...$parsedTransaction,
                         'description' => $rawDescription,
@@ -352,12 +384,13 @@ final readonly class ProcessStatementImportAction
                         'bank_account_name' => $mapping->external_account_name,
                         'ownership' => $mapping->ownership_type,
                         'suggested_account_id' => $mapping->suggested_account_id,
+                        'sharing_type' => $split['sharing_type'],
                         'external_transaction_id' => $externalTransactionId,
                     ],
                     description: $description,
                     amount: $amount,
-                    splitRule: TransactionSplitRule::Proportional->value,
-                    participants: [],
+                    splitRule: $split['split_rule'],
+                    participants: $split['participants'],
                     date: $date,
                     source: TransactionSource::AiImport->value,
                     confidence: $confidence,
@@ -374,6 +407,116 @@ final readonly class ProcessStatementImportAction
         });
     }
 
+    /**
+     * @param array<string, BankAccountMapping> $mappings
+     */
+    private function mappingForTransaction(array $mappings, string $bankAccountExternalId): ?BankAccountMapping
+    {
+        if (isset($mappings[$bankAccountExternalId])) {
+            return $mappings[$bankAccountExternalId];
+        }
+
+        $digits = StatementImportIdentity::preferredDigits($bankAccountExternalId);
+
+        foreach ($mappings as $mapping) {
+            if (StatementImportIdentity::digitsMatch(
+                $digits,
+                StatementImportIdentity::preferredDigits($mapping->external_account_name, $mapping->masked_identifier),
+            )) {
+                return $mapping;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $parsedTransaction
+     * @return array{split_rule: string, participants: list<array{user_id: int}>, sharing_type: string}
+     */
+    private function suggestedSplit(array $parsedTransaction, int $userId): array
+    {
+        $sharingType = strtolower($this->optionalString($parsedTransaction, 'sharing_type') ?? 'shared');
+
+        if (in_array($sharingType, ['individual', 'personal'], true)) {
+            return [
+                'split_rule' => TransactionSplitRule::Individual->value,
+                'participants' => [['user_id' => $userId]],
+                'sharing_type' => 'individual',
+            ];
+        }
+
+        return [
+            'split_rule' => TransactionSplitRule::Proportional->value,
+            'participants' => [],
+            'sharing_type' => 'shared',
+        ];
+    }
+
+    private function isDuplicateContent(
+        StatementImport $import,
+        BankAccountMapping $mapping,
+        int $currentEntryId,
+        string $date,
+        int $amount,
+        string $rawDescription,
+    ): bool {
+        $normalized = StatementImportIdentity::normalize($rawDescription);
+        $accountDigits = StatementImportIdentity::preferredDigits(
+            $mapping->external_account_name,
+            $mapping->masked_identifier,
+        );
+
+        $entries = StatementImportEntry::query()
+            ->where('ledger_id', $import->ledger_id)
+            ->whereKeyNot($currentEntryId)
+            ->where('raw_data->date', $date)
+            ->get();
+
+        foreach ($entries as $entry) {
+            $raw = is_array($entry->raw_data) ? $entry->raw_data : [];
+            $entryAmount = filter_var($raw['amount_cents'] ?? null, FILTER_VALIDATE_INT);
+            $entryDescription = $this->optionalString($raw, 'raw_description')
+                ?? $this->optionalString($raw, 'description')
+                ?? '';
+            $entryDigits = StatementImportIdentity::preferredDigits(
+                $this->optionalString($raw, 'bank_account_external_id'),
+            );
+
+            if (
+                is_int($entryAmount)
+                && $entryAmount === $amount
+                && StatementImportIdentity::normalize($entryDescription) === $normalized
+                && StatementImportIdentity::digitsMatch($accountDigits, $entryDigits)
+            ) {
+                return true;
+            }
+        }
+
+        return PendingTransaction::query()
+            ->where('ledger_id', $import->ledger_id)
+            ->whereIn('status', [
+                PendingTransactionStatus::Pending->value,
+                PendingTransactionStatus::Approved->value,
+            ])
+            ->whereDate('date', $date)
+            ->where('suggested_amount', $amount)
+            ->get()
+            ->contains(function (PendingTransaction $pending) use ($accountDigits, $normalized): bool {
+                $raw = is_array($pending->raw_data) ? $pending->raw_data : [];
+                $pendingDescription = $this->optionalString($raw, 'description')
+                    ?? $pending->suggested_description
+                    ?? '';
+                $pendingDigits = StatementImportIdentity::preferredDigits(
+                    $this->optionalString($raw, 'bank_account_external_id'),
+                    $this->optionalString($raw, 'bank_account_name'),
+                );
+
+                return StatementImportIdentity::normalize($pendingDescription) === $normalized
+                    && StatementImportIdentity::digitsMatch($accountDigits, $pendingDigits);
+            });
+    }
+
     private function destinationAccountId(LedgerUser $membership): ?int
     {
         if ($membership->default_expense_account_id !== null) {
@@ -388,22 +531,17 @@ final readonly class ProcessStatementImportAction
         return is_numeric($accountId) ? (int) $accountId : null;
     }
 
-    private function existingTransaction(
-        int $ledgerId,
-        int $payerAccountId,
-        int $destinationAccountId,
-        string $date,
-        int $amount,
-        string $description,
-    ): bool {
-        return Transaction::query()
-            ->where('ledger_id', $ledgerId)
-            ->where('payer_account_id', $payerAccountId)
-            ->where('destination_account_id', $destinationAccountId)
-            ->whereDate('date', $date)
-            ->where('amount', $amount)
-            ->where('description', $description)
-            ->exists();
+    private function markStage(StatementImport $import, StatementImportStage $stage): void
+    {
+        $import->update([
+            'status' => 'processing',
+            'stage' => $stage->value,
+        ]);
+    }
+
+    private function advanceProgress(StatementImport $import): void
+    {
+        $import->increment('progress_current');
     }
 
     /**
@@ -432,15 +570,6 @@ final readonly class ProcessStatementImportAction
         }
 
         return trim($result);
-    }
-
-    private function normalize(?string $value): string
-    {
-        return Str::of($value ?? '')
-            ->lower()
-            ->replaceMatches('/[^a-z0-9]+/', ' ')
-            ->squish()
-            ->toString();
     }
 
     private function validDate(string $date): bool

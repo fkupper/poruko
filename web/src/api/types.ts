@@ -242,14 +242,25 @@ export interface BankAccountMapping {
     updated_at: string | null;
 }
 
+export type StatementImportStage =
+    | 'queued'
+    | 'parsing'
+    | 'mapping_accounts'
+    | 'processing_transactions'
+    | 'completed'
+    | 'failed';
+
 export interface StatementImport {
     id: string;
     status: 'queued' | 'processing' | 'completed' | 'failed';
+    stage?: StatementImportStage | null;
     filename: string;
     parsed_count: number;
     pending_count: number;
     duplicate_count: number;
     failed_count: number;
+    progress_current?: number;
+    progress_total?: number;
     error_message: string | null;
     processed_at: string | null;
     created_at: string | null;

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PendingTransaction } from '@/api/types';
+import { useAuthStore } from '@/stores/authStore';
 import { useLedgerStore } from '@/stores/ledgerStore';
 
 import { PendingApprovalTable } from './PendingApprovalTable';
@@ -17,6 +18,7 @@ const updatePendingTransactionMock = vi.fn();
 const fetchAccountsMock = vi.fn();
 const createAccountMock = vi.fn();
 const updateBankAccountMappingMock = vi.fn();
+const fetchLedgerMembersMock = vi.fn();
 
 vi.mock('@/api/pending-transactions', () => ({
     fetchPendingTransactions: (...args: unknown[]) => fetchPendingTransactionsMock(...args),
@@ -34,6 +36,10 @@ vi.mock('@/api/accounts', () => ({
 
 vi.mock('@/api/ingestion', () => ({
     updateBankAccountMapping: (...args: unknown[]) => updateBankAccountMappingMock(...args),
+}));
+
+vi.mock('@/api/members', () => ({
+    fetchLedgerMembers: (...args: unknown[]) => fetchLedgerMembersMock(...args),
 }));
 
 vi.mock('@/hooks/use-ledger-currency', () => ({
@@ -109,7 +115,17 @@ describe('PendingApprovalTable', () => {
         fetchAccountsMock.mockReset();
         createAccountMock.mockReset();
         updateBankAccountMappingMock.mockReset();
+        fetchLedgerMembersMock.mockReset();
         useLedgerStore.setState({ activeLedgerId: 7 });
+        useAuthStore.setState({
+            user: {
+                id: 1,
+                name: 'Alice',
+                email: 'alice@example.test',
+                theme: 'poruko',
+                color_mode: 'light',
+            },
+        });
 
         fetchPendingTransactionsMock.mockResolvedValue(proposals);
         approvePendingTransactionMock.mockResolvedValue({ id: 20 });
@@ -146,6 +162,10 @@ describe('PendingApprovalTable', () => {
             balance: 0,
         });
         updateBankAccountMappingMock.mockResolvedValue({});
+        fetchLedgerMembersMock.mockResolvedValue([
+            { id: 1, name: 'Alice', shareable_income: 60000, is_active: true },
+            { id: 2, name: 'Bob', shareable_income: 40000, is_active: true },
+        ]);
     });
 
     afterEach(() => {
@@ -212,6 +232,7 @@ describe('PendingApprovalTable', () => {
 
         await screen.findByText('Groceries');
         await user.click(screen.getByRole('button', { name: 'Review Groceries' }));
+        await screen.findByText('Bob');
         await user.click(screen.getByRole('button', { name: 'Create' }));
 
         await waitFor(() => {
@@ -227,6 +248,37 @@ describe('PendingApprovalTable', () => {
             expect(updatePendingTransactionMock).toHaveBeenCalledWith(7, 10, {
                 payer_account_id: 300,
                 destination_account_id: 200,
+                split_rule: 'equal',
+                participants: [
+                    { user_id: 1, share: 1250, share_ratio: 0.5 },
+                    { user_id: 2, share: 1250, share_ratio: 0.5 },
+                ],
+            });
+        });
+    });
+
+    it('lets the reviewer change the sharing type before saving', async () => {
+        const user = userEvent.setup();
+        renderTable();
+
+        await screen.findByText('Groceries');
+        expect(screen.getByText('Equal')).toBeInTheDocument();
+        expect(screen.getByText('Proportional')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Review Groceries' }));
+        await user.click(screen.getByRole('radio', { name: 'Individual' }));
+        await waitFor(() => {
+            expect(screen.getByRole('radio', { name: /Assign to Alice/i })).toBeChecked();
+        });
+        await user.click(screen.getByRole('radio', { name: /Assign to Bob/i }));
+        await user.click(screen.getByRole('button', { name: 'Save review details' }));
+
+        await waitFor(() => {
+            expect(updatePendingTransactionMock).toHaveBeenCalledWith(7, 10, {
+                payer_account_id: 100,
+                destination_account_id: 200,
+                split_rule: 'individual',
+                participants: [{ user_id: 2 }],
             });
         });
     });

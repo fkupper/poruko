@@ -22,7 +22,7 @@ import {
     updateBankAccountMapping,
     uploadBankStatement,
 } from '@/api/ingestion';
-import type { AiProvider, BankAccountMapping } from '@/api/types';
+import type { AiProvider, BankAccountMapping, StatementImport, StatementImportStage } from '@/api/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -77,6 +78,41 @@ function importStatusVariant(status: string): 'default' | 'secondary' | 'destruc
     if (status === 'failed') return 'destructive';
     if (status === 'processing') return 'secondary';
     return 'outline';
+}
+
+function importStageLabel(item: StatementImport): string {
+    const stage: StatementImportStage | string = item.stage ?? item.status;
+
+    if (stage === 'parsing') return 'Extracting transactions';
+    if (stage === 'mapping_accounts') return 'Matching bank accounts';
+    if (stage === 'processing_transactions') return 'Creating proposals';
+    if (stage === 'queued') return 'Waiting in queue';
+    if (stage === 'completed') return 'Completed';
+    if (stage === 'failed') return 'Failed';
+
+    return item.status;
+}
+
+function importProgressValue(item: StatementImport): number | null {
+    if (item.status === 'completed') return 100;
+    if (item.status === 'failed') return null;
+
+    const current = item.progress_current ?? 0;
+    const total = item.progress_total ?? 0;
+
+    if (total > 0) {
+        return Math.round((current / total) * 100);
+    }
+
+    if (item.status === 'processing') {
+        return null;
+    }
+
+    return 0;
+}
+
+function isImportInProgress(item: StatementImport): boolean {
+    return item.status === 'queued' || item.status === 'processing';
 }
 
 function isAiProvider(value: string): value is AiProvider {
@@ -618,20 +654,42 @@ export default function AiImportPage() {
                         <p className="text-sm text-muted-foreground">No statements imported yet.</p>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {imports.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex flex-col justify-between gap-2 rounded-lg border p-3 sm:flex-row sm:items-center"
-                                >
-                                    <div className="flex flex-col gap-1">
-                                        <span className="font-medium">{item.filename}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {item.pending_count} pending · {item.duplicate_count} duplicates · {item.failed_count} skipped
-                                        </span>
+                            {imports.map((item) => {
+                                const inProgress = isImportInProgress(item);
+                                const progressValue = importProgressValue(item);
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="flex flex-col justify-between gap-2 rounded-lg border p-3 sm:flex-row sm:items-center"
+                                    >
+                                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                            <span className="font-medium">{item.filename}</span>
+                                            {inProgress ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {importStageLabel(item)}
+                                                        {item.progress_total
+                                                            ? ` · ${item.progress_current ?? 0} of ${item.progress_total}`
+                                                            : ''}
+                                                    </span>
+                                                    <Progress
+                                                        value={progressValue}
+                                                        aria-label={importStageLabel(item)}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {item.pending_count} pending · {item.duplicate_count} duplicates · {item.failed_count} skipped
+                                                </span>
+                                            )}
+                                        </div>
+                                        <Badge variant={importStatusVariant(item.status)}>
+                                            {inProgress ? importStageLabel(item) : item.status}
+                                        </Badge>
                                     </div>
-                                    <Badge variant={importStatusVariant(item.status)}>{item.status}</Badge>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </CardContent>

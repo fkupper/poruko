@@ -98,14 +98,32 @@ describe('AiImportPage', () => {
             {
                 id: 'import-1',
                 status: 'completed',
+                stage: 'completed',
                 filename: 'september.csv',
                 parsed_count: 4,
                 pending_count: 3,
                 duplicate_count: 1,
                 failed_count: 0,
+                progress_current: 4,
+                progress_total: 4,
                 error_message: null,
                 processed_at: '2026-09-19T10:00:00Z',
                 created_at: '2026-09-19T09:59:00Z',
+            },
+            {
+                id: 'import-2',
+                status: 'processing',
+                stage: 'processing_transactions',
+                filename: 'october.csv',
+                parsed_count: 81,
+                pending_count: 0,
+                duplicate_count: 0,
+                failed_count: 0,
+                progress_current: 40,
+                progress_total: 83,
+                error_message: null,
+                processed_at: null,
+                created_at: '2026-09-20T12:00:00Z',
             },
         ]);
         fetchAccountsMock.mockResolvedValue([
@@ -149,6 +167,8 @@ describe('AiImportPage', () => {
         expect(screen.getByText('Use suggestion: Alice Checking')).toBeInTheDocument();
         expect(screen.getByText('september.csv')).toBeInTheDocument();
         expect(screen.getByText('3 pending · 1 duplicates · 0 skipped')).toBeInTheDocument();
+        expect(screen.getByText('Creating proposals · 40 of 83')).toBeInTheDocument();
+        expect(screen.getByRole('progressbar', { name: 'Creating proposals' })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /review pending transactions/i }))
             .toHaveAttribute('href', '/transactions');
     });

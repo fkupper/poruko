@@ -22,6 +22,7 @@ class StatementImportFactory extends Factory
             'ledger_id' => Ledger::factory(),
             'user_id' => User::factory(),
             'status' => 'queued',
+            'stage' => 'queued',
             'file_path' => 'statement-imports/example.csv',
             'original_filename' => 'statement.csv',
             'mime_type' => 'text/csv',
@@ -30,6 +31,8 @@ class StatementImportFactory extends Factory
             'pending_count' => 0,
             'duplicate_count' => 0,
             'failed_count' => 0,
+            'progress_current' => 0,
+            'progress_total' => 0,
             'error_message' => null,
             'processed_at' => null,
         ];
