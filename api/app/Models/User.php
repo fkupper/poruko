@@ -8,6 +8,7 @@ use App\Enums\UiTheme;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -94,7 +95,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'ai_import_auto_create_accounts', 'deleted_at')
             ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
@@ -104,7 +105,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Ledger::class)
             ->using(LedgerUser::class)
-            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'deleted_at')
+            ->withPivot('role', 'main_personal_account_id', 'default_payment_account_id', 'default_expense_account_id', 'ai_import_auto_create_accounts', 'deleted_at')
             ->withTimestamps();
     }
 
@@ -118,5 +119,23 @@ class User extends Authenticatable
     public function financialProfiles(): HasMany
     {
         return $this->hasMany(FinancialProfile::class);
+    }
+
+    /** @return HasMany<BankAccountMapping, $this> */
+    public function bankAccountMappings(): HasMany
+    {
+        return $this->hasMany(BankAccountMapping::class);
+    }
+
+    /** @return HasMany<StatementImport, $this> */
+    public function statementImports(): HasMany
+    {
+        return $this->hasMany(StatementImport::class);
+    }
+
+    /** @return HasOne<AiProviderSetting, $this> */
+    public function aiProviderSetting(): HasOne
+    {
+        return $this->hasOne(AiProviderSetting::class);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AiStatementImportController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FinancialProfileController;
 use App\Http\Controllers\Api\HealthController;
@@ -75,8 +76,17 @@ Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFa
             Route::get('/pending-transactions', [PendingTransactionController::class, 'index'])->name('pending-transactions.index');
             Route::post('/pending-transactions/approve-batch', [PendingTransactionController::class, 'approveBatch'])->name('pending-transactions.approve-batch');
             Route::post('/pending-transactions/reject-batch', [PendingTransactionController::class, 'rejectBatch'])->name('pending-transactions.reject-batch');
+            Route::patch('/pending-transactions/{pendingTransaction}', [PendingTransactionController::class, 'update'])->name('pending-transactions.update');
             Route::post('/pending-transactions/{pendingTransaction}/approve', [PendingTransactionController::class, 'approve'])->name('pending-transactions.approve');
             Route::post('/pending-transactions/{pendingTransaction}/reject', [PendingTransactionController::class, 'reject'])->name('pending-transactions.reject');
+
+            Route::get('/ai-import/settings', [AiStatementImportController::class, 'settings'])->name('ai-import.settings.show');
+            Route::put('/ai-import/settings', [AiStatementImportController::class, 'saveSettings'])->name('ai-import.settings.update');
+            Route::delete('/ai-import/settings', [AiStatementImportController::class, 'destroySettings'])->name('ai-import.settings.destroy');
+            Route::get('/ai-import/mappings', [AiStatementImportController::class, 'mappings'])->name('ai-import.mappings.index');
+            Route::patch('/ai-import/mappings/{bankAccountMapping}', [AiStatementImportController::class, 'updateMapping'])->name('ai-import.mappings.update');
+            Route::post('/ai-import/statements', [AiStatementImportController::class, 'upload'])->name('ai-import.statements.store');
+            Route::get('/ai-import/statements', [AiStatementImportController::class, 'imports'])->name('ai-import.statements.index');
 
             Route::get('/recurring-transactions', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
             Route::post('/recurring-transactions', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');

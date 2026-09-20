@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2Icon, XCircleIcon } from 'lucide-react';
+import { CheckCircle2Icon, PencilIcon, XCircleIcon } from 'lucide-react';
 
 import {
     approvePendingTransaction,
@@ -37,17 +37,34 @@ import { useLedgerCurrencySymbol } from '@/hooks/use-ledger-currency';
 import { centsToCurrency } from '@/lib/currency';
 import { useLedgerStore } from '@/stores/ledgerStore';
 
+import { PendingTransactionReviewDialog } from './PendingTransactionReviewDialog';
+
 interface ReviewRequest {
     decision: 'approve' | 'reject';
     ids: number[];
 }
 
 function isReadyForApproval(transaction: PendingTransaction): boolean {
+    const hasSplitDetails = transaction.suggested_split_rule !== null
+        && (
+            transaction.suggested_split_rule !== 'individual'
+            || (transaction.suggested_participants?.length ?? 0) === 1
+        );
+
     return transaction.payer_account_id !== null
         && transaction.destination_account_id !== null
         && transaction.suggested_amount !== null
-        && transaction.suggested_split_rule !== null
+        && hasSplitDetails
         && transaction.date !== null;
+}
+
+function splitRuleLabel(rule: PendingTransaction['suggested_split_rule']): string {
+    if (rule === 'individual') return 'Individual';
+    if (rule === 'equal') return 'Equal';
+    if (rule === 'manual') return 'Manual';
+    if (rule === 'proportional') return 'Proportional';
+
+    return 'Needs sharing';
 }
 
 function sourceLabel(source: PendingTransaction['source']): string {
@@ -68,6 +85,7 @@ export function PendingApprovalTable() {
     const queryClient = useQueryClient();
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
     const [rejectingIds, setRejectingIds] = React.useState<number[]>([]);
+    const [reviewingTransaction, setReviewingTransaction] = React.useState<PendingTransaction | null>(null);
 
     const { data: pendingTransactions = [], isPending } = useQuery({
         queryKey: ['pending-transactions', activeLedgerId],
@@ -185,6 +203,7 @@ export function PendingApprovalTable() {
                                 <TableHead>Date</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Source</TableHead>
+                                <TableHead>Sharing</TableHead>
                                 <TableHead>Accounts</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -213,14 +232,31 @@ export function PendingApprovalTable() {
                                                 <span className="font-medium">
                                                     {transaction.suggested_description || transaction.raw_description || 'Untitled proposal'}
                                                 </span>
+                                                {transaction.rationale && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {transaction.rationale}
+                                                    </span>
+                                                )}
                                                 {!ready && (
                                                     <Badge variant="outline">Needs details</Badge>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="secondary">
-                                                {sourceLabel(transaction.source)}
+                                            <div className="flex flex-col items-start gap-1">
+                                                <Badge variant="secondary">
+                                                    {sourceLabel(transaction.source)}
+                                                </Badge>
+                                                {typeof transaction.confidence === 'number' && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {Math.round(transaction.confidence * 100)}% confident
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline">
+                                                {splitRuleLabel(transaction.suggested_split_rule)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
@@ -235,6 +271,15 @@ export function PendingApprovalTable() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex justify-end gap-1">
+                                                <Button
+                                                    size="icon-sm"
+                                                    variant="ghost"
+                                                    aria-label={`Review ${transaction.suggested_description || `proposal ${transaction.id}`}`}
+                                                    disabled={reviewMutation.isPending}
+                                                    onClick={() => setReviewingTransaction(transaction)}
+                                                >
+                                                    <PencilIcon />
+                                                </Button>
                                                 <Button
                                                     size="icon-sm"
                                                     variant="ghost"
@@ -302,6 +347,14 @@ export function PendingApprovalTable() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <PendingTransactionReviewDialog
+                transaction={reviewingTransaction}
+                open={reviewingTransaction !== null}
+                onOpenChange={(open) => {
+                    if (!open) setReviewingTransaction(null);
+                }}
+            />
         </>
     );
 }

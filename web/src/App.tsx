@@ -20,7 +20,7 @@ import MyFinancePage from '@/pages/MyFinancePage/MyFinancePage';
 import SettingsPage from '@/pages/SettingsPage/SettingsPage';
 import AccountSettingsPage from '@/pages/AccountSettingsPage/AccountSettingsPage';
 import MembersPage from '@/pages/MembersPage/MembersPage';
-// import IngestionPage from '@/pages/IngestionPage/IngestionPage';
+import AiImportPage from '@/pages/AiImportPage/AiImportPage';
 import SetupPage from '@/pages/SetupPage/SetupPage';
 import { SpaceGuard } from '@/routes/SpaceGuard';
 
@@ -113,8 +113,7 @@ export default function App() {
                                 <Route path="/accounts" element={<AccountsPage />} />
                                 <Route path="/recurring" element={<RecurringPage />} />
                                 <Route path="/my-finance" element={<MyFinancePage />} />
-                                {/* Hidden until AI ingestion ships */}
-                                {/* <Route path="/ingestion" element={<IngestionPage />} /> */}
+                                <Route path="/ai-import" element={<AiImportPage />} />
                                 <Route path="/account" element={<AccountSettingsPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
                                 <Route path="/members" element={<MembersPage />} />

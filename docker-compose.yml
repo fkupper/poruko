@@ -43,7 +43,7 @@ services:
         required: false
     environment:
       RUN_MIGRATIONS: "false"
-    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    command: php artisan queue:work --verbose --tries=3 --timeout=210
     depends_on:
       api:
         condition: service_healthy

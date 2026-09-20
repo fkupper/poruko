@@ -3,6 +3,7 @@
 namespace App\Modules\Ledger\Actions;
 
 use App\Enums\PendingTransactionStatus;
+use App\Enums\TransactionSource;
 use App\Enums\TransactionType;
 use App\Models\Ledger;
 use App\Models\PendingTransaction;
@@ -117,6 +118,17 @@ final readonly class ApprovePendingTransactionsAction
                         'confidence' => $pendingTransaction->confidence,
                         'rationale' => $pendingTransaction->rationale,
                     ], static fn (mixed $value): bool => $value !== null);
+
+                    if ($pendingTransaction->source === TransactionSource::AiImport) {
+                        $sourceMetadata = [
+                            ...$sourceMetadata,
+                            ...array_filter([
+                                'statement_import_id' => $pendingTransaction->raw_data['statement_import_id'] ?? null,
+                                'statement_import_entry_id' => $pendingTransaction->raw_data['statement_import_entry_id'] ?? null,
+                                'external_transaction_id' => $pendingTransaction->raw_data['external_transaction_id'] ?? null,
+                            ], static fn (mixed $value): bool => $value !== null),
+                        ];
+                    }
 
                     $transaction = $this->postManualTransactionAction->execute(
                         new PostManualTransactionData(

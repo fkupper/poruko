@@ -22,7 +22,7 @@ spec:
         - name: queue
           image: ghcr.io/fkupper/poruko:latest
           imagePullPolicy: IfNotPresent
-          args: ["php", "artisan", "queue:work", "--verbose", "--tries=3", "--timeout=90"]
+          args: ["php", "artisan", "queue:work", "--verbose", "--tries=3", "--timeout=210"]
           envFrom:
             - configMapRef:
                 name: poruko-config
