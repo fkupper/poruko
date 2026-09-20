@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { A2uiFinanceSurface } from '@/features/mcp/A2uiFinanceSurface';
+import { A2uiSurfaceRenderer } from '@/features/mcp/A2uiSurface';
 
-describe('A2uiFinanceSurface', () => {
+describe('A2uiSurfaceRenderer', () => {
     it('renders an authenticated v0.9 surface with the official React client', async () => {
         render(
-            <A2uiFinanceSurface
+            <A2uiSurfaceRenderer
                 messages={[
                     {
                         version: 'v0.9',

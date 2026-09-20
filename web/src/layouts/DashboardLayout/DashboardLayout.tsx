@@ -20,7 +20,6 @@ const ROUTE_LABELS: Record<string, string> = {
     '/recurring': 'Recurring',
     '/my-finance': 'My Finance',
     '/ai-import': 'AI Import',
-    '/agent-access': 'Agent Access',
     '/account': 'Account',
     '/settings': 'Settings',
     '/settings/mcp-log': 'MCP action log',

@@ -20,7 +20,6 @@ import MyFinancePage from '@/pages/MyFinancePage/MyFinancePage';
 import SettingsPage from '@/pages/SettingsPage/SettingsPage';
 import McpActionLogPage from '@/pages/McpActionLogPage/McpActionLogPage';
 import AccountSettingsPage from '@/pages/AccountSettingsPage/AccountSettingsPage';
-import AgentAccessPage from '@/pages/AgentAccessPage/AgentAccessPage';
 import MembersPage from '@/pages/MembersPage/MembersPage';
 import AiImportPage from '@/pages/AiImportPage/AiImportPage';
 import SetupPage from '@/pages/SetupPage/SetupPage';
@@ -117,7 +116,6 @@ export default function App() {
                                 <Route path="/my-finance" element={<MyFinancePage />} />
                                 <Route path="/ai-import" element={<AiImportPage />} />
                                 <Route path="/account" element={<AccountSettingsPage />} />
-                                <Route path="/agent-access" element={<AgentAccessPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
                                 <Route path="/settings/mcp-log" element={<McpActionLogPage />} />
                                 <Route path="/members" element={<MembersPage />} />

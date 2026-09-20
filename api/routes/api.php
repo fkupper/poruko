@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\LedgerAccountController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\LedgerTransactionController;
 use App\Http\Controllers\Api\LedgerUserController;
+use App\Http\Controllers\Api\McpA2uiController;
 use App\Http\Controllers\Api\McpActionLogController;
 use App\Http\Controllers\Api\McpSettingsController;
 use App\Http\Controllers\Api\PendingTransactionController;
@@ -78,6 +79,7 @@ Route::middleware(['auth:sanctum', 'ability:*', App\Http\Middleware\EnforceTwoFa
             Route::get('/mcp-settings', [McpSettingsController::class, 'show'])->name('mcp-settings.show');
             Route::put('/mcp-settings', [McpSettingsController::class, 'update'])->name('mcp-settings.update');
             Route::get('/mcp-action-logs', [McpActionLogController::class, 'index'])->name('mcp-action-logs.index');
+            Route::get('/mcp-a2ui/pending-approvals', McpA2uiController::class)->name('mcp-a2ui.pending-approvals');
 
             Route::get('/pending-transactions', [PendingTransactionController::class, 'index'])->name('pending-transactions.index');
             Route::post('/pending-transactions', [PendingTransactionController::class, 'store'])->name('pending-transactions.store');

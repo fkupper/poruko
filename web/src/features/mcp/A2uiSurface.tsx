@@ -13,11 +13,11 @@ import {
 import type { A2uiMessage as ApiA2uiMessage } from '@/api/mcp';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-interface A2uiFinanceSurfaceProps {
+interface A2uiSurfaceRendererProps {
     messages: ApiA2uiMessage[];
 }
 
-export function A2uiFinanceSurface({ messages }: A2uiFinanceSurfaceProps) {
+export function A2uiSurfaceRenderer({ messages }: A2uiSurfaceRendererProps) {
     const { processor, error } = React.useMemo(() => {
         const nextProcessor = new MessageProcessor([basicCatalog]);
 
